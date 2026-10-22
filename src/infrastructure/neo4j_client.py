@@ -1,36 +1,67 @@
-lazy import os
+import os
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
-from neo4j.exceptions import AuthError,ServiceUnavailable,DriverError
+from neo4j import AsyncGraphDatabase
+from neo4j.exceptions import AuthError, ServiceUnavailable, DriverError
+from opentelemetry import trace
+from opentelemetry.trace import Status,StatusCode
 load_dotenv()
-url=os.getenv("NEO4J_URI")
-username=os.getenv("NEO4J_USERNAME")
-password=os.getenv("NEO4J_PASSWORD")
-database=os.getenv("NEO4J_DATABASE")
+tracer=trace.get_tracer("graph_rag.neo4j")
 class DbConnect:
-    def __init__(self,*,url,username,password,database):
-        self.url=url
-        self.username=username
-        self.password=password
-        self.database=database
-        if self.url is None or self.username is None or self.password is None or self.database is None:
-            raise ValueError("Set NEO4J_URI,NEO4J_USERNAME,NEO4J_PASSWORD in .env")
-        self.driver=GraphDatabase.driver(self.url,auth=(self.username,self.password))
-    def verify_connection(self):
-        try:
-            self.driver.verify_connectivity()
-        except ServiceUnavailable as exc:
-            raise ConnectionError(
-                "Could not connect to Neo4j. Check that the database is running "
-                "and NEO4J_URI is correct."
-            ) from exc
-        except AuthError as exc:
-            raise ConnectionError(
-                "Neo4j authentication failed. Check your username and password."
-            ) from exc
-        except DriverError as exc:
-            raise ConnectionError(
-                "Could not connect to driver."
-            )from exc
-    def close(self):
-        self.driver.close
+    def __init__(self, *, url, username, password, database):
+        config = {
+            "NEO4J_URI": url,
+            "NEO4J_USERNAME": username,
+            "NEO4J_PASSWORD": password,
+            "NEO4J_DATABASE": database,
+        }
+        missing = [
+            name for name, value in config.items()
+            if not isinstance(value, str) or not value.strip()
+        ]
+        if missing:
+            raise ValueError(
+                f"Missing or invalid configuration: {', '.join(missing)}"
+            )
+
+        self.url = url
+        self.username = username
+        self.database = database
+
+        self.driver = AsyncGraphDatabase.driver(
+            self.url,
+            auth=(self.username, password),
+        )
+    async def verify_connection(self):
+        with tracer.start_as_current_span("neo4j.verify_connection") as span:
+            try:
+                await self.driver.verify_connectivity()
+                span.set_attribute("db.system", "neo4j")
+            except AuthError as exc:
+                span.record_exception(exc)
+                span.set_status(Status(StatusCode.ERROR, description=str(exc)))
+                raise ConnectionError(
+                    "Neo4j authentication failed. Check the credentials."
+                ) from exc
+            except ServiceUnavailable as exc:
+                span.record_exception(exc)
+                span.set_status(Status(StatusCode.ERROR, description=str(exc)))
+                raise ConnectionError(
+                    "Neo4j is unavailable. Check that the database is running "
+                    "and the URI is correct."
+                ) from exc
+            except DriverError as exc:
+                span.record_exception(exc)
+                span.set_status(Status(StatusCode.ERROR, description=str(exc)))
+                raise ConnectionError(
+                    "Neo4j driver error during connection verification."
+                ) from exc
+
+    async def close(self):
+        await self.driver.close()
+def create_db_connect():
+    return DbConnect(
+        url=os.getenv("NEO4J_URI"),
+        username=os.getenv("NEO4J_USERNAME"),
+        password=os.getenv("NEO4J_PASSWORD"),
+        database=os.getenv("NEO4J_DATABASE", "neo4j"),
+    )
