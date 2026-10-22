@@ -4,6 +4,8 @@ from neo4j import AsyncGraphDatabase
 from neo4j.exceptions import AuthError, ServiceUnavailable, DriverError
 from opentelemetry import trace
 from opentelemetry.trace import Status,StatusCode
+from contextlib import asynccontextmanager
+from typing import LiteralString
 load_dotenv()
 tracer=trace.get_tracer("graph_rag.neo4j")
 class DbConnect:
@@ -55,7 +57,10 @@ class DbConnect:
                 raise ConnectionError(
                     "Neo4j driver error during connection verification."
                 ) from exc
-
+    @asynccontextmanager
+    async def get_session(self):
+        async with self.driver.session(database=self.database) as session:
+            yield session
     async def close(self):
         await self.driver.close()
 def create_db_connect():
@@ -65,3 +70,7 @@ def create_db_connect():
         password=os.getenv("NEO4J_PASSWORD"),
         database=os.getenv("NEO4J_DATABASE", "neo4j"),
     )
+async def run_query(*,query:LiteralString,db_connection:DbConnect):
+    async with db_connection.get_session() as session:
+        result=await session.run(query)
+        return [record async for record in result]
