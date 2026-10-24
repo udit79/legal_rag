@@ -7,9 +7,9 @@ on enterprise risk concepts. It currently defines a health/readiness API,
 Neo4j connectivity, OpenTelemetry tracing, graph-domain validation, and
 contracts for the beginning of a document-ingestion workflow.
 
-The ingestion contracts and state describe how future stages can exchange
-small, typed values. They do not yet implement PDF preflight, routing,
-parsing/OCR, artifact storage, graph writes, or a workflow runner.
+The ingestion contracts and state describe how stages can exchange small,
+typed values. PDF preflight is implemented; routing, parsing/OCR, artifact
+storage, graph writes, and a workflow runner are not yet implemented.
 
 ## Component map
 
@@ -17,6 +17,7 @@ parsing/OCR, artifact storage, graph writes, or a workflow runner.
 | --- | --- | --- |
 | API | `src/api/main.py` | FastAPI application, lifecycle setup, liveness and readiness endpoints. |
 | Ingestion contracts | `src/ingestion/contracts.py` | Pydantic models for document references, preflight features, and route decisions. |
+| PDF preflight | `src/ingestion/preflight.py` | SHA-256, file size, page count, extracted text-character counts, and image counts per page. |
 | Ingestion state | `src/ingestion/state.py` | Typed workflow state and structured stage-error shape. |
 | Domain ontology | `src/domain/ontology.py` | Node/relation types and allowed directed relationship triples. |
 | Graph schema | `src/domain/graph_schema.py` | Required properties and validation for graph nodes. |
@@ -57,6 +58,16 @@ The lengths of both per-page lists must equal `page_count`. These lengths
 represent the number of pages being described; the values inside the lists
 represent that page's character or image count.
 
+`inspect_pdf(path)` in `src/ingestion/preflight.py` computes the SHA-256 over
+the file's original bytes, gets the byte size, and uses PyMuPDF to inspect each
+page. Text counts are the character lengths of each page's extracted text;
+image counts are the image occurrences reported for each page. Zero text and
+zero images are valid values for a page.
+
+Missing paths raise `PdfNotFoundError`. Empty, corrupt, encrypted, non-PDF, or
+zero-page inputs raise `InvalidPdfError`. Other filesystem read errors remain
+`OSError`s rather than being converted into fabricated metadata.
+
 ### `RouteDecision`
 
 Records the selected processing route and its rationale:
@@ -96,7 +107,8 @@ transition rules are implemented yet.
 ## Risk graph domain
 
 The ontology defines these node types: `ORGANIZATION`, `APPLICATION`, `POLICY`,
-`OBLIGATION`, `CONTROL`, `FINDING`, `RISK`, `EVIDENCE`, and `DOCUMENT`.
+`OBLIGATION`, `CONTROL`, `FINDING`, `RISK`, `EVIDENCE`, `DOCUMENT`, and
+`CHUNK`.
 Allowed relationship triples are directed:
 
 | Source | Relationship | Target |
@@ -108,17 +120,18 @@ Allowed relationship triples are directed:
 | `FINDING` | `EVALUATES` | `CONTROL` |
 | `FINDING` | `AFFECTS` | `APPLICATION` |
 | `EVIDENCE` | `SUPPORTS` | `FINDING` |
-| `EVIDENCE` | `EXTRACTED_FROM` | `DOCUMENT` |
+| `EVIDENCE` | `EXTRACTED_FROM` | `CHUNK` |
 | `RISK` | `INDICATED_BY` | `FINDING` |
+| `DOCUMENT` | `HAS_CHUNK` | `CHUNK` |
+| `CHUNK` | `NEXT_CHUNK` | `CHUNK` |
 
-`validate_relation` accepts enum names case-insensitively, returns `True` for
-an allowed triple and `False` for a known but disallowed triple, and raises
-`KeyError` for unknown names.
+`validate_relation` accepts enum values case-insensitively and returns `False`
+for unknown names or disallowed triples.
 
 `validate_node` checks that a node has the required properties defined in
-`NODE_PROPERTIES`, and rejects null, blank, or non-string property values.
-Additional properties are currently allowed. These validation helpers do not
-write nodes or relationships to Neo4j.
+`NODE_PROPERTY_TYPES`. It validates property types, rejects blank strings,
+negative chunk indexes, missing properties, and unknown properties. These
+validation helpers do not write nodes or relationships to Neo4j.
 
 The domain distinction between a finding and its evidence is intentional:
 evidence can support an observation, but neither evidence nor a finding alone

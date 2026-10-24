@@ -1,26 +1,48 @@
-NODE_PROPERTIES={
-    "ORGANIZATION":{"id","name"},
-    "APPLICATION":{"id","name"},
-    "POLICY":{"id","title","version"},
-    "OBLIGATION":{"id","description","requirement_text"},
-    "CONTROL":{"id","name","description"},
-    "FINDING":{"id","description","status"},
-    "RISK":{"id","name","description"},
-    "EVIDENCE":{"id","text","document_id"},
-    "DOCUMENT":{"id","filename","content_hash"}
+from typing import Final
+NODE_PROPERTY_TYPES: Final[dict[str, dict[str, type]]] = {
+    "ORGANIZATION": {"id": str, "name": str},
+    "APPLICATION": {"id": str, "name": str},
+    "POLICY": {"id": str, "title": str, "version": str},
+    "OBLIGATION": {"id": str, "description": str, "requirement_text": str},
+    "CONTROL": {"id": str, "name": str, "description": str},
+    "FINDING": {"id": str, "description": str, "status": str},
+    "RISK": {"id": str, "name": str, "description": str},
+    "EVIDENCE": {"id": str, "text": str, "chunk_id": str},
+    "DOCUMENT": {"id": str, "filename": str, "content_hash": str},
+    "CHUNK": {"id": str, "text": str, "document_id": str, "chunk_index": int},
 }
+
+# Required property names are the keys of each type map.
+NODE_PROPERTIES: Final[dict[str, set[str]]] = {
+    node_type: set(property_types)
+    for node_type, property_types in NODE_PROPERTY_TYPES.items()
+}
+
+
 def validate_node(node_type: str, properties: dict) -> bool:
     try:
-        node_property=NODE_PROPERTIES[node_type.upper()]
-    except KeyError:
-        raise ValueError(f"Invalid node_type: {node_type}")
-    incoming_properties=set(properties.keys())
-    property_diff=node_property-incoming_properties
-    if property_diff==set():
-        for _,v in properties.items():
-            if v is None or (isinstance(v,str) and not v.strip()):
-                raise ValueError("Property keys cannot be null, empty, or whitespace-only.")
-            if not isinstance(v,str):
-                raise ValueError("Property keys must be a string")
-        return True
-    raise ValueError(f"Required node properties are missing: {property_diff}")
+        property_types = NODE_PROPERTY_TYPES[node_type.upper()]
+    except (KeyError, AttributeError):
+        raise ValueError(f"Invalid node_type: {node_type}") from None
+
+    supplied = set(properties)
+    missing = set(property_types) - supplied
+    if missing:
+        raise ValueError(f"Required node properties are missing: {missing}")
+
+    unknown = supplied - set(property_types)
+    if unknown:
+        raise ValueError(f"Unknown node properties: {unknown}")
+
+    for name, value in properties.items():
+        expected_type = property_types[name]
+        if expected_type is int:
+            if type(value) is not int:
+                raise ValueError(f"Property {name} must be an integer")
+            if value < 0:
+                raise ValueError("Property chunk_index must be non-negative")
+        elif not isinstance(value, expected_type):
+            raise ValueError(f"Property {name} must be a string")
+        elif not value.strip():
+            raise ValueError("String properties cannot be empty or whitespace-only")
+    return True

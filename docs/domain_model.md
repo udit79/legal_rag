@@ -21,6 +21,7 @@ does not establish compliance or control effectiveness.
 | `RISK` | A potential adverse outcome. |
 | `EVIDENCE` | A source passage supporting a claim or finding. |
 | `DOCUMENT` | An original source file. |
+| `CHUNK` | An ordered text segment belonging to a source document. |
 
 ## Relationship triples
 
@@ -35,15 +36,17 @@ Each triple is **source — relationship → target**; direction is significant.
 | `FINDING` | `EVALUATES` | `CONTROL` |
 | `FINDING` | `AFFECTS` | `APPLICATION` |
 | `EVIDENCE` | `SUPPORTS` | `FINDING` |
-| `EVIDENCE` | `EXTRACTED_FROM` | `DOCUMENT` |
+| `EVIDENCE` | `EXTRACTED_FROM` | `CHUNK` |
 | `RISK` | `INDICATED_BY` | `FINDING` |
+| `DOCUMENT` | `HAS_CHUNK` | `CHUNK` |
+| `CHUNK` | `NEXT_CHUNK` | `CHUNK` |
 
 ## Validation behavior
 
 `validate_relation(source_type, relation_type, target_type)` accepts enum names
 as strings, case-insensitively. It returns `True` for a defined triple and
-`False` for a combination of known names that is not defined. An unknown node
-or relationship name raises `KeyError`.
+`False` for an unknown name or a combination that is not defined. Enum values
+are stable uppercase identifiers; descriptions are maintained separately.
 
 ## Findings, evidence, and control failures
 
