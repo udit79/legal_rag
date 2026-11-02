@@ -1,0 +1,931 @@
+{
+  "corpus_version": "1.0.0",
+  "synthetic": true,
+  "page_size": "A4",
+  "page_size_pt": [
+    595.28,
+    841.89
+  ],
+  "text_comparison": "normalise whitespace with ' '.join(s.split()) before comparing",
+  "generator": {
+    "script": "generate_corpus.py",
+    "python": "3.12.3",
+    "reportlab": "4.4.10",
+    "pypdf": "5.9.0",
+    "pillow": "12.1.1",
+    "pdfplumber": "0.11.9"
+  },
+  "contact_sheet": "previews/contact_sheet.png",
+  "documents": [
+    {
+      "id": "01_born_digital_single_column",
+      "case_no": 1,
+      "file": "pdfs/01_born_digital_single_column.pdf",
+      "title": "Born-digital, single-column text",
+      "page_count": 2,
+      "description": "Two-page synthetic agreement with a clean native text layer, one column, no images, no tables.",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/01_born_digital_single_column.page1.txt",
+          "min_native_chars": 1058,
+          "measured": {
+            "native_chars": 1176,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 2,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/01_born_digital_single_column.page2.txt",
+          "min_native_chars": 860,
+          "measured": {
+            "native_chars": 956,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Native-text path on both pages; OCR must NOT be invoked.",
+        "Every ground-truth block appears in the extracted text of its own page (whitespace-normalised).",
+        "Clause numbers 1.1-6.2 appear in ascending order across the document.",
+        "Chunking at clause boundaries should yield 12 clauses (1.1-6.2)."
+      ],
+      "size_bytes": 4683,
+      "sha256": "d17c169017ce4775b05780458b480a44765ce9f754355c78cc4cf72c5a2e3260",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "02_scanned_no_text",
+      "case_no": 2,
+      "file": "pdfs/02_scanned_no_text.pdf",
+      "title": "Scanned page with no embedded text",
+      "page_count": 1,
+      "description": "One full-page 200 dpi JPEG (grayscale, mild noise). No text layer at all.",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "scanned_image",
+          "text_layer": false,
+          "images": 1,
+          "ocr_required": true,
+          "expected_route": "ocr",
+          "semantically_blank": false,
+          "ground_truth": "expected/02_scanned_no_text.page1.txt",
+          "image_dpi": 200,
+          "ocr_tokens_must_contain": [
+            "INV-2023-0457",
+            "18,450.00",
+            "12 June 2024"
+          ],
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 1,
+            "image_coverage": 1.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Router must detect an empty text layer + full-page image and send the page to OCR.",
+        "OCR output should contain the invoice number INV-2023-0457 and the amount 18,450.00.",
+        "Reference image: images/img_01_scan_clean.jpg (same raster)."
+      ],
+      "size_bytes": 326969,
+      "sha256": "8897cf8a03f2997a9140c7c28aea020f8a39822ab7ff3195642f8d904161f334",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "03_mixed_digital_and_scanned",
+      "case_no": 3,
+      "file": "pdfs/03_mixed_digital_and_scanned.pdf",
+      "title": "Digital text mixed with scanned pages",
+      "page_count": 4,
+      "description": "Pages 1 and 3 are born-digital; pages 2 and 4 are image-only scans. Alternating on purpose.",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/03_mixed_digital_and_scanned.page1.txt",
+          "min_native_chars": 865,
+          "measured": {
+            "native_chars": 962,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 2,
+          "kind": "scanned_image",
+          "text_layer": false,
+          "images": 1,
+          "ocr_required": true,
+          "expected_route": "ocr",
+          "semantically_blank": false,
+          "ground_truth": "expected/03_mixed_digital_and_scanned.page2.txt",
+          "image_dpi": 200,
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 1,
+            "image_coverage": 1.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 3,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/03_mixed_digital_and_scanned.page3.txt",
+          "min_native_chars": 492,
+          "measured": {
+            "native_chars": 547,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 4,
+          "kind": "scanned_image",
+          "text_layer": false,
+          "images": 1,
+          "ocr_required": true,
+          "expected_route": "ocr",
+          "semantically_blank": false,
+          "ground_truth": "expected/03_mixed_digital_and_scanned.page4.txt",
+          "image_dpi": 200,
+          "note": "Slight skew and a shadow on the left edge (simulated binding shadow).",
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 1,
+            "image_coverage": 1.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Routing is decided PER PAGE: native_text, ocr, native_text, ocr.",
+        "Page order and page numbers must be preserved in the merged output.",
+        "Whole-document 'is scanned?' heuristics must not classify this file as either pure type."
+      ],
+      "size_bytes": 862736,
+      "sha256": "3fc85b6a71eb4286d4604c47346fab684c2a048c72822c72cd902e14484d749f",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "04_tables_known_cells",
+      "case_no": 4,
+      "file": "pdfs/04_tables_known_cells.pdf",
+      "title": "Tables with known rows and cells",
+      "page_count": 2,
+      "description": "Page 1: ruled 7x4 fee table (28 cells, header + 6 rows). Page 2: borderless 4x3 table (12 cells).",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "table_ruled",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/04_tables_known_cells.page1.txt",
+          "table_csv": "expected/04_tables_known_cells.page1.ruled_table.csv",
+          "table_shape": [
+            7,
+            4
+          ],
+          "structure": "table",
+          "min_native_chars": 298,
+          "measured": {
+            "native_chars": 332,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 14
+          }
+        },
+        {
+          "page": 2,
+          "kind": "table_borderless",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/04_tables_known_cells.page2.txt",
+          "table_csv": "expected/04_tables_known_cells.page2.borderless_table.csv",
+          "table_shape": [
+            4,
+            3
+          ],
+          "structure": "table",
+          "min_native_chars": 232,
+          "measured": {
+            "native_chars": 258,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Page 1: a lines-based table extractor must recover exactly 7 rows x 4 columns; cells equal the CSV.",
+        "Page 2: no ruling lines, so a whitespace/position-based extractor is needed; rows must read left-to-right.",
+        "Numeric cells (e.g. 4,800.00) must keep thousands separators and decimals.",
+        "Serialised tables must keep header-to-cell association (e.g. 'Court appearance' -> 3,200.00)."
+      ],
+      "size_bytes": 3946,
+      "sha256": "fa9cf8d34beafdf28abbcf73946c85a123cc52ba56b88b4f70d431a501e432f6",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "05_multi_column_reading_order",
+      "case_no": 5,
+      "file": "pdfs/05_multi_column_reading_order.pdf",
+      "title": "Multi-column text with known reading order",
+      "page_count": 2,
+      "description": "Page 1: full-width title then 2 columns (7.1-7.4 left, 7.5-7.8 right). Page 2: title then 3 columns (8.1-8.3, 8.4-8.6, 8.7-8.9). Content-stream order equals reading order.",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "multi_column",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/05_multi_column_reading_order.page1.txt",
+          "columns": 2,
+          "reading_order": [
+            "SCHEDULE 3 - DATA PROTECTION UNDERTAKINGS",
+            "Synthetic test document. Fictional parties. No legal effect.",
+            "7.1",
+            "7.2",
+            "7.3",
+            "7.4",
+            "7.5",
+            "7.6",
+            "7.7",
+            "7.8"
+          ],
+          "structure": "columns:2",
+          "column_split": {
+            "left": [
+              "7.1",
+              "7.2",
+              "7.3",
+              "7.4"
+            ],
+            "right": [
+              "7.5",
+              "7.6",
+              "7.7",
+              "7.8"
+            ]
+          },
+          "min_native_chars": 862,
+          "measured": {
+            "native_chars": 958,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 2,
+          "kind": "multi_column",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/05_multi_column_reading_order.page2.txt",
+          "columns": 3,
+          "reading_order": [
+            "SCHEDULE 4 - RECORDS MANAGEMENT",
+            "Synthetic test document. Fictional parties. No legal effect.",
+            "8.1",
+            "8.2",
+            "8.3",
+            "8.4",
+            "8.5",
+            "8.6",
+            "8.7",
+            "8.8",
+            "8.9"
+          ],
+          "structure": "columns:3",
+          "column_split": {
+            "left": [
+              "8.1",
+              "8.2",
+              "8.3"
+            ],
+            "middle": [
+              "8.4",
+              "8.5",
+              "8.6"
+            ],
+            "right": [
+              "8.7",
+              "8.8",
+              "8.9"
+            ]
+          },
+          "min_native_chars": 749,
+          "measured": {
+            "native_chars": 833,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Reading order = title, notice, then each column top-to-bottom, left-to-right.",
+        "Naive y-then-x line sorting interleaves columns (7.1, 7.5, 7.2, 7.6 ...) - that is the failure to catch.",
+        "Clause IDs in the output of page 1 must be 7.1..7.8 in order; page 2: 8.1..8.9 in order.",
+        "No sentence may be split across columns in the extracted text."
+      ],
+      "size_bytes": 4353,
+      "sha256": "25a9d784f688a7dece754952cb328a3201cb3859e1849df87e9ea041301edfd5",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "06_vector_only_diagram",
+      "case_no": 6,
+      "file": "pdfs/06_vector_only_diagram.pdf",
+      "title": "Vector-only diagram, no native text, no embedded images",
+      "page_count": 2,
+      "description": "Page 1: labelless org/flow diagram built from paths only. Page 2: sentences drawn as glyph outlines (looks like text, contains none).",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "vector_diagram",
+          "text_layer": false,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "vector_or_vision",
+          "semantically_blank": false,
+          "ground_truth": null,
+          "vector_graphic": true,
+          "note": "Contains no characters at all, so OCR would legitimately return nothing; a layout/vision model may caption it. It must NOT be treated as blank.",
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 31
+          }
+        },
+        {
+          "page": 2,
+          "kind": "vector_outlined_text",
+          "text_layer": false,
+          "images": 0,
+          "ocr_required": true,
+          "expected_route": "ocr",
+          "semantically_blank": false,
+          "ground_truth": "expected/06_vector_only_diagram.page2.txt",
+          "vector_graphic": true,
+          "note": "Rasterise the page and OCR it; text cannot be extracted natively.",
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 132
+          }
+        }
+      ],
+      "expectations": [
+        "Both pages: 0 native characters and 0 embedded images.",
+        "Neither page is blank: a blank-page detector based on 'no text and no images' must be refined by checking for vector paint operations / rendered ink coverage.",
+        "Page 2 should be recoverable by rasterise-then-OCR (ground truth in expected/)."
+      ],
+      "size_bytes": 30965,
+      "sha256": "b15a1e60455265d433003c4b5a0776b9e390bd9bbba6ed36142f151b0093fef7",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "07_truly_blank_page",
+      "case_no": 7,
+      "file": "pdfs/07_truly_blank_page.pdf",
+      "title": "Truly blank page",
+      "page_count": 1,
+      "description": "One A4 page created with no /Contents entry at all: no text, no images, no paths.",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "blank_empty",
+          "text_layer": false,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "skip_blank",
+          "semantically_blank": true,
+          "ground_truth": null,
+          "no_contents_stream": true,
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Page is counted (page_count == 1) but produces zero chunks.",
+        "No OCR call, no vision call, no exception on the missing /Contents entry.",
+        "Pipeline should log the page as 'blank' rather than silently dropping it."
+      ],
+      "size_bytes": 648,
+      "sha256": "d1db23255d7eae7ce50c2d313c4a937c0ca331c77bccf5b31c96851ee580ace4",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "08_faint_watermark_background",
+      "case_no": 8,
+      "file": "pdfs/08_faint_watermark_background.pdf",
+      "title": "Faint watermark / background graphic",
+      "page_count": 2,
+      "description": "Page 1: real text over a 45-degree grey 'DRAFT - NOT FOR EXECUTION' watermark (native text, 12% opacity) and faint concentric-circle vector art. Page 2: real text over a very faint full-page raster seal (6% contrast).",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "native_text_with_vector_watermark",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/08_faint_watermark_background.page1.txt",
+          "watermark_text": "DRAFT - NOT FOR EXECUTION",
+          "watermark_rotation_deg": 45,
+          "watermark_in_text_layer": true,
+          "watermark_effective_luminance": 0.94,
+          "structure": "watermark",
+          "min_native_chars": 627,
+          "measured": {
+            "native_chars": 697,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 14
+          }
+        },
+        {
+          "page": 2,
+          "kind": "native_text_with_faint_raster_background",
+          "text_layer": true,
+          "images": 1,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/08_faint_watermark_background.page2.txt",
+          "structure": "watermark",
+          "note": "Embedded image is decorative; it must not trigger the scanned-page/OCR path.",
+          "min_native_chars": 342,
+          "measured": {
+            "native_chars": 381,
+            "image_count": 1,
+            "image_coverage": 1.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Body text on both pages is extracted completely and in order.",
+        "The watermark string 'DRAFT - NOT FOR EXECUTION' is a rotated text run (text matrix with non-zero b/c, 25 chars; pdfplumber's 'upright' flag does NOT catch 45-degree text). Its characters interleave with body text in naive extraction (e.g. stray 'TI', 'O', 'N' fragments): filter or tag it as boilerplate.",
+        "Page 2 has an embedded full-page image but ALSO a text layer: it is NOT a scan.",
+        "If pages are rasterised for OCR/vision, the faint graphics must not produce spurious text or drop body words."
+      ],
+      "size_bytes": 39849,
+      "sha256": "e7879d0d34f5c136cdd5c502d8c8c37f55b37d8abb7821f60587af9cfa1cd0c5",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "09_mixed_blank_and_meaningful",
+      "case_no": 9,
+      "file": "pdfs/09_mixed_blank_and_meaningful.pdf",
+      "title": "Mix of blank and meaningful pages",
+      "page_count": 7,
+      "description": "7 pages: content, truly blank, content, 'intentionally left blank' text, content, noisy blank scan, content.",
+      "pages": [
+        {
+          "page": 1,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/09_mixed_blank_and_meaningful.page1.txt",
+          "min_native_chars": 391,
+          "measured": {
+            "native_chars": 435,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 2,
+          "kind": "blank_empty",
+          "text_layer": false,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "skip_blank",
+          "semantically_blank": true,
+          "ground_truth": null,
+          "no_paint_operators": true,
+          "note": "Content stream holds only reportlab setup boilerplate (no text, image or path-painting operators). Not zero bytes, so a naive len(stream)==0 blank check would miss it.",
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 3,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/09_mixed_blank_and_meaningful.page3.txt",
+          "min_native_chars": 293,
+          "measured": {
+            "native_chars": 326,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 4,
+          "kind": "blank_boilerplate_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "skip_blank",
+          "semantically_blank": true,
+          "ground_truth": "expected/09_mixed_blank_and_meaningful.page4.txt",
+          "note": "Has a text layer but carries no information; classify as blank/boilerplate.",
+          "min_native_chars": 29,
+          "measured": {
+            "native_chars": 33,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 5,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/09_mixed_blank_and_meaningful.page5.txt",
+          "min_native_chars": 341,
+          "measured": {
+            "native_chars": 379,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 6,
+          "kind": "scanned_blank",
+          "text_layer": false,
+          "images": 1,
+          "ocr_required": false,
+          "expected_route": "skip_blank",
+          "semantically_blank": true,
+          "ground_truth": null,
+          "dark_pixel_ratio_max": 0.0005,
+          "note": "Blank scan: grey paper tone, sensor noise, a few specks. OCR should return nothing.",
+          "min_native_chars": 0,
+          "measured": {
+            "native_chars": 0,
+            "image_count": 1,
+            "image_coverage": 1.0,
+            "vector_objects": 0
+          }
+        },
+        {
+          "page": 7,
+          "kind": "native_text",
+          "text_layer": true,
+          "images": 0,
+          "ocr_required": false,
+          "expected_route": "native_text",
+          "semantically_blank": false,
+          "ground_truth": "expected/09_mixed_blank_and_meaningful.page7.txt",
+          "min_native_chars": 320,
+          "measured": {
+            "native_chars": 356,
+            "image_count": 0,
+            "image_coverage": 0.0,
+            "vector_objects": 0
+          }
+        }
+      ],
+      "expectations": [
+        "Exactly 4 meaningful pages (1, 3, 5, 7) produce chunks; pages 2, 4, 6 are flagged blank.",
+        "Page numbering of surviving chunks keeps ORIGINAL page numbers (1, 3, 5, 7), not renumbered.",
+        "Page 6 has an image but must not be sent to OCR as content; ink-coverage thresholding classifies it blank.",
+        "Page 4 shows why 'has text' alone is not 'has meaning'."
+      ],
+      "size_bytes": 170865,
+      "sha256": "7f7beb0aef953b441679e8766a9c6f0f6a690549455d610a24ed8496df966ea6",
+      "page_size_pt": [
+        595.28,
+        841.89
+      ]
+    },
+    {
+      "id": "10_corrupted_or_invalid",
+      "case_no": 10,
+      "file": "pdfs/10_corrupted",
+      "title": "Corrupted or invalid PDF input",
+      "page_count": null,
+      "description": "Eight broken inputs, each exercising a different failure class.",
+      "members": [
+        {
+          "file": "pdfs/10_corrupted/10a_truncated.pdf",
+          "description": "Valid 2-page PDF cut off at 55% of its length: no xref, no trailer, no %%EOF.",
+          "size_bytes": 2575,
+          "sha256": "c5808ed32b1086e06116a99b43ca1f20b253ca8bb6d25d8108d52ee00e0c1349",
+          "expected_outcome": "fail_or_partial_recovery",
+          "has_pdf_header": true,
+          "has_eof_marker": false,
+          "strict_open": "error"
+        },
+        {
+          "file": "pdfs/10_corrupted/10b_bad_startxref.pdf",
+          "description": "Valid content but the startxref offset points past end-of-file; a lenient parser can rebuild the xref table.",
+          "size_bytes": 4687,
+          "sha256": "7f47f1ec7549c8810f93958a49c88cffe456374b1b03dea514c899c6c7b00554",
+          "expected_outcome": "recoverable",
+          "has_pdf_header": true,
+          "has_eof_marker": true,
+          "strict_open": "error",
+          "lenient_page_count": 2
+        },
+        {
+          "file": "pdfs/10_corrupted/10c_text_file_renamed.pdf",
+          "description": "Plain text bytes with a .pdf name: no %PDF header.",
+          "size_bytes": 85,
+          "sha256": "7d41f946f2822c822e89d8c958551a4ae1be764fbf58b06904af412b36ea7cfe",
+          "expected_outcome": "reject_not_a_pdf",
+          "has_pdf_header": false,
+          "strict_open": "error"
+        },
+        {
+          "file": "pdfs/10_corrupted/10d_zero_bytes.pdf",
+          "description": "Empty file (0 bytes), as left by an interrupted upload.",
+          "size_bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "expected_outcome": "reject_empty",
+          "has_pdf_header": false,
+          "strict_open": "error"
+        },
+        {
+          "file": "pdfs/10_corrupted/10e_header_then_garbage.pdf",
+          "description": "Correct %PDF-1.7 header followed by 4096 seeded random bytes.",
+          "size_bytes": 4105,
+          "sha256": "28e42566adad8592c8aff1b8f7ff382718678dc9aa89ef25e35fd2d5e384f695",
+          "expected_outcome": "reject_unparseable",
+          "has_pdf_header": true,
+          "has_eof_marker": false,
+          "strict_open": "error"
+        },
+        {
+          "file": "pdfs/10_corrupted/10f_png_renamed.pdf",
+          "description": "A PNG image saved with a .pdf extension (magic bytes mismatch).",
+          "size_bytes": 2258,
+          "sha256": "ed22db9f9323d36d864af4d7cb991a585d357f67d0285749c472c68bfce385c5",
+          "expected_outcome": "reject_wrong_type",
+          "has_pdf_header": false,
+          "strict_open": "error",
+          "magic_bytes": "PNG"
+        },
+        {
+          "file": "pdfs/10_corrupted/10g_encrypted_password_required.pdf",
+          "description": "Valid 2-page PDF encrypted (AES-256) with a user password. Password for tests: fixture-pass.",
+          "size_bytes": 5928,
+          "sha256": "98f0be030bcd559be060a3d2b0b400647d3c035ccb5777ad0e4227f0c593ea85",
+          "expected_outcome": "needs_password",
+          "has_pdf_header": true,
+          "has_eof_marker": true,
+          "strict_open": "ok_but_encrypted",
+          "password": "fixture-pass",
+          "page_count_after_decrypt": 2,
+          "deterministic": false
+        },
+        {
+          "file": "pdfs/10_corrupted/10h_corrupt_page2_stream.pdf",
+          "description": "Structurally valid 3-page PDF whose page-2 content stream is damaged. Pages 1 and 3 are fine.",
+          "size_bytes": 2601,
+          "sha256": "a45dc45fd509ae3b57e00954abda3f3c2abf75426b333d806bda9ecd4c27f66b",
+          "expected_outcome": "partial_page_failure",
+          "has_pdf_header": true,
+          "has_eof_marker": true,
+          "strict_open": "ok",
+          "page_count": 3,
+          "good_pages": [
+            1,
+            3
+          ],
+          "bad_pages": [
+            2
+          ],
+          "good_page_tokens": {
+            "1": "PAGE-1-OK",
+            "3": "PAGE-3-OK"
+          }
+        }
+      ],
+      "pages": [],
+      "expectations": [
+        "No input may crash the worker or hang the queue; each yields a structured failure/quarantine record.",
+        "10b is recoverable by rebuilding the xref table; 10a/10e should fail cleanly or recover partially.",
+        "10c, 10d, 10f are rejected by magic-byte / size checks BEFORE any PDF parser runs.",
+        "10g reports 'password required' (distinct from 'corrupt'); do not retry blindly.",
+        "10h: document opens, but page 2 fails in isolation - pages 1 and 3 must still be ingested and the failure recorded against page 2 only."
+      ]
+    }
+  ],
+  "images": [
+    {
+      "file": "images/img_01_scan_clean.jpg",
+      "description": "Clean 200 dpi scan of the termination notice (same raster embedded in case 02).",
+      "sha256": "8e48fea56d1dc17c5d4af7bb3490cd0ff1c28f0520de93fe5d7dffa8948c9369",
+      "ground_truth": "expected/images.img_01.page1.txt",
+      "has_text": true,
+      "is_blank": false,
+      "ocr_required": true,
+      "width": 1654,
+      "height": 2339,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_02_scan_skewed_noisy.jpg",
+      "description": "Same notice, 2.2 degree skew, heavy noise, binding shadow, 300 speckles. Tests deskew/denoise.",
+      "sha256": "b9ce2c3945a2032f9ef39f35170f6ccfe25d2c6e1dbbb3d79e1a97512c51a4e8",
+      "ground_truth": "expected/images.img_01.page1.txt",
+      "has_text": true,
+      "is_blank": false,
+      "ocr_required": true,
+      "skew_deg": 2.2,
+      "width": 1654,
+      "height": 2339,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_03_scan_low_contrast.jpg",
+      "description": "Same notice printed in mid-grey ink on grey paper (low contrast). Tests binarisation.",
+      "sha256": "f126b19990197073be22d40782c0e307604fcc42f9ef3bdce9b5f2a2b40f302d",
+      "ground_truth": "expected/images.img_01.page1.txt",
+      "has_text": true,
+      "is_blank": false,
+      "ocr_required": true,
+      "width": 1654,
+      "height": 2339,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_04_table_ruled.png",
+      "description": "Raster of the 7x4 fee table (ruled). Cells equal expected/04_tables_known_cells.page1.ruled_table.csv.",
+      "sha256": "43832c597a57ad0b54ff0001d11952a5da4849585dd21ae2d5af5035dc0ce104",
+      "ground_truth": "expected/04_tables_known_cells.page1.ruled_table.csv",
+      "has_text": true,
+      "is_blank": false,
+      "ocr_required": true,
+      "table_shape": [
+        7,
+        4
+      ],
+      "width": 1270,
+      "height": 728,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_05_diagram_flowchart_labeled.png",
+      "description": "Labelled flowchart (6 boxes, 5 arrows). Labels: Client, Provider, Escrow Agent, Regulator, Invoice, Payment released.",
+      "sha256": "9de246f5d15e92ae7057307ce5b16ca0fc574f3b07b78e83e5372860e43c31fa",
+      "ground_truth": "expected/images.img_05.page1.txt",
+      "has_text": true,
+      "is_blank": false,
+      "ocr_required": true,
+      "width": 1400,
+      "height": 700,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_06_watermarked_page.png",
+      "description": "Page image with a faint diagonal 'DRAFT - NOT FOR EXECUTION' watermark behind body text.",
+      "sha256": "7d89308dcd90322e7f91895b4fb46a017a63058203d4d4c5fc21d052c11e40d1",
+      "ground_truth": "expected/images.img_06.page1.txt",
+      "has_text": true,
+      "is_blank": false,
+      "ocr_required": true,
+      "watermark_text": "DRAFT - NOT FOR EXECUTION",
+      "width": 1654,
+      "height": 2339,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_07_blank_scan_noisy.jpg",
+      "description": "Blank scan with sensor noise, shadow and 25 specks (embedded in case 09, page 6).",
+      "sha256": "7dae95dd663566419aa7b8a7bb9b3ecd2e1ae4d81ae219f6ee2f183398fa74c2",
+      "has_text": false,
+      "is_blank": true,
+      "ocr_required": false,
+      "dark_pixel_ratio_max": 0.0005,
+      "width": 1654,
+      "height": 2339,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_08_blank_white.png",
+      "description": "Pure white page (all pixels 255).",
+      "sha256": "1dd347ed261948cb706be17bfc3045de974cae718e28a8ce1e8280262c150df1",
+      "has_text": false,
+      "is_blank": true,
+      "ocr_required": false,
+      "dark_pixel_ratio_max": 0.0,
+      "width": 827,
+      "height": 1170,
+      "mode": "L"
+    },
+    {
+      "file": "images/img_09_seal_graphic.png",
+      "description": "Text-free seal/emblem graphic (rings, guilloche, star). OCR should return nothing; NOT blank.",
+      "sha256": "b60d37d3d62c2a927524c8ea9bd166cac5689dd549aa97905941d1515ddf334f",
+      "has_text": false,
+      "is_blank": false,
+      "ocr_required": false,
+      "width": 800,
+      "height": 800,
+      "mode": "L"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+CONFIDENTIALITY UNDERTAKING
+Synthetic test document. Fictional parties. No legal effect.
+4. CONFIDENTIALITY
+4.1 Obligation. Each Party shall keep the other Party's Confidential Information strictly confidential and shall not disclose it to any third party without prior written consent.
+4.2 Exceptions. Clause 4.1 does not apply to information that is or becomes public other than through breach of this Agreement or that is required to be disclosed by law.
+5. LIABILITY
+5.1 Limitation. Neither Party's aggregate liability under this Agreement shall exceed the total fees paid in the twelve (12) months preceding the event giving rise to the claim.
+5.2 Exclusions. Nothing in this Agreement limits liability for fraud, wilful misconduct, or any liability that cannot be excluded by law.
+Page 1 of 2

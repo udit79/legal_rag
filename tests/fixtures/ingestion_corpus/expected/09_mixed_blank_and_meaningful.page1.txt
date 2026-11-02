@@ -1,0 +1,5 @@
+PART A - RECITALS
+Synthetic test document. Fictional parties. No legal effect.
+This Master Services Agreement (the "Agreement") is made between Alder Example Corp., a fictional company (the "Provider"), and Birch Sample LLC, a fictional company (the "Client") (each a "Party" and together the "Parties").
+1.1 Definitions. In this Agreement, "Services" means the consulting and advisory services described in Schedule A, and "Effective Date" means the date on which the last Party signs this Agreement.
+Page 1 of 7

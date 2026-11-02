@@ -1,0 +1,4 @@
+CONFIDENTIALITY UNDERTAKING
+Synthetic test document. Fictional parties. No legal effect.
+4.1 Obligation. Each Party shall keep the other Party's Confidential Information strictly confidential and shall not disclose it to any third party without prior written consent.
+4.2 Exceptions. Clause 4.1 does not apply to information that is or becomes public other than through breach of this Agreement or that is required to be disclosed by law.
