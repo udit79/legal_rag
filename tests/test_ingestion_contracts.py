@@ -52,6 +52,18 @@ def page_route_decision_data(page_number: int, route: str = "FAST_TEXT") -> dict
     return {**route_decision_data(), "page_number": page_number, "route": route}
 
 
+def document_route_plan_data(
+    page_count: int,
+    decisions: list[dict[str, object]],
+    document_disposition: str = "PROCESS",
+) -> dict[str, object]:
+    return {
+        "page_count": page_count,
+        "decisions": decisions,
+        "document_disposition": document_disposition,
+    }
+
+
 @pytest.mark.parametrize("field", ["document_id", "source_ref", "filename"])
 @pytest.mark.parametrize("blank_value", ["", "   "])
 def test_document_ref_rejects_blank_identifiers(field, blank_value):
@@ -152,7 +164,7 @@ def test_document_route_plan_accepts_mixed_page_outcomes():
         page_route_decision_data(2, "SKIP_BLANK"),
         page_route_decision_data(3, "OCR"),
     ]
-    plan = DocumentRoutePlan.model_validate({"page_count": 3, "decisions": decisions})
+    plan = DocumentRoutePlan.model_validate(document_route_plan_data(3, decisions))
     assert [decision.page_number for decision in plan.decisions] == [1, 2, 3]
     assert plan.decisions[1].route == "SKIP_BLANK"
 
@@ -160,13 +172,13 @@ def test_document_route_plan_accepts_mixed_page_outcomes():
 def test_document_route_plan_rejects_duplicate_page_numbers():
     decisions = [page_route_decision_data(1), page_route_decision_data(1)]
     with pytest.raises(ValidationError, match="exactly once"):
-        DocumentRoutePlan.model_validate({"page_count": 2, "decisions": decisions})
+        DocumentRoutePlan.model_validate(document_route_plan_data(2, decisions))
 
 
 def test_document_route_plan_rejects_missing_page_number():
     decisions = [page_route_decision_data(1), page_route_decision_data(3)]
     with pytest.raises(ValidationError, match="exactly once"):
-        DocumentRoutePlan.model_validate({"page_count": 3, "decisions": decisions})
+        DocumentRoutePlan.model_validate(document_route_plan_data(3, decisions))
 
 
 @pytest.mark.parametrize(
@@ -178,13 +190,13 @@ def test_document_route_plan_rejects_missing_page_number():
 )
 def test_document_route_plan_rejects_noncontiguous_or_out_of_order_decisions(decisions):
     with pytest.raises(ValidationError, match="ascending page order"):
-        DocumentRoutePlan.model_validate({"page_count": 2, "decisions": decisions})
+        DocumentRoutePlan.model_validate(document_route_plan_data(2, decisions))
 
 
 @pytest.mark.parametrize("page_count", [0, -1, True])
 def test_document_route_plan_rejects_invalid_page_count(page_count):
     with pytest.raises(ValidationError):
-        DocumentRoutePlan.model_validate({"page_count": page_count, "decisions": []})
+        DocumentRoutePlan.model_validate(document_route_plan_data(page_count, []))
 
 
 def test_document_route_plan_rejects_mixed_policy_versions():
@@ -192,14 +204,19 @@ def test_document_route_plan_rejects_mixed_policy_versions():
     second = page_route_decision_data(2, "OCR")
     second["policy_version"] = "2.0"
     with pytest.raises(ValidationError, match="same policy version"):
-        DocumentRoutePlan.model_validate({"page_count": 2, "decisions": [first, second]})
+        DocumentRoutePlan.model_validate(
+            document_route_plan_data(2, [first, second])
+        )
 
 
 @pytest.mark.parametrize(
     ("model", "data"),
     [
         (PageRouteDecision, page_route_decision_data(1)),
-        (DocumentRoutePlan, {"page_count": 1, "decisions": [page_route_decision_data(1)]}),
+        (
+            DocumentRoutePlan,
+            document_route_plan_data(1, [page_route_decision_data(1)]),
+        ),
     ],
 )
 def test_route_models_reject_unknown_fields(model, data):
@@ -238,3 +255,31 @@ def test_route_decision_rejects_unknown_fields():
     data["unexpected"] = "value"
     with pytest.raises(ValidationError):
         RouteDecision.model_validate(data)
+
+
+def test_document_route_plan_rejects_unknown_disposition():
+    data = document_route_plan_data(1, [page_route_decision_data(1)])
+    data["document_disposition"] = "UNKNOWN"
+
+    with pytest.raises(ValidationError):
+        DocumentRoutePlan.model_validate(data)
+
+
+def test_document_route_plan_requires_rejection_when_all_pages_are_blank():
+    decisions = [
+        page_route_decision_data(1, "SKIP_BLANK"),
+        page_route_decision_data(2, "SKIP_BLANK"),
+    ]
+
+    with pytest.raises(ValidationError, match="no detected content"):
+        DocumentRoutePlan.model_validate(document_route_plan_data(2, decisions))
+
+
+def test_document_route_plan_rejects_no_content_disposition_for_nonblank_page():
+    decisions = [page_route_decision_data(1, "FAST_TEXT")]
+    data = document_route_plan_data(
+        1, decisions, document_disposition="REJECT_NO_CONTENT"
+    )
+
+    with pytest.raises(ValidationError, match="requires all pages to be SKIP_BLANK"):
+        DocumentRoutePlan.model_validate(data)

@@ -5,7 +5,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from dotenv import load_dotenv
 
-lazy import os
+import os
 load_dotenv()
 def configure_telemetry():
     resource = Resource.create(

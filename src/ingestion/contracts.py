@@ -12,6 +12,7 @@ Route = Literal[
     "REJECT",
 ]
 DecisionSource = Literal["RULES", "CDM", "FALLBACK"]
+DocumentDisposition = Literal["PROCESS", "REJECT_NO_CONTENT"]
 NonNegativeInt = Annotated[int, Field(ge=0, strict=True)]
 PositiveInt = Annotated[int, Field(gt=0, strict=True)]
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -67,6 +68,7 @@ class DocumentRoutePlan(BaseModel):
 
     page_count: PositiveInt
     decisions: tuple[PageRouteDecision, ...]
+    document_disposition: DocumentDisposition
 
     @model_validator(mode="after")
     def validate_page_decisions(self) -> Self:
@@ -80,4 +82,17 @@ class DocumentRoutePlan(BaseModel):
         policy_versions = {decision.policy_version for decision in self.decisions}
         if len(policy_versions) != 1:
             raise ValueError("All page decisions must use the same policy version")
+
+        all_pages_blank = all(
+            decision.route == "SKIP_BLANK" for decision in self.decisions
+        )
+        if all_pages_blank and self.document_disposition != "REJECT_NO_CONTENT":
+            raise ValueError(
+                "A document with all pages marked SKIP_BLANK must be rejected "
+                "for no detected content"
+            )
+        if not all_pages_blank and self.document_disposition == "REJECT_NO_CONTENT":
+            raise ValueError(
+                "A no-content disposition requires all pages to be SKIP_BLANK"
+            )
         return self

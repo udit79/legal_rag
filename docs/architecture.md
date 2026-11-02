@@ -5,19 +5,24 @@
 This repository is a foundation for a document-backed graph RAG system focused
 on enterprise risk concepts. It currently defines a health/readiness API,
 Neo4j connectivity, OpenTelemetry tracing, graph-domain validation, and
-contracts for the beginning of a document-ingestion workflow.
+contracts and PDF preflight for the beginning of a document-ingestion
+workflow.
 
 The ingestion contracts and state describe how stages can exchange small,
-typed values. PDF preflight is implemented; routing, parsing/OCR, artifact
-storage, graph writes, and a workflow runner are not yet implemented.
+typed values. PDF preflight and deterministic per-page route selection are
+implemented; parsing/OCR, artifact storage, graph writes, and a workflow runner
+are not yet implemented.
+See [code_map.md](code_map.md) for the file tree and a function/class-to-file
+index.
 
 ## Component map
 
 | Area | Location | Responsibility |
 | --- | --- | --- |
 | API | `src/api/main.py` | FastAPI application, lifecycle setup, liveness and readiness endpoints. |
-| Ingestion contracts | `src/ingestion/contracts.py` | Pydantic models for document references, preflight features, and route decisions. |
-| PDF preflight | `src/ingestion/preflight.py` | SHA-256, file size, page count, extracted text-character counts, and image counts per page. |
+| Ingestion contracts | `src/ingestion/contracts.py` | Pydantic models for document references, per-page/document features, and page/document route plans. |
+| PDF preflight | `src/ingestion/preflight.py` | SHA-256, file size, page count, and per-page text, image, and drawing counts. |
+| Ingestion routing | `src/ingestion/router.py` | Deterministic per-page route selection from validated document features. |
 | Ingestion state | `src/ingestion/state.py` | Typed workflow state and structured stage-error shape. |
 | Domain ontology | `src/domain/ontology.py` | Node/relation types and allowed directed relationship triples. |
 | Graph schema | `src/domain/graph_schema.py` | Required properties and validation for graph nodes. |
@@ -51,18 +56,16 @@ Stores preflight metadata rather than the document itself:
 - `content_sha256`: 64-character hexadecimal hash, normalized to lowercase.
 - `file_size_bytes`: positive integer.
 - `page_count`: positive integer.
-- `page_text_char_counts`: non-negative integer count for each page, in page order.
-- `page_image_counts`: non-negative integer count for each page, in page order.
+- `pages`: one `PageFeatures` record for each page, with a one-based page
+  number and non-negative text-character, image, and drawing counts.
 
-The lengths of both per-page lists must equal `page_count`. These lengths
-represent the number of pages being described; the values inside the lists
-represent that page's character or image count.
+The number of page records must equal `page_count`, and page numbers must be
+contiguous and one-based.
 
 `inspect_pdf(path)` in `src/ingestion/preflight.py` computes the SHA-256 over
 the file's original bytes, gets the byte size, and uses PyMuPDF to inspect each
 page. Text counts are the character lengths of each page's extracted text;
-image counts are the image occurrences reported for each page. Zero text and
-zero images are valid values for a page.
+image and drawing counts come from PyMuPDF. Zero counts are valid values.
 
 Missing paths raise `PdfNotFoundError`. Empty, corrupt, encrypted, non-PDF, or
 zero-page inputs raise `InvalidPdfError`. Other filesystem read errors remain
@@ -72,13 +75,35 @@ zero-page inputs raise `InvalidPdfError`. Other filesystem read errors remain
 
 Records the selected processing route and its rationale:
 
-- `route`: `FAST_TEXT`, `STRUCTURED_PARSE`, `OCR`, `LAYOUT_OCR`, `ESCALATE`, or `REJECT`.
+- `route`: `FAST_TEXT`, `STRUCTURED_PARSE`, `OCR`, `LAYOUT_OCR`,
+  `SKIP_BLANK`, `ESCALATE`, or `REJECT`.
 - `reason`: non-empty explanatory text.
 - `decision_source`: `RULES`, `CDM`, or `FALLBACK`.
 - `confidence`: optional value between 0.0 and 1.0.
 - `policy_version`: non-empty identifier for the policy version.
 
-All three contract models reject unspecified extra fields.
+The contract models reject unspecified extra fields.
+
+`PageRouteDecision` adds a page number, and `DocumentRoutePlan` validates that
+every page has exactly one ordered decision and that all decisions use the
+same policy version. The plan also has a document-level disposition:
+`PROCESS` or `REJECT_NO_CONTENT`. This is separate from individual page
+routes: a blank page in a document with detected content may be `SKIP_BLANK`
+while the document remains `PROCESS`. When every page is blank, the document
+is `REJECT_NO_CONTENT`. The plan contract rejects inconsistent combinations
+of page routes and disposition.
+
+`route_document(features, policy_version)` in `src/ingestion/router.py` applies
+the initial deterministic heuristics using
+`MIN_NATIVE_TEXT_CHARACTERS` (50). Pages with sufficient text route to
+`FAST_TEXT` or, when images/drawings are present, `STRUCTURED_PARSE`. Pages
+with less text route to `OCR` when images are present, `LAYOUT_OCR` when
+drawings are present, or `ESCALATE` when no visual content is present; pages
+with no text or visual content route to `SKIP_BLANK`. If all page decisions
+are `SKIP_BLANK`, the document disposition is `REJECT_NO_CONTENT`; otherwise
+it is `PROCESS`. Every page decision uses `decision_source="RULES"` and
+carries the supplied policy version. These provisional heuristics do not
+detect tables or multi-column layouts.
 
 ## Ingestion workflow state
 
@@ -101,8 +126,9 @@ handles, database sessions, or exception instances. Large parse results should
 be kept in artifact storage and referenced through `parsed_artifact_ref`.
 
 These types define a possible data flow—document reference, preflight,
-routing, processing, and completion/failure—but no stage execution or
-transition rules are implemented yet.
+routing, processing, and completion/failure. Preflight and route selection are
+available as standalone functions, but a workflow runner and stage transition
+rules are not implemented yet.
 
 ## Risk graph domain
 

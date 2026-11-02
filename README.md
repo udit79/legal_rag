@@ -7,4 +7,5 @@ initial document-ingestion contracts and workflow state.
 
 See [docs/architecture.md](docs/architecture.md) for the current component
 structure, data contracts, and the boundary between implemented foundations
-and planned ingestion processing.
+and planned ingestion processing. See [docs/code_map.md](docs/code_map.md) for
+the file tree and a file-by-file index of implemented classes and functions.

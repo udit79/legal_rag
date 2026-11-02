@@ -1,0 +1,123 @@
+# Code and file map
+
+This page maps the current source tree to its implemented responsibilities
+and symbols. It describes the code as it exists; a declared contract or
+placeholder does not imply that a workflow uses it yet.
+
+## Source tree
+
+```text
+.
+├── main.py                         # Simple greeting script (not the API)
+├── test_ontology.py                # Empty legacy/test placeholder at repository root
+├── src/
+│   ├── api/
+│   │   ├── __init__.py             # Empty package marker
+│   │   └── main.py                 # FastAPI app, lifecycle, health endpoints
+│   ├── domain/
+│   │   ├── graph_schema.py         # Graph-node properties and validation
+│   │   ├── ontology.py             # Domain enums and relationship validation
+│   │   └── __init___.py            # Empty package marker (currently misspelled)
+│   ├── infrastructure/
+│   │   ├── __init__.py             # Empty package marker
+│   │   └── neo4j_client.py         # Neo4j driver and query helper
+│   ├── ingestion/
+│   │   ├── __init__.py             # Empty package marker
+│   │   ├── contracts.py            # Ingestion data models and validation
+│   │   ├── preflight.py            # PDF inspection
+│   │   ├── router.py               # Deterministic per-page route selection
+│   │   └── state.py                # Workflow type declarations
+│   └── observability/
+│       ├── __init__.py             # Empty package marker
+│       └── telemetry.py            # OpenTelemetry setup
+├── docs/
+│   ├── architecture.md             # Components, behavior, and current scope
+│   ├── code_map.md                 # This file: source and symbol index
+│   └── domain_model.md             # Risk graph domain definitions
+└── tests/
+    ├── test_graph_schema.py
+    ├── test_ingestion_contracts.py
+    ├── test_ingestion_preflight.py
+    ├── test_neo4j_connection.py
+    ├── test_ontology.py
+    └── test_telemetry.py
+```
+
+## Implemented symbols by file
+
+### Application
+
+| File | Implemented symbols |
+| --- | --- |
+| `main.py` | `main()` — prints a greeting; not the service entry point. |
+| `test_ontology.py` | Empty root-level placeholder; the active ontology tests are in `tests/test_ontology.py`. |
+| `src/__init__.py`, `src/api/__init__.py` | Empty package markers. |
+| `src/api/main.py` | `app`; response models `HealthResponse`, `ReadinessResponse`, `ErrorResponse`; `lifespan(app)` initializes telemetry and Neo4j and closes them on shutdown; `get_db(request)` retrieves the app's database connection; `check_health()` (`GET /health`); `check_neo4j(db)` (`GET /health/ready`) verifies the database and runs a readiness query. |
+
+### Domain and graph
+
+| File | Implemented symbols |
+| --- | --- |
+| `src/domain/ontology.py` | `NodeType`, `RelationType`, `EpistemicMode`, `EntityResolutionMethod`; `NODE_TYPE_DESCRIPTIONS`, `RELATION_DESCRIPTIONS`, `EPISTEMIC_MODE_DESCRIPTIONS`, `ALLOWED_TRIPLES`; `validate_relation(source_type, relation_type, target_type)`. |
+| `src/domain/graph_schema.py` | `NODE_PROPERTY_TYPES`, `NODE_PROPERTIES`; `validate_node(node_type, properties)`. |
+| `src/domain/__init___.py` | No functions; currently an empty package marker whose filename has three trailing underscores. |
+
+### Ingestion
+
+| File | Implemented symbols |
+| --- | --- |
+| `src/ingestion/contracts.py` | Type aliases `DocumentMediaType`, `Route`, `DecisionSource`, `DocumentDisposition`, `NonNegativeInt`, `PositiveInt`, `NonEmptyStr`; models and validation described below. |
+| `src/ingestion/preflight.py` | `PdfPreflightError`, `PdfNotFoundError`, `InvalidPdfError`; `inspect_pdf(path)` computes document hash/size and per-page PDF features. |
+| `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
+| `src/ingestion/router.py` | `MIN_NATIVE_TEXT_CHARACTERS` (50); `route_document(features, policy_version)` returns a validated plan with a deterministic decision for each page; `_route_page(page)` applies the per-page heuristics. |
+| `src/ingestion/__init__.py` | Empty package marker. |
+
+### Infrastructure and observability
+
+| File | Implemented symbols |
+| --- | --- |
+| `src/infrastructure/neo4j_client.py` | `DbConnect`; methods `__init__()`, `verify_connection()`, `get_session()`, `close()`; `create_db_connect()` reads connection settings from environment variables; `run_query(query, db_connection)` executes a query in a session. |
+| `src/infrastructure/__init__.py`, `src/observability/__init__.py` | Empty package markers. |
+| `src/observability/telemetry.py` | `configure_telemetry()` creates and registers the tracer provider and OTLP exporter. |
+
+## Ingestion contract details
+
+The models below are declared in `src/ingestion/contracts.py`. They validate
+and carry data. `route_document()` consumes `DocumentFeatures` and returns a
+validated `DocumentRoutePlan`; document processing is not implemented yet.
+
+| Model | Fields and behavior |
+| --- | --- |
+| `DocumentRef` | `document_id`, `source_ref`, and `filename` are non-empty strings; `media_type` is currently only `application/pdf`. |
+| `PageFeatures` | `page_number` is a positive, one-based integer; `text_char_count`, `image_count`, and `drawing_count` are non-negative integers. |
+| `DocumentFeatures` | `content_sha256` is a 64-digit hexadecimal SHA-256 normalized to lowercase; `file_size_bytes` and `page_count` are positive integers; `pages` is a tuple of `PageFeatures`. `validate_pages()` requires exactly `page_count` records numbered contiguously from 1. |
+| `RouteDecision` | `route` is one of `FAST_TEXT`, `STRUCTURED_PARSE`, `OCR`, `LAYOUT_OCR`, `SKIP_BLANK`, `ESCALATE`, or `REJECT`; `reason` and `policy_version` are non-empty strings; `decision_source` is `RULES`, `CDM`, or `FALLBACK`; `confidence` is optional and, when provided, is a strict number in the range 0–1. |
+| `PageRouteDecision` | Extends `RouteDecision` with a positive `page_number`. |
+| `DocumentRoutePlan` | Contains positive `page_count`, a tuple of page `decisions`, and a required `document_disposition` (`PROCESS` or `REJECT_NO_CONTENT`). `validate_page_decisions()` requires one decision for every page, in ascending order, with a consistent `policy_version`. It rejects `PROCESS` if every page is `SKIP_BLANK`, and rejects `REJECT_NO_CONTENT` if any page is not `SKIP_BLANK`. |
+
+All six models reject extra fields. `NonNegativeInt`, `PositiveInt`, and
+`NonEmptyStr` are reusable constrained types; `DocumentMediaType`, `Route`,
+`DecisionSource`, and `DocumentDisposition` restrict values to the literals
+listed above.
+
+`src/ingestion/state.py` is a separate workflow-state contract: `IngestionState`
+requires `document_ref` and `current_stage`, and optionally carries
+`features`, `route_decision`, `parsed_artifact_ref`, and `error`.
+`WorkflowError` requires an error `code` and `stage` and may include a
+`message`. These are type declarations, not state-transition functions.
+
+## Tests by area
+
+| Test file | Source area covered |
+| --- | --- |
+| `tests/test_graph_schema.py` | `src/domain/graph_schema.py` |
+| `tests/test_ontology.py` | `src/domain/ontology.py` |
+| `tests/test_ingestion_contracts.py` | `src/ingestion/contracts.py` |
+| `tests/test_ingestion_preflight.py` | `src/ingestion/preflight.py` |
+| `tests/test_neo4j_connection.py` | Neo4j connectivity through `src/infrastructure/neo4j_client.py` |
+| `tests/test_telemetry.py` | Telemetry setup through `src/observability/telemetry.py` |
+| `tests/__init__.py` | Empty test package marker. |
+
+The test named `test_neo4j_connection.py` contains a standalone async
+connectivity check and requires a configured Neo4j instance. The telemetry
+smoke test requires `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`.
