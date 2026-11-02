@@ -10,8 +10,9 @@ workflow.
 
 The ingestion contracts and state describe how stages can exchange small,
 typed values. PDF preflight and deterministic per-page route selection are
-implemented; parsing/OCR, artifact storage, graph writes, and a workflow runner
-are not yet implemented.
+implemented, as are replaceable PyMuPDF, Docling, and OCR page parsers with a
+shared canonical output contract. Artifact storage, graph writes, and an
+end-to-end workflow runner are not yet implemented.
 See [code_map.md](code_map.md) for the file tree and a function/class-to-file
 index.
 
@@ -23,6 +24,9 @@ index.
 | Ingestion contracts | `src/ingestion/contracts.py` | Pydantic models for document references, per-page/document features, and page/document route plans. |
 | PDF preflight | `src/ingestion/preflight.py` | SHA-256, file size, page count, and per-page text, image, and drawing counts. |
 | Ingestion routing | `src/ingestion/router.py` | Deterministic per-page route selection from validated document features. |
+| Parser output contract | `src/ingestion/parser_contracts.py` | Canonical document/page/block models, source coordinates, statuses, and explicit failures. |
+| Parser adapters | `src/ingestion/parsers.py` | PyMuPDF native text, Docling structured/table parsing, and Tesseract or RapidOCR. |
+| Parser dispatch | `src/ingestion/dispatcher.py` | Selects an adapter per page and preserves page-level failures without dropping remaining pages. |
 | Ingestion state | `src/ingestion/state.py` | Typed workflow state and structured stage-error shape. |
 | Domain ontology | `src/domain/ontology.py` | Node/relation types and allowed directed relationship triples. |
 | Graph schema | `src/domain/graph_schema.py` | Required properties and validation for graph nodes. |
@@ -105,6 +109,35 @@ it is `PROCESS`. Every page decision uses `decision_source="RULES"` and
 carries the supplied policy version. These provisional heuristics do not
 detect tables or multi-column layouts.
 
+## Parser adapters and canonical output
+
+`dispatch_document(source, route_plan)` in `src/ingestion/dispatcher.py`
+dispatches each page independently:
+
+| Route | Adapter |
+| --- | --- |
+| `FAST_TEXT` | `FastTextParser`, using PyMuPDF native text and visual primitives. |
+| `STRUCTURED_PARSE` | `StructuredParser`, using Docling layout and table parsing. |
+| `LAYOUT_OCR` | `StructuredParser` with Docling RapidOCR enabled. |
+| `OCR` | `OcrParser`, using the Tesseract executable by default or RapidOCR when configured. |
+| `SKIP_BLANK` | Validates the page with PyMuPDF and emits a blank result only if it is actually blank. |
+
+The shared output types in `src/ingestion/parser_contracts.py` are
+`CanonicalDocument`, `CanonicalPage`, and `CanonicalBlock`. Each block carries
+its original one-based page number, text, block type, reading-order index, and
+source coordinates. Coordinates identify their units and origin: PyMuPDF and
+OCR use top-left PDF points, while Docling provenance uses bottom-left PDF
+points. OCR confidence is retained when available.
+
+Page results distinguish `PARSED`, `BLANK`, `VECTOR_ONLY`, and `FAILED`.
+Encrypted or unreadable documents receive a document-level failure; individual
+page parser errors are recorded on that page while other pages continue to
+parse in order. A page incorrectly routed as blank is checked rather than
+silently skipped: detected content is returned with a
+`ROUTE_FEATURE_MISMATCH` warning, and corrupt content is recorded as a page
+failure. These adapters stop at canonical page output; they do not chunk,
+extract domain entities, or write to Neo4j.
+
 ## Ingestion workflow state
 
 `IngestionState` in `src/ingestion/state.py` is a `TypedDict`, intended to
@@ -126,9 +159,9 @@ handles, database sessions, or exception instances. Large parse results should
 be kept in artifact storage and referenced through `parsed_artifact_ref`.
 
 These types define a possible data flow—document reference, preflight,
-routing, processing, and completion/failure. Preflight and route selection are
-available as standalone functions, but a workflow runner and stage transition
-rules are not implemented yet.
+routing, parsing, and completion/failure. Preflight, route selection, and
+per-page parser dispatch are available as standalone functions, but a workflow
+runner and stage transition rules are not implemented yet.
 
 ## Risk graph domain
 

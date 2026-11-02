@@ -24,6 +24,9 @@ placeholder does not imply that a workflow uses it yet.
 │   ├── ingestion/
 │   │   ├── __init__.py             # Empty package marker
 │   │   ├── contracts.py            # Ingestion data models and validation
+│   │   ├── dispatcher.py           # Per-page parser routing and failure records
+│   │   ├── parser_contracts.py     # Canonical document/page/block models
+│   │   ├── parsers.py              # PyMuPDF, Docling, and OCR adapters
 │   │   ├── preflight.py            # PDF inspection
 │   │   ├── router.py               # Deterministic per-page route selection
 │   │   └── state.py                # Workflow type declarations
@@ -35,6 +38,7 @@ placeholder does not imply that a workflow uses it yet.
 │   ├── code_map.md                 # This file: source and symbol index
 │   └── domain_model.md             # Risk graph domain definitions
 └── tests/
+    ├── test_ingestion_adapters.py
     ├── test_graph_schema.py
     ├── test_ingestion_contracts.py
     ├── test_ingestion_preflight.py
@@ -68,6 +72,9 @@ placeholder does not imply that a workflow uses it yet.
 | --- | --- |
 | `src/ingestion/contracts.py` | Type aliases `DocumentMediaType`, `Route`, `DecisionSource`, `DocumentDisposition`, `NonNegativeInt`, `PositiveInt`, `NonEmptyStr`; models and validation described below. |
 | `src/ingestion/preflight.py` | `PdfPreflightError`, `PdfNotFoundError`, `InvalidPdfError`; `inspect_pdf(path)` computes document hash/size and per-page PDF features. |
+| `src/ingestion/parser_contracts.py` | `SourceCoordinates`, `CanonicalBlock`, `ParserFailure`, `CanonicalPage`, `CanonicalDocument`; validates block coordinates, page statuses, and complete original page order. |
+| `src/ingestion/parsers.py` | `PageParser`; `FastTextParser.parse_page()` uses PyMuPDF; `StructuredParser.parse_page()` uses Docling, with optional RapidOCR for layout OCR; `OcrParser.parse_page()` uses Tesseract by default or RapidOCR. |
+| `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` sends `FAST_TEXT` to PyMuPDF, `STRUCTURED_PARSE` and `LAYOUT_OCR` to Docling, `OCR` to Tesseract, and validates `SKIP_BLANK` pages. It keeps parser failures attached to the affected page and continues in source order. |
 | `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
 | `src/ingestion/router.py` | `MIN_NATIVE_TEXT_CHARACTERS` (50); `route_document(features, policy_version)` returns a validated plan with a deterministic decision for each page; `_route_page(page)` applies the per-page heuristics. |
 | `src/ingestion/__init__.py` | Empty package marker. |
@@ -106,10 +113,19 @@ requires `document_ref` and `current_stage`, and optionally carries
 `WorkflowError` requires an error `code` and `stage` and may include a
 `message`. These are type declarations, not state-transition functions.
 
+The parser output contract is separate from route decisions. `CanonicalBlock`
+requires an original one-based page number, text, block type, reading order,
+and source coordinates tagged with coordinate units and origin.
+`CanonicalPage` records parsed, blank, vector-only, or failed outcomes.
+`CanonicalDocument` requires exactly one page result per input page in source
+order. `dispatch_document()` returns failed page records rather than silently
+discarding parser errors or later pages.
+
 ## Tests by area
 
 | Test file | Source area covered |
 | --- | --- |
+| `tests/test_ingestion_adapters.py` | Canonical parser output, all three adapters, route dispatch, encrypted/corrupt pages, and failure continuation. |
 | `tests/test_graph_schema.py` | `src/domain/graph_schema.py` |
 | `tests/test_ontology.py` | `src/domain/ontology.py` |
 | `tests/test_ingestion_contracts.py` | `src/ingestion/contracts.py` |
