@@ -151,6 +151,30 @@ silently skipped: detected content is returned with a
 failure. These adapters stop at canonical page output; they do not chunk,
 extract domain entities, or write to Neo4j.
 
+The chunk data contracts are defined separately in
+`src/ingestion/chunk_contracts.py`. `ChunkSource` references a serialized
+stable `CanonicalBlock.block_id` together with document identity, page number,
+block reading order, and type. For `TEXT`, `TABLE`, and `OTHER` blocks, it
+requires half-open `[start_offset, end_offset)` character ranges and total
+source length, all measured in Python Unicode string characters. `IMAGE`
+sources may omit ranges when they have no text or provide ranges if the parser
+supplies text (Docling's image path retains an item's text when present).
+`VECTOR` blocks are currently emitted with empty text and do not accept text
+ranges. OCR recognition is emitted as `TEXT` blocks. A chunk can reference
+multiple ordered blocks, and one block can be referenced by multiple chunks. A
+chunk cannot contain overlapping ranges for the same canonical block, while
+adjacent ranges and ranges in separate chunks are valid. The
+`ChunkedDocument` records document identity, source page count, and chunking
+policy version, and validates zero-based contiguous indices. Contract
+serialization is deterministic for the same ordered inputs; deterministic
+chunk generation is a separate requirement for the future splitting
+algorithm, which is not part of this contract-only step. Block IDs derive
+deterministically from the one-based page number and zero-based reading order
+within a canonical document representation; reparsing that changes ordering
+may change IDs. Task 5C must resolve each source against the actual canonical
+document and validate its block identity and text range; this cross-reference
+validation is not implemented in the contract-only step.
+
 ## Ingestion workflow state
 
 `IngestionState` in `src/ingestion/state.py` is a `TypedDict`, intended to

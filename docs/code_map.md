@@ -72,7 +72,8 @@ placeholder does not imply that a workflow uses it yet.
 | --- | --- |
 | `src/ingestion/contracts.py` | Type aliases `DocumentMediaType`, `Route`, `DecisionSource`, `DocumentDisposition`, `NonNegativeInt`, `PositiveInt`, `NonEmptyStr`; models and validation described below. |
 | `src/ingestion/preflight.py` | `PdfPreflightError`, `PdfNotFoundError`, `InvalidPdfError`; `inspect_pdf(path)` computes document hash/size and per-page PDF features. |
-| `src/ingestion/parser_contracts.py` | `SourceCoordinates`, `CanonicalBlock`, `ParserFailure`, `CanonicalPage`, `CanonicalDocument`; validates block coordinates, page statuses, and complete original page order. |
+| `src/ingestion/parser_contracts.py` | `SourceCoordinates`, `CanonicalBlock`, `ParserFailure`, `CanonicalPage`, `CanonicalDocument`; validates block coordinates, page statuses, and complete original page order. `canonical_block_id(page_number, reading_order)` and serialized `CanonicalBlock.block_id` provide deterministic IDs within one canonical document representation. |
+| `src/ingestion/chunk_contracts.py` | `ChunkSource`, `Chunk`, `ChunkedDocument`, `TEXT_BEARING_BLOCK_TYPES`; immutable contracts for typed source provenance, Unicode text offsets, contiguous chunk indices, source page bounds, and policy version. No splitting algorithm is implemented. |
 | `src/ingestion/parsers.py` | `PageParser`; `FastTextParser.parse_page()` uses PyMuPDF; `StructuredParser.parse_page()` uses Docling, with optional RapidOCR for layout OCR; `OcrParser.parse_page()` uses Tesseract by default or RapidOCR. |
 | `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` sends `FAST_TEXT` to PyMuPDF, `STRUCTURED_PARSE` and `LAYOUT_OCR` to Docling, `OCR` to Tesseract, and validates `SKIP_BLANK` pages. It keeps parser failures attached to the affected page and continues in source order. |
 | `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
@@ -120,6 +121,36 @@ and source coordinates tagged with coordinate units and origin.
 `CanonicalDocument` requires exactly one page result per input page in source
 order. `dispatch_document()` returns failed page records rather than silently
 discarding parser errors or later pages.
+
+The chunking data contracts are in `src/ingestion/chunk_contracts.py`.
+`ChunkSource` identifies a canonical block using the `document_id` on
+`ChunkedDocument`, its one-based page number, and the canonical block's stable
+`block_id` (also retaining reading order and block type). `BlockType` is a
+`Literal` alias in `parser_contracts.py`, not an enum, so
+`TEXT_BEARING_BLOCK_TYPES` uses those literal strings without changing parser
+contracts. `TEXT`, `TABLE`, and
+`OTHER` are explicitly treated as text-bearing and require half-open
+`[start_offset, end_offset)` ranges and source text length, measured in Python
+Unicode string characters (not UTF-8 bytes). `IMAGE` may omit ranges or
+provide them when its canonical parser output contains text; Docling retains
+an image item's text when present. `VECTOR` is emitted with empty text and
+cannot carry offsets; OCR recognition is emitted as `TEXT`. A chunk may
+reference multiple ordered sources, and one source block may contribute
+distinct ranges to multiple chunks.
+Overlapping or duplicate ranges for the same block within a single chunk are
+rejected; adjacent ranges and ranges in separate chunks are allowed.
+`ChunkedDocument` records the source page count and non-empty policy version,
+and validates contiguous zero-based indices and in-range source pages.
+Repeated validation of the same ordered model input produces the same
+serialization; deterministic chunk generation remains the responsibility of
+the future splitting algorithm. `block_id` is deterministic from one-based
+page number and zero-based reading order within a canonical document
+representation, but may change if reparsing changes block ordering. The
+current contract validates internal ranges only. Task 5C must resolve each
+source against the actual `CanonicalDocument` and verify block identity,
+page, order, type, text length, and source-range correspondence before
+accepting chunk output. That cross-reference validator is not implemented
+yet. These models define data shape only; chunk splitting is not implemented.
 
 `FastTextParser` joins PyMuPDF line spans with newline characters to retain
 native line boundaries. OCR adapters preserve native blocks and add

@@ -303,6 +303,55 @@ def test_structured_parser_preserves_docling_coordinate_origin_and_bounds(
     assert_pdf_point_bounds(source, page)
 
 
+def test_structured_parser_preserves_text_on_image_blocks(tmp_path: Path):
+    source = make_pdf(tmp_path / "image-text.pdf")
+    bbox = SimpleNamespace(
+        l=10.0,
+        t=90.0,
+        r=300.0,
+        b=70.0,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+
+    class Picture:
+        label = SimpleNamespace(value="picture")
+        text = "Text embedded in an image block"
+        prov = [SimpleNamespace(page_no=1, bbox=bbox)]
+
+    class FakeDocument:
+        def iterate_items(self) -> Iterable[tuple[object, object]]:
+            yield Picture(), 0
+
+    class FakeResult:
+        status: object
+        errors: object
+        document: DoclingDocument
+
+        def __init__(self) -> None:
+            self.status = SimpleNamespace(name="SUCCESS")
+            self.errors = []
+            self.document = FakeDocument()
+
+    class FakeConverter:
+        def convert(
+            self,
+            source: Path,
+            *,
+            page_range: tuple[int, int],
+            raises_on_error: bool,
+        ) -> DoclingResult:
+            assert source.is_file()
+            assert page_range == (1, 1)
+            assert not raises_on_error
+            return FakeResult()
+
+    page = StructuredParser(converter=FakeConverter()).parse_page(source, 1)
+
+    assert len(page.blocks) == 1
+    assert page.blocks[0].block_type == "IMAGE"
+    assert page.blocks[0].text == "Text embedded in an image block"
+
+
 def test_ocr_parser_uses_rapidocr_output_and_returns_canonical_blocks(tmp_path: Path):
     source = make_pdf(tmp_path / "ocr.pdf", page_count=2)
     native_bbox = native_line_bbox(source, 2, "First line")
