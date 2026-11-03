@@ -16,6 +16,9 @@ from src.ingestion.parser_contracts import (
     SourceCoordinates,
 )
 
+OCR_DUPLICATE_OVERLAP_THRESHOLD = 0.8
+NATIVE_WORD_GAP_EM_THRESHOLD = 0.25
+
 
 class PageParser(Protocol):
     def parse_page(self, source: Path, page_number: int) -> CanonicalPage: ...
@@ -72,9 +75,125 @@ def _page_status(
     return "PARSED"
 
 
-def _check_page_content_streams(
-    document: pymupdf.Document, page: pymupdf.Page
-) -> None:
+def _normalize_text_line(text: str) -> str:
+    return " ".join(text.casefold().split())
+
+
+def _overlap_relative_to_smaller(first: pymupdf.Rect, second: pymupdf.Rect) -> float:
+    intersection = first & second
+    intersection_area = max(0.0, intersection.width) * max(0.0, intersection.height)
+    smaller_area = min(
+        max(0.0, first.width) * max(0.0, first.height),
+        max(0.0, second.width) * max(0.0, second.height),
+    )
+    if smaller_area == 0:
+        return 0.0
+    return intersection_area / smaller_area
+
+
+def _span_gap_indicates_word_boundary(
+    previous_span: dict[str, object],
+    current_span: dict[str, object],
+    direction: tuple[float, float],
+) -> bool:
+    previous_bbox = previous_span.get("bbox")
+    current_bbox = current_span.get("bbox")
+    previous_size = previous_span.get("size")
+    current_size = current_span.get("size")
+    if (
+        not isinstance(previous_bbox, (tuple, list))
+        or len(previous_bbox) != 4
+        or not isinstance(current_bbox, (tuple, list))
+        or len(current_bbox) != 4
+        or not isinstance(previous_size, (int, float))
+        or not isinstance(current_size, (int, float))
+    ):
+        return False
+
+    if abs(direction[0]) >= abs(direction[1]):
+        gap = (
+            float(current_bbox[0]) - float(previous_bbox[2])
+            if direction[0] >= 0
+            else float(previous_bbox[0]) - float(current_bbox[2])
+        )
+    else:
+        gap = (
+            float(current_bbox[1]) - float(previous_bbox[3])
+            if direction[1] >= 0
+            else float(previous_bbox[1]) - float(current_bbox[3])
+        )
+    word_gap_threshold = (
+        min(float(previous_size), float(current_size)) * NATIVE_WORD_GAP_EM_THRESHOLD
+    )
+    return gap >= word_gap_threshold
+
+
+def _join_native_spans(
+    spans: list[dict[str, object]],
+    direction: tuple[float, float],
+) -> str:
+    text = ""
+    previous_span: dict[str, object] | None = None
+    for span in spans:
+        span_text = span.get("text", "")
+        if not isinstance(span_text, str):
+            continue
+        if (
+            previous_span is not None
+            and text
+            and span_text
+            and not text[-1].isspace()
+            and not span_text[0].isspace()
+            and _span_gap_indicates_word_boundary(previous_span, span, direction)
+        ):
+            text += " "
+        text += span_text
+        previous_span = span
+    return text
+
+
+def _native_text_line_geometry(
+    page: pymupdf.Page,
+) -> list[tuple[str, pymupdf.Rect]]:
+    text_data = page.get_text("dict", sort=False)
+    if not isinstance(text_data, dict):
+        raise TypeError("PyMuPDF did not return a text dictionary")
+    raw_blocks = text_data.get("blocks", [])
+    if not isinstance(raw_blocks, list):
+        raise TypeError("PyMuPDF text dictionary has an invalid blocks field")
+
+    lines_with_geometry = []
+    for raw_block in raw_blocks:
+        if not isinstance(raw_block, dict) or raw_block.get("type") != 0:
+            continue
+        raw_lines = raw_block.get("lines", [])
+        if not isinstance(raw_lines, list):
+            raise TypeError("PyMuPDF text block has an invalid lines field")
+        for line in raw_lines:
+            if not isinstance(line, dict):
+                raise TypeError("PyMuPDF returned an invalid text line")
+            spans = line.get("spans", [])
+            if not isinstance(spans, list):
+                raise TypeError("PyMuPDF text line has an invalid spans field")
+            raw_direction = line.get("dir", (1.0, 0.0))
+            if not isinstance(raw_direction, (tuple, list)) or len(raw_direction) != 2:
+                raise TypeError("PyMuPDF text line has an invalid direction")
+            direction = (float(raw_direction[0]), float(raw_direction[1]))
+            text = _join_native_spans(spans, direction)
+            normalized = _normalize_text_line(text)
+            bbox = line.get("bbox")
+            if not normalized or not isinstance(bbox, (tuple, list)) or len(bbox) != 4:
+                continue
+            lines_with_geometry.append(
+                (
+                    normalized,
+                    pymupdf.Rect(*(float(value) for value in bbox)),
+                )
+            )
+    return lines_with_geometry
+
+
+def _check_page_content_streams(document: pymupdf.Document, page: pymupdf.Page) -> None:
     for xref in page.get_contents():
         try:
             stream = document.xref_stream(xref)
@@ -86,11 +205,11 @@ def _check_page_content_streams(
             try:
                 stream_object = document.xref_object(xref)
             except (RuntimeError, ValueError) as exc:
-                raise ValueError(f"Unable to inspect page content stream {xref}") from exc
-            if "/Filter" in stream_object:
                 raise ValueError(
-                    f"Page content stream {xref} could not be decoded"
-                )
+                    f"Unable to inspect page content stream {xref}"
+                ) from exc
+            if "/Filter" in stream_object:
+                raise ValueError(f"Page content stream {xref} could not be decoded")
 
 
 class FastTextParser:
@@ -119,18 +238,36 @@ class FastTextParser:
                 if not isinstance(raw_block, dict):
                     raise TypeError("PyMuPDF returned an invalid text block")
                 bbox = raw_block.get("bbox")
-                if (
-                    not isinstance(bbox, (tuple, list))
-                    or len(bbox) != 4
-                ):
+                if not isinstance(bbox, (tuple, list)) or len(bbox) != 4:
                     continue
                 block_type = raw_block.get("type")
                 if block_type == 0:
-                    text = "".join(
-                        span.get("text", "")
-                        for line in raw_block.get("lines", [])
-                        for span in line.get("spans", [])
-                    )
+                    raw_lines = raw_block.get("lines", [])
+                    if not isinstance(raw_lines, list):
+                        raise TypeError("PyMuPDF text block has an invalid lines field")
+                    line_texts = []
+                    for line in raw_lines:
+                        if not isinstance(line, dict):
+                            raise TypeError("PyMuPDF returned an invalid text line")
+                        spans = line.get("spans", [])
+                        if not isinstance(spans, list) or not all(
+                            isinstance(span, dict) for span in spans
+                        ):
+                            raise TypeError("PyMuPDF text line has invalid spans")
+                        raw_direction = line.get("dir", (1.0, 0.0))
+                        if (
+                            not isinstance(raw_direction, (tuple, list))
+                            or len(raw_direction) != 2
+                        ):
+                            raise TypeError(
+                                "PyMuPDF text line has an invalid direction"
+                            )
+                        direction = (
+                            float(raw_direction[0]),
+                            float(raw_direction[1]),
+                        )
+                        line_texts.append(_join_native_spans(spans, direction))
+                    text = "\n".join(line_texts)
                     if not text.strip():
                         continue
                     kind = "TEXT"
@@ -243,10 +380,7 @@ class StructuredParser:
             )
         ).upper()
         if status_name not in {"SUCCESS", "PARTIAL_SUCCESS"}:
-            raise RuntimeError(
-                f"Docling failed on page {page_number}: "
-                f"{result.errors}"
-            )
+            raise RuntimeError(f"Docling failed on page {page_number}: {result.errors}")
 
         document = result.document
         blocks: list[CanonicalBlock] = []
@@ -295,6 +429,16 @@ class StructuredParser:
                     block_type = "OTHER"
 
             bbox = getattr(page_provenance, "bbox")
+            coord_origin = getattr(bbox, "coord_origin", None)
+            origin_name = getattr(coord_origin, "value", coord_origin)
+            if origin_name == "TOPLEFT":
+                origin = "TOP_LEFT"
+            elif origin_name == "BOTTOMLEFT":
+                origin = "BOTTOM_LEFT"
+            else:
+                raise ValueError(
+                    f"Docling returned unsupported coordinate origin: {coord_origin!r}"
+                )
             source_coordinates = _coordinates(
                 (
                     float(getattr(bbox, "l")),
@@ -303,7 +447,7 @@ class StructuredParser:
                     float(getattr(bbox, "b")),
                 ),
                 unit="PDF_POINT",
-                origin="BOTTOM_LEFT",
+                origin=origin,
             )
             blocks.append(
                 CanonicalBlock(
@@ -411,9 +555,7 @@ class OcrParser:
             confidences = [
                 float(word["conf"]) for word in words if float(word["conf"]) >= 0
             ]
-            confidence = (
-                sum(confidences) / len(confidences) if confidences else None
-            )
+            confidence = sum(confidences) / len(confidences) if confidences else None
             output.append((text, (left, top, right, bottom), confidence))
         return output
 
@@ -429,7 +571,9 @@ class OcrParser:
         if boxes is None or texts is None:
             raise RuntimeError("RapidOCR returned incomplete text detection results")
         if scores is not None and len(scores) != len(texts):
-            raise RuntimeError("RapidOCR returned a different number of scores and texts")
+            raise RuntimeError(
+                "RapidOCR returned a different number of scores and texts"
+            )
 
         output = []
         for index, (box, text) in enumerate(zip(boxes, texts, strict=True)):
@@ -455,13 +599,12 @@ class OcrParser:
                 raise IndexError(f"Page number {page_number} is outside the PDF")
             page = document.load_page(page_number - 1)
             _check_page_content_streams(document, page)
-            pixmap = page.get_pixmap(
-                dpi=300, colorspace=pymupdf.csRGB, alpha=False
-            )
+            pixmap = page.get_pixmap(dpi=300, colorspace=pymupdf.csRGB, alpha=False)
             page_width = page.rect.width
             page_height = page.rect.height
             scale_x = page_width / pixmap.width
             scale_y = page_height / pixmap.height
+            native_text_geometry = _native_text_line_geometry(page)
             visual_page = FastTextParser().parse_page(source, page_number)
 
             with tempfile.TemporaryDirectory(prefix="legal-rag-ocr-") as directory:
@@ -477,19 +620,43 @@ class OcrParser:
             for block in visual_page.blocks
             if block.block_type in {"TEXT", "IMAGE", "VECTOR"}
         ]
+        seen_text_lines = native_text_geometry
         for text, bbox, confidence in recognized:
+            ocr_rect = pymupdf.Rect(
+                bbox[0] * scale_x,
+                bbox[1] * scale_y,
+                bbox[2] * scale_x,
+                bbox[3] * scale_y,
+            )
+            retained_lines = []
+            for line in text.splitlines():
+                normalized_line = _normalize_text_line(line)
+                if not normalized_line:
+                    continue
+                is_duplicate = any(
+                    normalized_line == existing_text
+                    and _overlap_relative_to_smaller(ocr_rect, existing_rect)
+                    >= OCR_DUPLICATE_OVERLAP_THRESHOLD
+                    for existing_text, existing_rect in seen_text_lines
+                )
+                if is_duplicate:
+                    continue
+                seen_text_lines.append((normalized_line, ocr_rect))
+                retained_lines.append(line.strip())
+            if not retained_lines:
+                continue
             blocks.append(
                 CanonicalBlock(
                     page_number=page_number,
-                    text=text,
+                    text="\n".join(retained_lines),
                     block_type="TEXT",
                     reading_order=len(blocks),
                     source_coordinates=_coordinates(
                         (
-                            bbox[0] * scale_x,
-                            bbox[1] * scale_y,
-                            bbox[2] * scale_x,
-                            bbox[3] * scale_y,
+                            ocr_rect.x0,
+                            ocr_rect.y0,
+                            ocr_rect.x1,
+                            ocr_rect.y1,
                         ),
                         unit="PDF_POINT",
                         origin="TOP_LEFT",
@@ -500,9 +667,9 @@ class OcrParser:
 
         blocks.sort(
             key=lambda block: (
-            block.source_coordinates.y0,
-            block.source_coordinates.x0,
-            block.reading_order,
+                block.source_coordinates.y0,
+                block.source_coordinates.x0,
+                block.reading_order,
             )
         )
         ordered_blocks = tuple(

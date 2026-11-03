@@ -121,6 +121,16 @@ and source coordinates tagged with coordinate units and origin.
 order. `dispatch_document()` returns failed page records rather than silently
 discarding parser errors or later pages.
 
+`FastTextParser` joins PyMuPDF line spans with newline characters to retain
+native line boundaries. OCR adapters preserve native blocks and add
+recognized lines, omitting OCR lines only when case-folded,
+whitespace-normalized text matches a native line or earlier OCR line and their
+source-coordinate rectangles overlap by at least 0.8 relative to the smaller
+rectangle. Repeated text at separate locations and novel lines in a mixed OCR
+result are retained; there is no fuzzy matching. Docling coordinate origin is
+taken from each provenance bbox. Adapter tests check source page numbers and
+PDF-point coordinates against the corresponding source page bounds.
+
 ## Tests by area
 
 | Test file | Source area covered |

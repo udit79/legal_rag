@@ -20,6 +20,7 @@ dependencies = [
     "pillow>=13.0.0",
     "pydantic>=2.14.1",
     "pymupdf>=1.28.2",
+    "pytesseract>=0.3.13",
     "pytest>=9.1.1",
     "rapidocr>=3.10.0",
     "uvicorn[standard]>=0.54.0",

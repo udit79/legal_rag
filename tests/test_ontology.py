@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 from pydantic import ValidationError
 
@@ -12,7 +14,7 @@ from src.domain.ontology import (
 )
 
 
-EXPECTED_TRIPLES = {
+EXPECTED_TRIPLES: set[tuple[NodeType, RelationType, NodeType]] = {
     (NodeType.ORGANIZATION, RelationType.OWNS, NodeType.APPLICATION),
     (NodeType.APPLICATION, RelationType.IN_SCOPE_OF, NodeType.POLICY),
     (NodeType.POLICY, RelationType.DEFINES, NodeType.OBLIGATION),
@@ -27,8 +29,10 @@ EXPECTED_TRIPLES = {
 }
 
 
-@pytest.mark.parametrize("triple", sorted(EXPECTED_TRIPLES, key=lambda row: row[1].name))
-def test_every_allowed_triple_is_accepted(triple):
+@pytest.mark.parametrize("triple", sorted(EXPECTED_TRIPLES, key=str))
+def test_every_allowed_triple_is_accepted(
+    triple: tuple[NodeType, RelationType, NodeType],
+):
     source, relation, target = triple
     assert validate_relation(source.value, relation.value, target.value)
 
@@ -73,7 +77,7 @@ def test_unknown_names_are_rejected(source, relation, target):
 
 def test_non_string_relation_argument_is_rejected_by_validate_call():
     with pytest.raises(ValidationError):
-        validate_relation(NodeType.ORGANIZATION, "OWNS", "APPLICATION")
+        validate_relation(cast(str, NodeType.ORGANIZATION), "OWNS", "APPLICATION")
 
 
 def test_each_relation_type_has_an_allowed_triple():

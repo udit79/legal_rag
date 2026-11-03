@@ -47,7 +47,8 @@ def inspect_pdf(path: Path) -> DocumentFeatures:
                     image_count=len(page.get_image_info(xrefs=True)),
                     drawing_count=len(page.get_drawings()),
                 )
-                for page_number, page in enumerate(document, start=1)
+                for page_number in range(1, page_count + 1)
+                for page in (document.load_page(page_number - 1),)
             )
     except pymupdf.FileNotFoundError as exc:
         raise PdfNotFoundError(f"PDF file not found: {path}") from exc

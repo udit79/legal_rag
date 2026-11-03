@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from src.observability.telemetry import configure_telemetry
 from src.infrastructure.neo4j_client import create_db_connect,DbConnect,run_query
-from typing import Annotated
 from neo4j.exceptions import ServiceUnavailable,SessionExpired,AuthError,DriverError
 from pydantic import BaseModel
 class HealthResponse(BaseModel):

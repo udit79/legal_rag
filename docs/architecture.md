@@ -126,8 +126,21 @@ The shared output types in `src/ingestion/parser_contracts.py` are
 `CanonicalDocument`, `CanonicalPage`, and `CanonicalBlock`. Each block carries
 its original one-based page number, text, block type, reading-order index, and
 source coordinates. Coordinates identify their units and origin: PyMuPDF and
-OCR use top-left PDF points, while Docling provenance uses bottom-left PDF
-points. OCR confidence is retained when available.
+OCR use top-left PDF points, while Docling provenance retains the origin
+reported by Docling (`TOPLEFT` or `BOTTOMLEFT`). OCR confidence is retained
+when available.
+
+`FastTextParser` preserves line boundaries inside each native text block by
+joining PyMuPDF lines with newline characters. On OCR routes, native text and
+visual blocks are retained and OCR output is merged as additional text. To
+avoid duplicates, an OCR line is omitted when its case-folded, whitespace-
+normalized text exactly matches a native line or an earlier OCR line and their
+source-coordinate rectangles overlap by at least 0.8 relative to the smaller
+rectangle. Repeated text at a different location or with less overlap is kept.
+New lines in a multi-line OCR result are kept even when another line in that
+result duplicates native text. This is exact text matching constrained by
+spatial overlap, not fuzzy matching; similar but differently recognized text
+may appear in both forms.
 
 Page results distinguish `PARSED`, `BLANK`, `VECTOR_ONLY`, and `FAILED`.
 Encrypted or unreadable documents receive a document-level failure; individual
