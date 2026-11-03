@@ -279,13 +279,19 @@ def test_image_block_may_carry_text_offsets_when_parser_provides_text():
     assert (source.start_offset, source.end_offset) == (0, 8)
 
 
-@pytest.mark.parametrize("text", ["", "  ", "\n\t"])
-def test_chunk_rejects_empty_text(text: str):
+def test_chunk_rejects_empty_text():
     data = chunk_data()
-    data["text"] = text
+    data["text"] = ""
 
     with pytest.raises(ValidationError, match="cannot be empty"):
         Chunk.model_validate(data)
+
+
+def test_chunk_accepts_nonempty_whitespace_text():
+    data = chunk_data()
+    data["text"] = " \t\n"
+
+    assert Chunk.model_validate(data).text == " \t\n"
 
 
 def test_chunk_requires_source_provenance():

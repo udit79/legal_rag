@@ -6,3 +6,4 @@
 .pytest-tmp-ontology-review/
 .ruff_cache/
 .pytest-*/
+docs/m0_*

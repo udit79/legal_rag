@@ -75,7 +75,7 @@ class Chunk(BaseModel):
 
     @model_validator(mode="after")
     def validate_chunk(self) -> Self:
-        if not self.text.strip():
+        if not self.text:
             raise ValueError("Chunk text cannot be empty")
         if not self.sources:
             raise ValueError("A chunk must identify at least one source")

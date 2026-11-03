@@ -166,14 +166,16 @@ chunk cannot contain overlapping ranges for the same canonical block, while
 adjacent ranges and ranges in separate chunks are valid. The
 `ChunkedDocument` records document identity, source page count, and chunking
 policy version, and validates zero-based contiguous indices. Contract
-serialization is deterministic for the same ordered inputs; deterministic
-chunk generation is a separate requirement for the future splitting
-algorithm, which is not part of this contract-only step. Block IDs derive
-deterministically from the one-based page number and zero-based reading order
-within a canonical document representation; reparsing that changes ordering
-may change IDs. Task 5C must resolve each source against the actual canonical
-document and validate its block identity and text range; this cross-reference
-validation is not implemented in the contract-only step.
+serialization is deterministic for the same ordered inputs. BLP-1 chunk
+generation is implemented in `src/ingestion/chunking.py` and
+`src/ingestion/segmentation.py`: it routes pages, builds lossless source-span
+atoms, and packs TEXT, OTHER, TABLE, and IMAGE groups under a character limit.
+Block IDs derive deterministically from the one-based page number and
+zero-based reading order within a canonical document representation; reparsing
+that changes ordering may change IDs. The `chunk_document()` entry point builds
+provenance directly from the canonical blocks it processes. See
+[`blp1_chunking.md`](blp1_chunking.md) for the algorithm, report semantics, and
+current scope.
 
 ## Ingestion workflow state
 

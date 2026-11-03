@@ -141,16 +141,16 @@ Overlapping or duplicate ranges for the same block within a single chunk are
 rejected; adjacent ranges and ranges in separate chunks are allowed.
 `ChunkedDocument` records the source page count and non-empty policy version,
 and validates contiguous zero-based indices and in-range source pages.
-Repeated validation of the same ordered model input produces the same
-serialization; deterministic chunk generation remains the responsibility of
-the future splitting algorithm. `block_id` is deterministic from one-based
-page number and zero-based reading order within a canonical document
-representation, but may change if reparsing changes block ordering. The
-current contract validates internal ranges only. Task 5C must resolve each
-source against the actual `CanonicalDocument` and verify block identity,
-page, order, type, text length, and source-range correspondence before
-accepting chunk output. That cross-reference validator is not implemented
-yet. These models define data shape only; chunk splitting is not implemented.
+`chunking.py` implements validated configuration and policy identity, page
+routing, M5 TEXT/OTHER packing, M6 isolated TABLE/IMAGE handling, and final
+reports. `segmentation.py` implements the six M3 boundary primitives and the
+M4 recursive boundary ladder. `chunk_document()` builds each `ChunkSource`
+from the canonical block and atom offsets, preserving exact source slices and
+the configured separator policy. Algorithm version is `1.2.0`. See
+[`blp1_chunking.md`](blp1_chunking.md) for the BLP-1 algorithm and its current
+limits. `block_id` is deterministic from one-based page number and zero-based
+reading order within a canonical document representation, but may change if
+reparsing changes block ordering.
 
 `FastTextParser` joins PyMuPDF line spans with newline characters to retain
 native line boundaries. OCR adapters preserve native blocks and add
@@ -171,6 +171,11 @@ PDF-point coordinates against the corresponding source page bounds.
 | `tests/test_ontology.py` | `src/domain/ontology.py` |
 | `tests/test_ingestion_contracts.py` | `src/ingestion/contracts.py` |
 | `tests/test_ingestion_preflight.py` | `src/ingestion/preflight.py` |
+| `tests/test_ingestion_chunk_contracts.py` | Chunk/source provenance model validation. |
+| `tests/test_ingestion_chunking_models.py` | Chunking configuration, digest, policy, and report models. |
+| `tests/test_ingestion_chunking_routing.py` | Page status routing and text eligibility. |
+| `tests/test_ingestion_segmentation.py` | M3 boundary primitives, M4 atom spans, and Unicode hard cuts. |
+| `tests/test_ingestion_chunking_packing.py` | M5/M6 greedy packing, row splitting, isolation, provenance, and reporting. |
 | `tests/test_neo4j_connection.py` | Neo4j connectivity through `src/infrastructure/neo4j_client.py` |
 | `tests/test_telemetry.py` | Telemetry setup through `src/observability/telemetry.py` |
 | `tests/__init__.py` | Empty test package marker. |
