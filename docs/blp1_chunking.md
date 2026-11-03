@@ -157,6 +157,9 @@ Focused tests live in:
 - `tests/test_ingestion_segmentation.py` for M3/M4 boundaries and atom spans.
 - `tests/test_ingestion_chunking_packing.py` for M5/M6 packing, exact coverage,
   separators, isolation, and reporting.
+- `tests/ingestion/test_ingestion_chunking_properties.py` for bounded,
+  deterministic Hypothesis coverage of source, limit, isolation, Unicode,
+  table, and reporting invariants.
 
 Parser structure is an input limitation: chunking preserves canonical text
 and boundaries, but cannot recover table structure or reading order that the

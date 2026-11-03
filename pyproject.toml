@@ -25,3 +25,8 @@ dependencies = [
     "rapidocr>=3.10.0",
     "uvicorn[standard]>=0.54.0",
 ]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.14",
+]

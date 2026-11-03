@@ -1,0 +1,4043 @@
+{
+  "page_count": 20,
+  "document_disposition": "PROCESS",
+  "pages": [
+    {
+      "page_number": 1,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 1,
+          "text": "",
+          "block_type": "IMAGE",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 30.667292511319157,
+            "y0": 753.0444499790074,
+            "x1": 106.23328530842826,
+            "y1": 823.2165884638625,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-0"
+        },
+        {
+          "page_number": 1,
+          "text": "2026 INSC 60",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 31.199370000000002,
+            "y0": 750.7659699999999,
+            "x1": 106.57137,
+            "y1": 761.86597,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-1"
+        },
+        {
+          "page_number": 1,
+          "text": "REPORTABLE",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 419.71,
+            "y0": 754.5157381818183,
+            "x1": 516.2630800000002,
+            "y1": 766.3250800000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-2"
+        },
+        {
+          "page_number": 1,
+          "text": "IN THE SUPREME COURT OF INDIA CIVIL APPELLATE JURISDICTION",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 176.54,
+            "y0": 698.9557381818182,
+            "x1": 418.75808000000023,
+            "y1": 729.24508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-3"
+        },
+        {
+          "page_number": 1,
+          "text": "CIVIL APPEAL NO. 262 OF 2026 [Arising out of SLP (C) No. 2640 OF 2025]",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 170.66,
+            "y0": 645.7957381818183,
+            "x1": 424.74532,
+            "y1": 676.2050800000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-4"
+        },
+        {
+          "page_number": 1,
+          "text": "THE AUTHORITY FOR ADVANCE RULINGS",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 570.2857381818183,
+            "x1": 365.1511200000003,
+            "y1": 582.09508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-5"
+        },
+        {
+          "page_number": 1,
+          "text": "(INCOME TAX) AND OTHERS",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 551.8057381818182,
+            "x1": 269.17368,
+            "y1": 563.61508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-6"
+        },
+        {
+          "page_number": 1,
+          "text": ".... APPELLANT(S)",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 370.51,
+            "y0": 551.8057381818182,
+            "x1": 489.9763600000002,
+            "y1": 563.61508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-7"
+        },
+        {
+          "page_number": 1,
+          "text": ".... RESPONDENT(S)",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 363.55,
+            "y0": 444.0457381818182,
+            "x1": 493.84120000000024,
+            "y1": 455.85508000000004,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-8"
+        },
+        {
+          "page_number": 1,
+          "text": "VERSUS",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 270.05,
+            "y0": 504.64573818181816,
+            "x1": 325.3114400000002,
+            "y1": 516.45508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-9"
+        },
+        {
+          "page_number": 1,
+          "text": "TIGER GLOBAL INTERNATIONAL II HOLDINGS",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 444.0457381818182,
+            "x1": 318.1873200000001,
+            "y1": 474.33508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-10"
+        },
+        {
+          "page_number": 1,
+          "text": "WITH",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 277.85,
+            "y0": 369.9857381818182,
+            "x1": 317.6814800000001,
+            "y1": 381.79508000000004,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-11"
+        },
+        {
+          "page_number": 1,
+          "text": "CIVIL APPEAL NO. 263 OF 2026",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 192.53,
+            "y0": 332.90573818181815,
+            "x1": 402.96999999999997,
+            "y1": 344.71508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-12"
+        },
+        {
+          "page_number": 1,
+          "text": "[Arising out of SLP (C) No. 2565 of 2026] [Arising out of SLP (C) Diary No. 1260 of 2025]",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 155.66,
+            "y0": 295.94573818181823,
+            "x1": 439.74532,
+            "y1": 326.23508000000004,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-13"
+        },
+        {
+          "page_number": 1,
+          "text": "THE AUTHORITY FOR ADVANCE RULINGS (INCOME TAX) AND OTHERS",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 230.30573818181813,
+            "x1": 365.1511200000003,
+            "y1": 260.71508000000006,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-14"
+        },
+        {
+          "page_number": 1,
+          "text": "VERSUS",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 270.05,
+            "y0": 183.2357381818182,
+            "x1": 325.3114400000002,
+            "y1": 195.04507999999998,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-15"
+        },
+        {
+          "page_number": 1,
+          "text": "",
+          "block_type": "IMAGE",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 50.77469035206226,
+            "y0": 95.74309966968531,
+            "x1": 323.2537820434571,
+            "y1": 147.80303325879606,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-16"
+        },
+        {
+          "page_number": 1,
+          "text": ".... APPELLANT(S)",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 370.51,
+            "y0": 230.30573818181813,
+            "x1": 489.9763600000002,
+            "y1": 242.11508000000003,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-17"
+        },
+        {
+          "page_number": 1,
+          "text": ".... RESPONDENT(S)",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 367.03,
+            "y0": 94.07973818181824,
+            "x1": 497.3914000000002,
+            "y1": 105.88908000000004,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-1-block-18"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 2,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 2,
+          "text": "WITH",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 288.05,
+            "y0": 736.0357381818183,
+            "x1": 327.88148000000007,
+            "y1": 747.84508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-0"
+        },
+        {
+          "page_number": 2,
+          "text": "CIVIL APPEAL NO. 264 OF 2026",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 194.21,
+            "y0": 698.9557381818182,
+            "x1": 401.16999999999996,
+            "y1": 710.76508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-1"
+        },
+        {
+          "page_number": 2,
+          "text": "[Arising out of SLP (C) No. 5987 OF 2025]",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 170.66,
+            "y0": 680.4757381818182,
+            "x1": 424.74532,
+            "y1": 692.28508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-2"
+        },
+        {
+          "page_number": 2,
+          "text": "THE AUTHORITY FOR ADVANCE RULINGS (INCOME TAX) AND OTHERS",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 586.3957381818183,
+            "x1": 365.1511200000003,
+            "y1": 616.68508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-3"
+        },
+        {
+          "page_number": 2,
+          "text": "VERSUS",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 270.05,
+            "y0": 539.2057381818182,
+            "x1": 325.3114400000002,
+            "y1": 551.01508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-4"
+        },
+        {
+          "page_number": 2,
+          "text": "TIGER GLOBAL INTERNATIONAL III HOLDINGS",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 478.6057381818182,
+            "x1": 323.59272000000016,
+            "y1": 509.01508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-5"
+        },
+        {
+          "page_number": 2,
+          "text": "J U D G M E N T",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 245.33,
+            "y0": 423.0457381818182,
+            "x1": 350.0684000000001,
+            "y1": 434.85508000000004,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-6"
+        },
+        {
+          "page_number": 2,
+          "text": ".... APPELLANT(S)",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 391.51,
+            "y0": 586.3957381818183,
+            "x1": 511.1027200000002,
+            "y1": 598.2050800000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-7"
+        },
+        {
+          "page_number": 2,
+          "text": ".... RESPONDENT(S)",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 380.95,
+            "y0": 478.6057381818182,
+            "x1": 511.4377600000002,
+            "y1": 490.41508000000005,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-8"
+        },
+        {
+          "page_number": 2,
+          "text": "R. MAHADEVAN, J.",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 386.0657381818182,
+            "x1": 200.68655999999996,
+            "y1": 397.87508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-9"
+        },
+        {
+          "page_number": 2,
+          "text": "Delay condoned.",
+          "block_type": "OTHER",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 353.85128,
+            "x1": 202.88828000000004,
+            "y1": 365.93971999999997,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-10"
+        },
+        {
+          "page_number": 2,
+          "text": "Leave granted. The present appeals arise from a final judgment and common order dated 28.08.2024 passed by the High Court of Delhi at New Delhi 1 in W.P. (C) Nos. 6764, 6765 and 6766 of 2020 and are, therefore, disposed of by this common judgment.",
+          "block_type": "OTHER",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 208.86127999999997,
+            "x1": 523.4506,
+            "y1": 317.57972000000007,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-11"
+        },
+        {
+          "page_number": 2,
+          "text": "For the sake of clarity and systematic analysis, this judgment is divided into the following heads:",
+          "block_type": "OTHER",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 112.26128000000006,
+            "x1": 523.0332800000004,
+            "y1": 156.62972000000002,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-12"
+        },
+        {
+          "page_number": 2,
+          "text": "1 Hereinafter referred to as \"the High Court\"",
+          "block_type": "OTHER",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 72.44928000000004,
+            "x1": 267.6551999999999,
+            "y1": 83.08727999999996,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-2-block-13"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 3,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 3,
+          "text": "| S.NO.   |    | HEADINGS                               |   PAGE NO. |\n|---------|----|----------------------------------------|------------|\n| I       |    | INTRODUCTION                           |          3 |\n| II      |    | BRIEF FACTS                            |          6 |\n| III     |    | FINDINGS OF THE AAR AND THE HIGH COURT |            |\n|         | A  | AAR                                    |         11 |\n|         | B  | HIGH COURT                             |         20 |\n| IV      |    | CONTENTIONS OF THE PARTIES             |            |\n|         | A  | ON BEHALF OF THE APPELLANTS            |         29 |\n|         | B  | ON BEHALF OF THE RESPONDENTS           |         40 |\n| V       |    | ANALYSIS                               |         50 |\n|         | A  | ISSUES FOR CONSIDERATION               |         51 |\n|         | B  | LEGAL BACKGROUND                       |         52 |\n|         | C  | DISCUSSION AND FINDINGS                |        104 |\n| VI      |    | CONCLUSION                             |        132 |\n| VII     |    | RESULT                                 |        133 |",
+          "block_type": "TABLE",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 78.48020365721429,
+            "y0": 254.61337964853033,
+            "x1": 529.3103770457019,
+            "y1": 770.7718533346941,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-3-block-0"
+        },
+        {
+          "page_number": 3,
+          "text": "I. INTRODUCTION",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 206.87573818181818,
+            "x1": 220.10131999999996,
+            "y1": 218.68507999999997,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-3-block-1"
+        },
+        {
+          "page_number": 3,
+          "text": "The power of an independent Republic to levy and collect tax forms part of its inherent sovereign functions, and such power is circumscribed only by the requirement of being within the authority of law. Article 265 of the Constitution of India envisages the same. In a world where nations must necessarily engage",
+          "block_type": "OTHER",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 78.06528000000003,
+            "x1": 523.51708,
+            "y1": 186.74972000000002,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-3-block-2"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 4,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 4,
+          "text": "with each other for mutual economic growth through trade, commerce and business, and for reasons of economic policy, international cooperation, and diplomatic balance, the power of each nation is often exercised in tune with such bilateral or multilateral agreements, which do not take away such inherent power but which now stand shaped by the legal framework agreed to between the parties. Having said this, it is for the legislatures to employ their discretion to innovate through the empirical process and in line with treaty obligations, evolve new ways of tapping revenue and placing checks on new methods and devices of tax evasion that may have arisen by abuse of beneficial provisions based on treaties. Here, the Court will have to tread carefully and cautiously to ascertain whether the action of the Revenue is within the contours of law - meaning constitutional, statutory and treaty obligations - in order that fiscal difficulties are addressed by the State in line with its own fiscal wisdom and policy.",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 335.85128,
+            "x1": 523.48,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-4-block-0"
+        },
+        {
+          "page_number": 4,
+          "text": "4.1. India has developed an extensive network of Double Taxation Avoidance Agreements. Among these, its treaty with Mauritius has been particularly significant, shaping patterns of foreign investment since the early 1980s, and is germane to the present case. The India - Mauritius Double Taxation Avoidance Agreement 2 , signed in Port Louis on 24 August 1982 and effective in both jurisdictions from 1983, soon gave rise to what became known as the Mauritius Route. Investors favoured this structure for the beneficial provisions of the",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 110.46127999999999,
+            "x1": 523.4874399999999,
+            "y1": 315.77972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-4-block-1"
+        },
+        {
+          "page_number": 4,
+          "text": "2 For short, \"DTAA\"",
+          "block_type": "OTHER",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 72.44928000000004,
+            "x1": 164.14415999999994,
+            "y1": 83.08727999999996,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-4-block-2"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 5,
+      "parser": "FAST_TEXT",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 5,
+          "text": "5 \n ",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 38.160003662109375,
+            "x1": 302.905029296875,
+            "y1": 62.6400032043457,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-0"
+        },
+        {
+          "page_number": 5,
+          "text": "treaty combined with Mauritius’ domestic tax regime. While this significantly ",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 72.59033203125,
+            "x1": 526.4564208984375,
+            "y1": 88.13261413574219,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-1"
+        },
+        {
+          "page_number": 5,
+          "text": "helped foreign capital inflows, it also attracted mounting scrutiny. Concerns ",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 104.7503662109375,
+            "x1": 526.470458984375,
+            "y1": 120.29264831542969,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-2"
+        },
+        {
+          "page_number": 5,
+          "text": "were raised that the treaty, entered into with the intent to prevent double ",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 137.03033447265625,
+            "x1": 526.3582153320312,
+            "y1": 152.57261657714844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-3"
+        },
+        {
+          "page_number": 5,
+          "text": "taxation, was being used to achieve non-taxation, particularly in respect of ",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 169.19036865234375,
+            "x1": 526.6956787109375,
+            "y1": 184.73265075683594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-4"
+        },
+        {
+          "page_number": 5,
+          "text": "capital gains. Entities were incorporated in Mauritius solely to take advantage of ",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 201.350341796875,
+            "x1": 526.5125122070312,
+            "y1": 216.8926239013672,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-5"
+        },
+        {
+          "page_number": 5,
+          "text": "treaty benefits. This created serious issues of treaty shopping, tax avoidance, ",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 233.63031005859375,
+            "x1": 526.3159790039062,
+            "y1": 249.17259216308594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-6"
+        },
+        {
+          "page_number": 5,
+          "text": "and the integrity of the international tax system. ",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 265.8203125,
+            "x1": 343.9000244140625,
+            "y1": 281.36260986328125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-7"
+        },
+        {
+          "page_number": 5,
+          "text": "4.2. \nOver time, judicial and legislative responses were developed to address ",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 297.9803466796875,
+            "x1": 526.4397583007812,
+            "y1": 313.52264404296875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-8"
+        },
+        {
+          "page_number": 5,
+          "text": "these challenges. After deliberations, in 2016, India and Mauritius signed a ",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 330.1403503417969,
+            "x1": 526.4564819335938,
+            "y1": 345.6826477050781,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-9"
+        },
+        {
+          "page_number": 5,
+          "text": "protocol providing that the DTAA would shift away from a residence-based ",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 362.42034912109375,
+            "x1": 526.9025268554688,
+            "y1": 377.962646484375,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-10"
+        },
+        {
+          "page_number": 5,
+          "text": "system for the taxation of capital gains to a source-based system, to restore ",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 394.5803527832031,
+            "x1": 526.7810668945312,
+            "y1": 410.1226501464844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-11"
+        },
+        {
+          "page_number": 5,
+          "text": "balance and prevent abuse. However, as global investment structures grow ",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 426.7403259277344,
+            "x1": 526.4423828125,
+            "y1": 442.2826232910156,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-12"
+        },
+        {
+          "page_number": 5,
+          "text": "increasingly complex, with multi-country reach, interpretational issues continue ",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 459.04034423828125,
+            "x1": 526.6512451171875,
+            "y1": 474.5826416015625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-13"
+        },
+        {
+          "page_number": 5,
+          "text": "to surface.  ",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 491.2003479003906,
+            "x1": 137.3300018310547,
+            "y1": 506.7426452636719,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-14"
+        },
+        {
+          "page_number": 5,
+          "text": "4.3. \nThese issues have once again come before this Court in the present ",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 523.3603515625,
+            "x1": 526.4259643554688,
+            "y1": 538.9026489257812,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-15"
+        },
+        {
+          "page_number": 5,
+          "text": "matter, arising out of the taxation of capital gains from the sale of shares of a ",
+          "block_type": "TEXT",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 555.640380859375,
+            "x1": 526.2996215820312,
+            "y1": 571.1826782226562,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-16"
+        },
+        {
+          "page_number": 5,
+          "text": "Singapore-based entity deriving substantial value from its Indian operations. ",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 587.8003540039062,
+            "x1": 526.4253540039062,
+            "y1": 603.3426513671875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-17"
+        },
+        {
+          "page_number": 5,
+          "text": "The transactional involvement of the relevant investment entities based in ",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 619.9903564453125,
+            "x1": 526.3582153320312,
+            "y1": 635.5326538085938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-18"
+        },
+        {
+          "page_number": 5,
+          "text": "Mauritius raises significant questions as to the reach of treaty protections, the ",
+          "block_type": "TEXT",
+          "reading_order": 19,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 652.2703247070312,
+            "x1": 526.4284057617188,
+            "y1": 667.8126220703125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-19"
+        },
+        {
+          "page_number": 5,
+          "text": "relationship between treaty provisions and domestic tax law, and the principles ",
+          "block_type": "TEXT",
+          "reading_order": 20,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 684.4303588867188,
+            "x1": 526.3861694335938,
+            "y1": 699.97265625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-20"
+        },
+        {
+          "page_number": 5,
+          "text": "that must guide the grant or denial of treaty benefits. It is in this legal, ",
+          "block_type": "TEXT",
+          "reading_order": 21,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 716.59033203125,
+            "x1": 526.6045532226562,
+            "y1": 732.1326293945312,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-5-block-21"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 6,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 6,
+          "text": "economic, and policy backdrop that the dispute relating to Tiger Global needs to be considered.",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 722.30128,
+            "x1": 522.9466800000002,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-6-block-0"
+        },
+        {
+          "page_number": 6,
+          "text": "II. BRIEF FACTS",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 673.9957381818182,
+            "x1": 198.71839999999997,
+            "y1": 685.80508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-6-block-1"
+        },
+        {
+          "page_number": 6,
+          "text": "5. The respondents - assessees viz., Tiger Global International II Holdings, Tiger Global International III Holdings, and Tiger Global International IV Holdings, are private companies limited by shares, incorporated under the laws of Mauritius. They were set up with the primary objective of undertaking investment activities with the intention of earning long-term capital appreciation and investment income. The assessees are regulated by the Financial Services Commission 3 in Mauritius and have been granted a Category I Global Business License 4 under Section 72(6) of the Financial Services Act, 2007, enacted by the Parliament of Mauritius.",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 384.09128,
+            "x1": 523.7168800000001,
+            "y1": 653.8837599999999,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-6-block-2"
+        },
+        {
+          "page_number": 6,
+          "text": "5.1. The business of the assessees, according to them, is wholly controlled and managed by their Board of Directors in Mauritius. The assessees claim to have satisfied all the requirements laid down by the FSC in Section 3 of Chapter 4 of the Guide to Global Business, thereby establishing commercial substance in Mauritius. The assessees had three Directors on the Board of Directors, of whom two are Mauritian residents and one is a resident of the United States. They have maintained, and continue to maintain, their principal bank account and accounting records in Mauritius. They have caused their statutory financial",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 126.54128000000003,
+            "x1": 523.4759200000001,
+            "y1": 364.01972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-6-block-3"
+        },
+        {
+          "page_number": 6,
+          "text": "3 In short, \"FSC\"",
+          "block_type": "OTHER",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 88.76927999999998,
+            "x1": 148.99424,
+            "y1": 99.40728000000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-6-block-4"
+        },
+        {
+          "page_number": 6,
+          "text": "4 In short, \"GBL-I\"",
+          "block_type": "OTHER",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 74.24928,
+            "x1": 158.72432,
+            "y1": 84.88728000000003,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-6-block-5"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 7,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 7,
+          "text": "statements to be prepared and audited in Mauritius and continue to do so. They have held and continue to hold, office premises in Mauritius since incorporation and have two employees at the same.",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 690.02128,
+            "x1": 523.3706799999999,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-7-block-0"
+        },
+        {
+          "page_number": 7,
+          "text": "5.2. Further, the assessees hold valid Tax Residency Certificates 5 issued by the Mauritius Revenue Authority 6 , certifying them to be tax residents in Mauritius for the income tax purposes. On the basis of the same, they claim to be tax residents of Mauritius under the laws of Mauritius and under the DTAA between India and Mauritius for the avoidance of double taxation and the prevention of fiscal evasion. 5.3. The assessees engaged Tiger Global Management 7 , LLC, a company",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 464.63128,
+            "x1": 524.19952,
+            "y1": 671.497,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-7-block-1"
+        },
+        {
+          "page_number": 7,
+          "text": "incorporated in the United States of America, to provide services in relation to their investment activities. All services provided by TGM, including but not limited to investment sourcing, portfolio stewardship, and observership services, are subject to review and final approval by the Board of Directors of the assessees. TGM does not have the right to contract on behalf of, or bind, the assesses, or take any decisions on their behalf without the approval of the Board of Directors. The assessees also hold valid Permanent Account Numbers issued by the Indian income tax authorities.",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 207.06128,
+            "x1": 523.4519200000001,
+            "y1": 444.55971999999997,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-7-block-2"
+        },
+        {
+          "page_number": 7,
+          "text": "5 In short, \"TRC\"",
+          "block_type": "OTHER",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 101.48527999999999,
+            "x1": 148.15519999999998,
+            "y1": 112.12328000000002,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-7-block-3"
+        },
+        {
+          "page_number": 7,
+          "text": "6 In short, \"MRA\"",
+          "block_type": "OTHER",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 86.96928000000003,
+            "x1": 151.76528,
+            "y1": 97.60728000000006,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-7-block-4"
+        },
+        {
+          "page_number": 7,
+          "text": "7 For short, \"the TGM\"",
+          "block_type": "OTHER",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 74.24928,
+            "x1": 173.83856,
+            "y1": 84.88728000000003,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-7-block-5"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 8,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 8,
+          "text": "5.4. The assessees held shares of Flipkart Private Limited 8 , a private company limited by shares, incorporated under the laws of Singapore. The total number of shares of Singapore Co. acquired by the assessees is tabulated below:\n\n|   Sl.No. | Applicant                                          |   Number of shares Acquired | Period / date of acquisition   |\n|----------|----------------------------------------------------|-----------------------------|--------------------------------|\n|       1. | Tiger Global International II Holdings, Mauritius  |                  23,670,710 | October, 2011 to April, 2015   |\n|       2. | Tiger Global International III Holdings, Mauritius |                   2,282,825 | 23 rd June 2014                |\n|       3. | Tiger Global International IV Holdings, Mauritius  |                     105,928 | 24 th April, 2012              |",
+          "block_type": "TABLE",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 93.3969191132616,
+            "y0": 399.01756594696406,
+            "x1": 518.3075640705289,
+            "y1": 673.7633557157901,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-8-block-0"
+        },
+        {
+          "page_number": 8,
+          "text": "5.4. The assessees held shares of Flipkart Private Limited 8 , a private company limited by shares, incorporated under the laws of Singapore. The total number of shares of Singapore Co. acquired by the assessees is tabulated below:",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 690.02128,
+            "x1": 523.3782400000001,
+            "y1": 768.117,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-8-block-1"
+        },
+        {
+          "page_number": 8,
+          "text": "5.5. Thereafter, Singapore Co. invested in multiple companies in India, and the value of its shares was derived substantially from assets located in India. The assessees transferred shares of Singapore Co. (\"Sale Shares\") held by them to Fit Holdings S.A.R.L (\"Buyer\"), a company incorporated under the laws of Luxembourg. These transfers were undertaken as part of a broader transaction involving the majority acquisition of Singapore Co. by Walmart Inc., a company incorporated in the United States of America, from several shareholders,",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 158.46128,
+            "x1": 523.5699999999999,
+            "y1": 363.77972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-8-block-2"
+        },
+        {
+          "page_number": 8,
+          "text": "8 For short, \"Singapore Co.\"",
+          "block_type": "OTHER",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 72.44928000000004,
+            "x1": 196.59176,
+            "y1": 83.08727999999996,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-8-block-3"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 9,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 9,
+          "text": "including the assessees. The details of shares transferred by the assessees and the gross consideration received are as under:",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 722.30128,
+            "x1": 523.48528,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-9-block-0"
+        },
+        {
+          "page_number": 9,
+          "text": "|   Sl.No. | Applicant                                          |   Number of shares sold | Gross consideration received                                |\n|----------|----------------------------------------------------|-------------------------|-------------------------------------------------------------|\n|       1. | Tiger Global International II Holdings, Mauritius  |              14,754,087 | USD 1,893,510,103.82 equivalent to INR Rs.13122,02,50,194/- |\n|       2. | Tiger Global International III Holdings, Mauritius |               1,422,897 | USD 181,782,633.10 equivalent to INR Rs.1259,75,36,473.83   |\n|       3. | Tiger Global International IV Holdings, Mauritius  |                  66,026 | USD 8,435,171.44 equivalent to INR Rs.58,45,57,380.79       |",
+          "block_type": "TABLE",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 93.3471864912814,
+            "y0": 465.3286783351581,
+            "x1": 529.223684077935,
+            "y1": 706.3091981169276,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-9-block-1"
+        },
+        {
+          "page_number": 9,
+          "text": "5.6. Thereafter, the assessees approached the Indian tax authorities by filing applications under Section 197 of the Income Tax Act, 1961 9 , seeking certification of nil withholding prior to consummation of the transfer. By notices dated 17.08.2018, the tax authorities informed that the assessees would not be eligible to avail the benefits under the DTAA on the ground that they were not independent in their decision-making and that control over the decision- making relating to the purchase and sale of shares did not lie with them. The tax authorities, accordingly, issued certificates dated 17.08.2018, prescribing a withholding rate in respect of the sale of shares by the assessees as under:",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 160.26128000000006,
+            "x1": 523.48156,
+            "y1": 429.91972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-9-block-2"
+        },
+        {
+          "page_number": 9,
+          "text": "9 In short, \"the Act\"",
+          "block_type": "OTHER",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 74.24928,
+            "x1": 159.58464,
+            "y1": 84.88728000000003,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-9-block-3"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 10,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 10,
+          "text": "| Tiger Global International II Holdings, Mauritius.   | Certificate dated 17.08.2018 mentioning the rate of income tax @ 6.05%   |\n|------------------------------------------------------|--------------------------------------------------------------------------|\n| Tiger Global International III Holdings, Mauritius.  | Certificate dated 17.08.2018 mentioning the rate of income tax @ 6.92%   |\n| Tiger Global International IV Holdings, Mauritius.   | Certificate dated 17.08.2018 mentioning the rate of income tax @ 8.47%   |",
+          "block_type": "TABLE",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 102.59064128286887,
+            "y0": 625.0487463407901,
+            "x1": 500.5215140917478,
+            "y1": 770.2192401340511,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-10-block-0"
+        },
+        {
+          "page_number": 10,
+          "text": "5.7. Hence, the assessees approached the Authority for Advance Rulings 10 by filing applications under Section 245Q(1) of the Act, seeking an advance ruling on the common question that \"Whether, on the facts and circumstances of the case, gains arising to the assessees (private companies incorporated in Mauritius) from the sale of shares held by them in Flipkart Pvt. Ltd (a private company incorporated in Singapore) to Fit Holdings S.A.R.L. (a company incorporated in Luxembourg) would be chargeable to tax in India under the Act read with the DTAA between India and Mauritius?\"",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 352.04787636363636,
+            "x1": 523.4868399999999,
+            "y1": 591.097,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-10-block-1"
+        },
+        {
+          "page_number": 10,
+          "text": "5.8. The AAR, after providing opportunities to the assessees and upon considering the materials gathered by the Assessing Officer, came to the conclusion that the applications preferred by the assessees relate to a transaction or issue which is prima facie designed for the avoidance of income tax and therefore, rejected the same as being hit by the threshold jurisdictional bar to maintainability, as enshrined in proviso (iii) to Section 245R(2).",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 158.82128,
+            "x1": 523.5048400000001,
+            "y1": 331.85972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-10-block-2"
+        },
+        {
+          "page_number": 10,
+          "text": "10 In short \"the AAR\"",
+          "block_type": "OTHER",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 74.24928,
+            "x1": 167.62415999999996,
+            "y1": 84.88728000000003,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-10-block-3"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 11,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 11,
+          "text": "5.9. Challenging the order dated 26.03.2020 passed by the AAR, the assessees filed W.P.(C) Nos. 6764, 6765 and 6766 of 2020 before the High Court.",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 722.30128,
+            "x1": 523.4125600000002,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-11-block-0"
+        },
+        {
+          "page_number": 11,
+          "text": "5.10. The High Court, vide the final judgment and common order dated 28.08.2024, allowed the writ petitions and quashed the AAR's order dated 26.03.2020, after holding that the assessees were entitled to treaty benefits and that their income would not be chargeable to tax in India. Aggrieved by the same, the Revenue has preferred the instant appeals.",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 561.2312800000001,
+            "x1": 523.4308,
+            "y1": 702.12376,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-11-block-1"
+        },
+        {
+          "page_number": 11,
+          "text": "III. FINDINGS OF THE AAR AND THE HIGH COURT",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 513.0457381818183,
+            "x1": 425.7452000000001,
+            "y1": 524.85508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-11-block-2"
+        },
+        {
+          "page_number": 11,
+          "text": "6. Before turning to the rival submissions, it would be appropriate to outline the findings of the AAR and the High Court, which culminated in orders favourable to the Revenue and the respondents / assessees respectively.",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 416.39128,
+            "x1": 522.9020000000002,
+            "y1": 492.79972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-11-block-3"
+        },
+        {
+          "page_number": 11,
+          "text": "(A) AAR",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 384.14573818181816,
+            "x1": 138.4166,
+            "y1": 395.95508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-11-block-4"
+        },
+        {
+          "page_number": 11,
+          "text": "6.1. After noting the organisational structure of the Respondents, the AAR held that they were part of Tiger Global Management LLC, USA, and were held through its affiliates via a web of entities based in the Cayman Islands and Mauritius. On facts, the AAR found that the overall control and management of the respondent companies did not lie with their Board of Directors in Mauritius, and that the authority to operate bank accounts for transactions above USD 2,50,000 was vested with Mr. Charles P. Coleman. Although the principal bank account of the respondents was maintained in Mauritius, no local person based in Mauritius was authorised to sign cheques on behalf of the Directors.",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 94.38527999999997,
+            "x1": 523.3117600000002,
+            "y1": 364.01972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-11-block-5"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 12,
+      "parser": "FAST_TEXT",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 12,
+          "text": "12 \n ",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 38.160003662109375,
+            "x1": 305.7850341796875,
+            "y1": 62.6400032043457,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-0"
+        },
+        {
+          "page_number": 12,
+          "text": "According to the AAR, Mr. Coleman, who was not based in Mauritius, was ",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 72.59033203125,
+            "x1": 526.5733032226562,
+            "y1": 88.13261413574219,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-1"
+        },
+        {
+          "page_number": 12,
+          "text": "appointed as the signatory for the Mauritius bank account, and he was declared ",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 104.7503662109375,
+            "x1": 526.8776245117188,
+            "y1": 120.29264831542969,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-2"
+        },
+        {
+          "page_number": 12,
+          "text": "as the beneficial owner in the application for a GBL-I filed with the Mauritius ",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 137.03033447265625,
+            "x1": 526.748779296875,
+            "y1": 152.57261657714844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-3"
+        },
+        {
+          "page_number": 12,
+          "text": "FSC. He was also the authorised signatory for the immediate parent companies, ",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 169.19036865234375,
+            "x1": 526.4970703125,
+            "y1": 184.73265075683594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-4"
+        },
+        {
+          "page_number": 12,
+          "text": "Tiger Global Five Percent Holdings and Tiger Global Six Percent Holdings. He ",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 201.350341796875,
+            "x1": 526.3722534179688,
+            "y1": 216.8926239013672,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-5"
+        },
+        {
+          "page_number": 12,
+          "text": "was further noted to be the sole Director controlling the ultimate holding ",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 233.63031005859375,
+            "x1": 526.38623046875,
+            "y1": 249.17259216308594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-6"
+        },
+        {
+          "page_number": 12,
+          "text": "companies, Tiger Global PIP Management V Limited and Tiger Global PIP ",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 265.8203125,
+            "x1": 526.3721313476562,
+            "y1": 281.36260986328125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-7"
+        },
+        {
+          "page_number": 12,
+          "text": "Management VI Limited. Though the decisions for investment or sale were ",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 297.9803466796875,
+            "x1": 526.4424438476562,
+            "y1": 313.52264404296875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-8"
+        },
+        {
+          "page_number": 12,
+          "text": "formally taken by the Boards of Directors of the respondent companies, the ",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 330.1403503417969,
+            "x1": 526.752685546875,
+            "y1": 345.6826477050781,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-9"
+        },
+        {
+          "page_number": 12,
+          "text": "AAR concluded that real control over transactions exceeding USD 2,50,000 was ",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 362.42034912109375,
+            "x1": 526.4845581054688,
+            "y1": 377.962646484375,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-10"
+        },
+        {
+          "page_number": 12,
+          "text": "exercised by Mr. Coleman through the non-resident Director, Mr. Steven Boyd. ",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 394.5803527832031,
+            "x1": 526.7911987304688,
+            "y1": 410.1226501464844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-11"
+        },
+        {
+          "page_number": 12,
+          "text": "On this basis, it was held that the “head and brain” of the companies, was not in ",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 426.7403259277344,
+            "x1": 526.077392578125,
+            "y1": 442.2826232910156,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-12"
+        },
+        {
+          "page_number": 12,
+          "text": "Mauritius and, therefore, their control and management were situated outside ",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 459.04034423828125,
+            "x1": 526.4142456054688,
+            "y1": 474.5826416015625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-13"
+        },
+        {
+          "page_number": 12,
+          "text": "Mauritius, in the USA. Referring to the financial statements filed with the ",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 491.2003479003906,
+            "x1": 526.4002685546875,
+            "y1": 506.7426452636719,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-14"
+        },
+        {
+          "page_number": 12,
+          "text": "applications, the AAR found that the respondents had made no investment other ",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 523.3603515625,
+            "x1": 526.6632690429688,
+            "y1": 538.9026489257812,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-15"
+        },
+        {
+          "page_number": 12,
+          "text": "than in the shares of Flipkart, and therefore concluded that the real intention ",
+          "block_type": "TEXT",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 555.640380859375,
+            "x1": 526.3441772460938,
+            "y1": 571.1826782226562,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-16"
+        },
+        {
+          "page_number": 12,
+          "text": "behind obtaining the TRCs was to avail the benefit of the DTAA. ",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 587.8003540039062,
+            "x1": 440.5,
+            "y1": 603.3426513671875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-17"
+        },
+        {
+          "page_number": 12,
+          "text": "6.2. \nThe AAR further observed that the exemption granted to a resident of ",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 619.9903564453125,
+            "x1": 526.3836669921875,
+            "y1": 635.5326538085938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-18"
+        },
+        {
+          "page_number": 12,
+          "text": "Mauritius applied only to capital gains arising from the alienation of shares of ",
+          "block_type": "TEXT",
+          "reading_order": 19,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 652.2703247070312,
+            "x1": 526.7578125,
+            "y1": 667.8126220703125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-19"
+        },
+        {
+          "page_number": 12,
+          "text": "an Indian company. In the present case, however, the capital gains arose from ",
+          "block_type": "TEXT",
+          "reading_order": 20,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 684.4303588867188,
+            "x1": 526.330078125,
+            "y1": 699.97265625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-20"
+        },
+        {
+          "page_number": 12,
+          "text": "the sale of shares of a Singapore Co., and hence, the transaction did not qualify ",
+          "block_type": "TEXT",
+          "reading_order": 21,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 716.59033203125,
+            "x1": 526.6342163085938,
+            "y1": 732.1326293945312,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-21"
+        },
+        {
+          "page_number": 12,
+          "text": "for exemption under the Mauritius Treaty. The AAR also held that the objective ",
+          "block_type": "TEXT",
+          "reading_order": 22,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 748.8663330078125,
+            "x1": 526.7724609375,
+            "y1": 764.4086303710938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-12-block-22"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 13,
+      "parser": "FAST_TEXT",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 13,
+          "text": "13 \n ",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 38.160003662109375,
+            "x1": 305.7850341796875,
+            "y1": 62.6400032043457,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-0"
+        },
+        {
+          "page_number": 13,
+          "text": "of the DTAA was to provide exemption only for gains arising from the transfer ",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 72.59033203125,
+            "x1": 526.3582153320312,
+            "y1": 88.13261413574219,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-1"
+        },
+        {
+          "page_number": 13,
+          "text": "of shares of an Indian company, and that such exemption was never intended for ",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 104.7503662109375,
+            "x1": 526.3862915039062,
+            "y1": 120.29264831542969,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-2"
+        },
+        {
+          "page_number": 13,
+          "text": "the transfer of shares of a company not resident in India. Furthermore, the AAR ",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 137.03033447265625,
+            "x1": 526.3582153320312,
+            "y1": 152.57261657714844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-3"
+        },
+        {
+          "page_number": 13,
+          "text": "held that there was no foreign direct investment made by the respondent ",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 169.19036865234375,
+            "x1": 526.913330078125,
+            "y1": 184.73265075683594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-4"
+        },
+        {
+          "page_number": 13,
+          "text": "companies in India and, therefore, no question of participation in investment ",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 201.350341796875,
+            "x1": 526.5716552734375,
+            "y1": 216.8926239013672,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-5"
+        },
+        {
+          "page_number": 13,
+          "text": "arose. As there was neither any business operation in India nor any taxable ",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 233.63031005859375,
+            "x1": 526.302001953125,
+            "y1": 249.17259216308594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-6"
+        },
+        {
+          "page_number": 13,
+          "text": "revenue generated, the AAR concluded that the transaction was a preordained ",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 265.8203125,
+            "x1": 526.7603149414062,
+            "y1": 281.36260986328125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-7"
+        },
+        {
+          "page_number": 13,
+          "text": "arrangement created for the purpose of tax avoidance. It was therefore held that ",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 297.9803466796875,
+            "x1": 526.8007202148438,
+            "y1": 313.52264404296875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-8"
+        },
+        {
+          "page_number": 13,
+          "text": "the transaction was prima facie designed for avoidance of tax and qualified as ",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 330.1403503417969,
+            "x1": 526.5440673828125,
+            "y1": 345.6826477050781,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-9"
+        },
+        {
+          "page_number": 13,
+          "text": "an “arrangement” under the law. Accordingly, the bar under clause (iii) of the ",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 362.42034912109375,
+            "x1": 526.428466796875,
+            "y1": 377.962646484375,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-10"
+        },
+        {
+          "page_number": 13,
+          "text": "proviso to Section 245R(2) of the Act was found to be applicable.  ",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 394.5803527832031,
+            "x1": 446.8900146484375,
+            "y1": 410.1226501464844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-11"
+        },
+        {
+          "page_number": 13,
+          "text": "6.3. \nThe AAR found that though the assessees contended that the transaction ",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 426.7403259277344,
+            "x1": 526.4258422851562,
+            "y1": 442.2826232910156,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-12"
+        },
+        {
+          "page_number": 13,
+          "text": "involved in the present case was a sale of shares simpliciter undertaken between ",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 459.04034423828125,
+            "x1": 526.8080444335938,
+            "y1": 474.5826416015625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-13"
+        },
+        {
+          "page_number": 13,
+          "text": "two unrelated independent parties, which could not be considered as being ",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 491.2003479003906,
+            "x1": 526.8047485351562,
+            "y1": 506.7426452636719,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-14"
+        },
+        {
+          "page_number": 13,
+          "text": "designed for avoidance of tax, the same was too simplistic to be accepted. The ",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 523.3603515625,
+            "x1": 526.8953857421875,
+            "y1": 538.9026489257812,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-15"
+        },
+        {
+          "page_number": 13,
+          "text": "precise question raised in the applications was the chargeability of capital gains ",
+          "block_type": "TEXT",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 555.640380859375,
+            "x1": 526.773193359375,
+            "y1": 571.1826782226562,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-16"
+        },
+        {
+          "page_number": 13,
+          "text": "on the sale of shares under the Act read with the DTAA between India and ",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 587.8003540039062,
+            "x1": 526.7947998046875,
+            "y1": 603.3426513671875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-17"
+        },
+        {
+          "page_number": 13,
+          "text": "Mauritius. Capital gain is not dependent on the mere sale of shares. As per the ",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 619.9903564453125,
+            "x1": 526.7493286132812,
+            "y1": 635.5326538085938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-18"
+        },
+        {
+          "page_number": 13,
+          "text": "mechanism of computation of capital gains, the cost of acquisition of shares is ",
+          "block_type": "TEXT",
+          "reading_order": 19,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 652.2703247070312,
+            "x1": 526.330078125,
+            "y1": 667.8126220703125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-19"
+        },
+        {
+          "page_number": 13,
+          "text": "to be reduced from the sale price of shares. Therefore, in the mechanism of ",
+          "block_type": "TEXT",
+          "reading_order": 20,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 684.4303588867188,
+            "x1": 526.3724365234375,
+            "y1": 699.97265625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-20"
+        },
+        {
+          "page_number": 13,
+          "text": "capital gains computation, what is relevant is not only the sale of shares but also ",
+          "block_type": "TEXT",
+          "reading_order": 21,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 716.59033203125,
+            "x1": 526.4090576171875,
+            "y1": 732.1326293945312,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-21"
+        },
+        {
+          "page_number": 13,
+          "text": "the purchase of shares. Thus, the entire transaction of acquisition as well as sale ",
+          "block_type": "TEXT",
+          "reading_order": 22,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 748.8663330078125,
+            "x1": 526.5933227539062,
+            "y1": 764.4086303710938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-13-block-22"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 14,
+      "parser": "FAST_TEXT",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 14,
+          "text": "14 \n ",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 38.160003662109375,
+            "x1": 305.7850341796875,
+            "y1": 62.6400032043457,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-0"
+        },
+        {
+          "page_number": 14,
+          "text": "of shares, as a whole, is required to be examined, and a dissecting approach by ",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 72.59033203125,
+            "x1": 526.716796875,
+            "y1": 88.13261413574219,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-1"
+        },
+        {
+          "page_number": 14,
+          "text": "examining only the sale of shares, as suggested by the assesses, cannot be ",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 104.7503662109375,
+            "x1": 526.8685302734375,
+            "y1": 120.29264831542969,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-2"
+        },
+        {
+          "page_number": 14,
+          "text": "adopted. The AAR observed that the design for avoidance of tax may be a long-",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 137.03033447265625,
+            "x1": 523.6552734375,
+            "y1": 152.57261657714844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-3"
+        },
+        {
+          "page_number": 14,
+          "text": "drawn process. The AAR also noted from the Notes to Financial Statements that ",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 169.19036865234375,
+            "x1": 526.9275512695312,
+            "y1": 184.73265075683594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-4"
+        },
+        {
+          "page_number": 14,
+          "text": "the principal objective of the assessees was to act as investment holding ",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 201.350341796875,
+            "x1": 526.708251953125,
+            "y1": 216.8926239013672,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-5"
+        },
+        {
+          "page_number": 14,
+          "text": "companies for a portfolio investment domiciled outside Mauritius. The ",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 233.63031005859375,
+            "x1": 526.4600830078125,
+            "y1": 249.17259216308594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-6"
+        },
+        {
+          "page_number": 14,
+          "text": "investment made by the assessees in the Singapore Co., with an Indian ",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 265.8203125,
+            "x1": 526.9094848632812,
+            "y1": 281.36260986328125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-7"
+        },
+        {
+          "page_number": 14,
+          "text": "subsidiary, was with a prime objective of obtaining benefits under the DTAA ",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 297.9803466796875,
+            "x1": 526.9373168945312,
+            "y1": 313.52264404296875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-8"
+        },
+        {
+          "page_number": 14,
+          "text": "between Mauritius and India, and between Mauritius and Singapore. The AAR ",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 330.1403503417969,
+            "x1": 526.88671875,
+            "y1": 345.6826477050781,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-9"
+        },
+        {
+          "page_number": 14,
+          "text": "further noted that the assessees were part of Tiger Global Management LLC, ",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 362.42034912109375,
+            "x1": 526.9299926757812,
+            "y1": 377.962646484375,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-10"
+        },
+        {
+          "page_number": 14,
+          "text": "USA, and were held through its affiliates via a web of entities based in the ",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 394.5803527832031,
+            "x1": 526.9205322265625,
+            "y1": 410.1226501464844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-11"
+        },
+        {
+          "page_number": 14,
+          "text": "Cayman Islands and Mauritius. Though the holding subsidiary structure might ",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 426.7403259277344,
+            "x1": 526.7019653320312,
+            "y1": 442.2826232910156,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-12"
+        },
+        {
+          "page_number": 14,
+          "text": "not be conclusive proof of tax avoidance, the purpose for which the subsidiaries ",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 459.04034423828125,
+            "x1": 526.63134765625,
+            "y1": 474.5826416015625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-13"
+        },
+        {
+          "page_number": 14,
+          "text": "were set up does indicate the real intention behind the structure.  ",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 491.2003479003906,
+            "x1": 436.3000183105469,
+            "y1": 506.7426452636719,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-14"
+        },
+        {
+          "page_number": 14,
+          "text": "6.4. \nAccording to the AAR, the fact that the assessee companies were set up ",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 523.3603515625,
+            "x1": 526.8759155273438,
+            "y1": 538.9026489257812,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-15"
+        },
+        {
+          "page_number": 14,
+          "text": "for making investments in order to derive benefits under the DTAA between ",
+          "block_type": "TEXT",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 555.640380859375,
+            "x1": 526.785888671875,
+            "y1": 571.1826782226562,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-16"
+        },
+        {
+          "page_number": 14,
+          "text": "Mauritius and India was an inescapable conclusion. The assessees had not ",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 587.8003540039062,
+            "x1": 526.9166259765625,
+            "y1": 603.3426513671875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-17"
+        },
+        {
+          "page_number": 14,
+          "text": "explained why Mr. Charles P. Coleman, who was not based in Mauritius, was ",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 619.9903564453125,
+            "x1": 526.909423828125,
+            "y1": 635.5326538085938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-18"
+        },
+        {
+          "page_number": 14,
+          "text": "appointed to sign the cheques on the Mauritius bank account. Further,             ",
+          "block_type": "TEXT",
+          "reading_order": 19,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 652.2703247070312,
+            "x1": 568.6900024414062,
+            "y1": 667.8126220703125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-19"
+        },
+        {
+          "page_number": 14,
+          "text": "Mr. Charles P. Coleman was the beneficial owner, as disclosed by the assessees ",
+          "block_type": "TEXT",
+          "reading_order": 20,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 684.4303588867188,
+            "x1": 526.9299926757812,
+            "y1": 699.97265625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-20"
+        },
+        {
+          "page_number": 14,
+          "text": "in the application form for a GBL-I filed with the Mauritius FSC. Mr. Coleman ",
+          "block_type": "TEXT",
+          "reading_order": 21,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 716.59033203125,
+            "x1": 526.9300537109375,
+            "y1": 732.1326293945312,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-21"
+        },
+        {
+          "page_number": 14,
+          "text": "was also the authorised signatory for the immediate parent companies of the ",
+          "block_type": "TEXT",
+          "reading_order": 22,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 748.8663330078125,
+            "x1": 526.9161376953125,
+            "y1": 764.4086303710938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-14-block-22"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 15,
+      "parser": "FAST_TEXT",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 15,
+          "text": "15 \n ",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 38.160003662109375,
+            "x1": 305.7850341796875,
+            "y1": 62.6400032043457,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-0"
+        },
+        {
+          "page_number": 15,
+          "text": "assessees viz., Tiger Global Five Percent Holdings and Tiger Global Six Percent ",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 72.59033203125,
+            "x1": 526.5248413085938,
+            "y1": 88.13261413574219,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-1"
+        },
+        {
+          "page_number": 15,
+          "text": "Holdings, and was the sole Director of the ultimate holding companies, Tiger ",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 104.7503662109375,
+            "x1": 526.90673828125,
+            "y1": 120.29264831542969,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-2"
+        },
+        {
+          "page_number": 15,
+          "text": "Global PIP Management V Limited and Tiger Global PIP Management VI ",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 137.03033447265625,
+            "x1": 526.4425048828125,
+            "y1": 152.57261657714844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-3"
+        },
+        {
+          "page_number": 15,
+          "text": "Limited. Thus, the appointment of Mr. Charles P. Coleman as the authorised ",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 169.19036865234375,
+            "x1": 526.9288940429688,
+            "y1": 184.73265075683594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-4"
+        },
+        {
+          "page_number": 15,
+          "text": "signatory of bank cheques above the prescribed limit could not be considered a ",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 201.350341796875,
+            "x1": 526.8060302734375,
+            "y1": 216.8926239013672,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-5"
+        },
+        {
+          "page_number": 15,
+          "text": "mere coincidence. While the decisions for investment or sale were taken by the ",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 233.63031005859375,
+            "x1": 526.8701171875,
+            "y1": 249.17259216308594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-6"
+        },
+        {
+          "page_number": 15,
+          "text": "Boards of Directors of the assessees, the real control over decisions involving ",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 265.8203125,
+            "x1": 526.9304809570312,
+            "y1": 281.36260986328125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-7"
+        },
+        {
+          "page_number": 15,
+          "text": "any transaction over USD 2,50,000 was exercised only by Mr. Charles P. ",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 297.9803466796875,
+            "x1": 526.8228759765625,
+            "y1": 313.52264404296875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-8"
+        },
+        {
+          "page_number": 15,
+          "text": "Coleman. He was thus controlling the decisions of the Boards of Directors of ",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 330.1403503417969,
+            "x1": 526.7937622070312,
+            "y1": 345.6826477050781,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-9"
+        },
+        {
+          "page_number": 15,
+          "text": "the assessees through the non-resident Director, Mr. Steven Boyd, who was ",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 362.42034912109375,
+            "x1": 526.8668823242188,
+            "y1": 377.962646484375,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-10"
+        },
+        {
+          "page_number": 15,
+          "text": "accountable to him. Therefore, the AAR concluded that the head and brain of ",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 394.5803527832031,
+            "x1": 526.3441772460938,
+            "y1": 410.1226501464844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-11"
+        },
+        {
+          "page_number": 15,
+          "text": "the companies and, consequently, their control and management were situated ",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 426.7403259277344,
+            "x1": 526.7889404296875,
+            "y1": 442.2826232910156,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-12"
+        },
+        {
+          "page_number": 15,
+          "text": "not in Mauritius but outside, particularly in the USA. ",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 459.04034423828125,
+            "x1": 372.70001220703125,
+            "y1": 474.5826416015625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-13"
+        },
+        {
+          "page_number": 15,
+          "text": "6.5. \nThough the assessees contended that the holding structure of the ",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 491.2003479003906,
+            "x1": 526.397705078125,
+            "y1": 506.7426452636719,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-14"
+        },
+        {
+          "page_number": 15,
+          "text": "applicants has no relevance in determining whether the transaction was prima ",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 523.3603515625,
+            "x1": 526.9227294921875,
+            "y1": 538.9026489257812,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-15"
+        },
+        {
+          "page_number": 15,
+          "text": "facie designed for avoidance of tax, the AAR held that it was not the holding ",
+          "block_type": "TEXT",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 555.640380859375,
+            "x1": 526.78759765625,
+            "y1": 571.1826782226562,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-16"
+        },
+        {
+          "page_number": 15,
+          "text": "structure alone that was relevant; rather, the holding structure coupled with the ",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 587.8003540039062,
+            "x1": 526.9299926757812,
+            "y1": 603.3426513671875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-17"
+        },
+        {
+          "page_number": 15,
+          "text": "prima facie management and control of the holding structure, including the ",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 619.9903564453125,
+            "x1": 526.5142822265625,
+            "y1": 635.5326538085938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-18"
+        },
+        {
+          "page_number": 15,
+          "text": "management and control of the applicants, were relevant factors for determining ",
+          "block_type": "TEXT",
+          "reading_order": 19,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 652.2703247070312,
+            "x1": 526.7628173828125,
+            "y1": 667.8126220703125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-19"
+        },
+        {
+          "page_number": 15,
+          "text": "the design for avoidance of tax. Further, the real management and control of the ",
+          "block_type": "TEXT",
+          "reading_order": 20,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 684.4303588867188,
+            "x1": 526.7828979492188,
+            "y1": 699.97265625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-20"
+        },
+        {
+          "page_number": 15,
+          "text": "assessees were not with their respective Boards of Directors, but with ",
+          "block_type": "TEXT",
+          "reading_order": 21,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 716.59033203125,
+            "x1": 526.4285278320312,
+            "y1": 732.1326293945312,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-21"
+        },
+        {
+          "page_number": 15,
+          "text": "Mr.Charles P. Coleman, the beneficial owner of the entire group structure. The ",
+          "block_type": "TEXT",
+          "reading_order": 22,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 748.8663330078125,
+            "x1": 526.4706420898438,
+            "y1": 764.4086303710938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-15-block-22"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 16,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 16,
+          "text": "assessee companies were only \"see-through entities\" to avail the benefits of the DTAA.",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 722.30128,
+            "x1": 523.52284,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-16-block-0"
+        },
+        {
+          "page_number": 16,
+          "text": "6.6. The AAR also pointed out that it is a settled principle that a treaty is to be interpreted in good faith. The context and purpose of the treaty must be determined on the basis of the preamble and annexures, including the agreement, subsequent agreements regarding the interpretation of the terms of the treaties, and relevant international rules applicable to the agreement. Circular No.682 dated 30.03.1994 issued by the Central Board of Direct Taxes 11 had clarified that any resident of Mauritius deriving income from the alienation of shares of Indian companies would be liable to capital gains tax only in Mauritius, as per the Mauritius tax law, and would not have any capital gains tax liability in India. It was evident from this Circular that what was exempted for a resident of Mauritius was capital gains derived from the alienation of shares of an Indian company. In the present case, capital gains had not been derived from the alienation of shares of any Indian resident; rather, the assessees sought relief in respect of capital gains arising from the sale of shares of a Singapore Co. The Protocol for Amendment of the Convention for Avoidance of Double Taxation between India and Mauritius was signed on 10.05.2016, which provided that taxation of capital gains arising from the alienation of shares acquired on or after 01.04.2017 in a company resident in India would be on a source basis with effect from the financial year 2017-18. At the same time,",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 110.46127999999999,
+            "x1": 523.5337599999999,
+            "y1": 702.10972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-16-block-1"
+        },
+        {
+          "page_number": 16,
+          "text": "11 For short, \"CBDT\"",
+          "block_type": "OTHER",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 72.44928000000004,
+            "x1": 166.45391999999998,
+            "y1": 83.08727999999996,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-16-block-2"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 17,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 17,
+          "text": "17",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 292.13,
+            "y0": 792.72,
+            "x1": 303.36726000000004,
+            "y1": 803.76,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-17-block-0"
+        },
+        {
+          "page_number": 17,
+          "text": "investments made before 01.04.2017 were grandfathered and not subject to capital gains tax in India. Thus, even under the amended DTAA between India and Mauritius, what was not taxable was capital gains arising from the sale of shares of a company resident in India.",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 657.8612800000001,
+            "x1": 523.4909200000001,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-17-block-1"
+        },
+        {
+          "page_number": 17,
+          "text": "6.7. Therefore, the AAR found that exemption from capital gains tax on the sale of shares of a company not resident in India was never intended under either the original or the amended DTAA between India and Mauritius. In view of the clear stipulations in the DTAA, the assessees were not entitled to claim the benefit of exemption of capital gains on the sale of shares of a Singapore Co. and hence, failed on merits as well as on the ground of treaty eligibility. The assessees disputed the contention of the Revenue that tax residency in Mauritius was established only to take advantage of the DTAA. They submitted that Mauritius' comprehensive tax treaty network with various countries, and not just India, facilitated efficient asset management and competitive returns for their investors. According to them, the mere fact of obtaining a TRC to avail treaty benefits does not render the transaction a colourable device for tax avoidance. It had been held by this Court in Vodafone International Holdings BV v. Union of India 12 that the DTAA and Circular No.789 dated 13.04.2000 would not preclude the Income Tax Department from denying treaty benefits in suitable cases. It was further held that the Department is entitled to examine the",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 126.54128000000003,
+            "x1": 523.52284,
+            "y1": 621.7097200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-17-block-2"
+        },
+        {
+          "page_number": 17,
+          "text": "12 (2012) 6 SCC 613 (3 Judge Bench)",
+          "block_type": "OTHER",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 72.44928000000004,
+            "x1": 236.93328,
+            "y1": 83.08727999999996,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-17-block-3"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 18,
+      "parser": "FAST_TEXT",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 18,
+          "text": "18 \n ",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 38.160003662109375,
+            "x1": 305.7850341796875,
+            "y1": 62.6400032043457,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-0"
+        },
+        {
+          "page_number": 18,
+          "text": "entire transaction as a whole, and if it is established that the Mauritian company ",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 72.59033203125,
+            "x1": 526.6138305664062,
+            "y1": 88.13261413574219,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-1"
+        },
+        {
+          "page_number": 18,
+          "text": "was interposed as a device, it would be open to the Department to discard the ",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 104.7503662109375,
+            "x1": 526.5835571289062,
+            "y1": 120.29264831542969,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-2"
+        },
+        {
+          "page_number": 18,
+          "text": "device and subject the real transaction to tax. ",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 137.03033447265625,
+            "x1": 327.46002197265625,
+            "y1": 152.57261657714844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-3"
+        },
+        {
+          "page_number": 18,
+          "text": "6.8. \nThe AAR further found that though tax residency was claimed to have ",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 169.19036865234375,
+            "x1": 526.8269653320312,
+            "y1": 184.73265075683594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-4"
+        },
+        {
+          "page_number": 18,
+          "text": "been established to take advantage of Mauritius’ treaty network with various ",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 201.350341796875,
+            "x1": 526.7288208007812,
+            "y1": 216.8926239013672,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-5"
+        },
+        {
+          "page_number": 18,
+          "text": "countries and not just India, in effect, the entire investment made by the ",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 233.63031005859375,
+            "x1": 526.657470703125,
+            "y1": 249.17259216308594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-6"
+        },
+        {
+          "page_number": 18,
+          "text": "assessees was only in the Singapore Co. in respect of which the benefit of the ",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 265.8203125,
+            "x1": 526.9205322265625,
+            "y1": 281.36260986328125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-7"
+        },
+        {
+          "page_number": 18,
+          "text": "DTAA was being claimed. All three assessees had made no investment other ",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 297.9803466796875,
+            "x1": 526.8232421875,
+            "y1": 313.52264404296875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-8"
+        },
+        {
+          "page_number": 18,
+          "text": "than in the shares of Flipkart. Thus, the real intention of the assessees was to ",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 330.1403503417969,
+            "x1": 526.2739868164062,
+            "y1": 345.6826477050781,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-9"
+        },
+        {
+          "page_number": 18,
+          "text": "avail the benefit of the DTAA. Accordingly, the AAR concluded that the ",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 362.42034912109375,
+            "x1": 526.8821411132812,
+            "y1": 377.962646484375,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-10"
+        },
+        {
+          "page_number": 18,
+          "text": "assessees failed to satisfy the yardsticks laid down by this Court in Vodafone. ",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 394.5803527832031,
+            "x1": 526.9299926757812,
+            "y1": 410.1226501464844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-11"
+        },
+        {
+          "page_number": 18,
+          "text": "There was no foreign direct investment made by the assessee companies in ",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 426.7403259277344,
+            "x1": 526.3020629882812,
+            "y1": 442.2826232910156,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-12"
+        },
+        {
+          "page_number": 18,
+          "text": "India, and therefore, no participation in investment arose. The assessees had ",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 459.04034423828125,
+            "x1": 526.8143310546875,
+            "y1": 474.5826416015625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-13"
+        },
+        {
+          "page_number": 18,
+          "text": "invested in shares of Flipkart, a Singapore Co., and thus, the immediate ",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 491.2003479003906,
+            "x1": 526.726318359375,
+            "y1": 506.7426452636719,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-14"
+        },
+        {
+          "page_number": 18,
+          "text": "investment destination was Singapore and not India. Consequently, the ",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 523.3603515625,
+            "x1": 526.9141845703125,
+            "y1": 538.9026489257812,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-15"
+        },
+        {
+          "page_number": 18,
+          "text": "assessees also failed on other parameters, viz., the period of business operation ",
+          "block_type": "TEXT",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 555.640380859375,
+            "x1": 526.722900390625,
+            "y1": 571.1826782226562,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-16"
+        },
+        {
+          "page_number": 18,
+          "text": "in India, generation of tax revenue in India, timing of exit, and continuity of ",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 587.8003540039062,
+            "x1": 526.8090209960938,
+            "y1": 603.3426513671875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-17"
+        },
+        {
+          "page_number": 18,
+          "text": "business on such exit. In the absence of any strategic foreign direct investment ",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 619.9903564453125,
+            "x1": 526.3863525390625,
+            "y1": 635.5326538085938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-18"
+        },
+        {
+          "page_number": 18,
+          "text": "in India, there was neither any business operation in India nor any taxable ",
+          "block_type": "TEXT",
+          "reading_order": 19,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 652.2703247070312,
+            "x1": 526.8909912109375,
+            "y1": 667.8126220703125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-19"
+        },
+        {
+          "page_number": 18,
+          "text": "revenue generated. Thus, the arrangement was held to be a preordained ",
+          "block_type": "TEXT",
+          "reading_order": 20,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 684.4303588867188,
+            "x1": 526.4425048828125,
+            "y1": 699.97265625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-20"
+        },
+        {
+          "page_number": 18,
+          "text": "transaction created for the purpose of tax avoidance. ",
+          "block_type": "TEXT",
+          "reading_order": 21,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 716.59033203125,
+            "x1": 368.6199951171875,
+            "y1": 732.1326293945312,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-18-block-21"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 19,
+      "parser": "FAST_TEXT",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 19,
+          "text": "19 \n ",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 38.160003662109375,
+            "x1": 305.7850341796875,
+            "y1": 62.6400032043457,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-0"
+        },
+        {
+          "page_number": 19,
+          "text": "6.9. \nUltimately, the AAR held that the question raised in the applications filed ",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 72.59033203125,
+            "x1": 526.843994140625,
+            "y1": 88.13261413574219,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-1"
+        },
+        {
+          "page_number": 19,
+          "text": "under Section 197 was prima facie designed for avoidance of tax. Though the ",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 104.7503662109375,
+            "x1": 526.7109375,
+            "y1": 120.29264831542969,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-2"
+        },
+        {
+          "page_number": 19,
+          "text": "assessees contended that the shares of the Singapore Co. derived their value ",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 137.03033447265625,
+            "x1": 526.8021850585938,
+            "y1": 152.57261657714844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-3"
+        },
+        {
+          "page_number": 19,
+          "text": "substantially from assets located in India and that they were eligible to claim ",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 169.19036865234375,
+            "x1": 526.9141235351562,
+            "y1": 184.73265075683594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-4"
+        },
+        {
+          "page_number": 19,
+          "text": "benefit under Article 13(4) of the DTAA, the fact remained that what was ",
+          "block_type": "TEXT",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 201.350341796875,
+            "x1": 526.9158325195312,
+            "y1": 216.8926239013672,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-5"
+        },
+        {
+          "page_number": 19,
+          "text": "transferred were shares of the Singapore Co. and not of an Indian company. The ",
+          "block_type": "TEXT",
+          "reading_order": 6,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 233.63031005859375,
+            "x1": 526.68798828125,
+            "y1": 249.17259216308594,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-6"
+        },
+        {
+          "page_number": 19,
+          "text": "objective of the DTAA was to allow exemption of capital gains only on the ",
+          "block_type": "TEXT",
+          "reading_order": 7,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 265.8203125,
+            "x1": 526.9205322265625,
+            "y1": 281.36260986328125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-7"
+        },
+        {
+          "page_number": 19,
+          "text": "transfer of shares of an Indian company, and any such exemption in respect of ",
+          "block_type": "TEXT",
+          "reading_order": 8,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 297.9803466796875,
+            "x1": 526.9368286132812,
+            "y1": 313.52264404296875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-8"
+        },
+        {
+          "page_number": 19,
+          "text": "shares of a company not resident in India was never intended by the legislature. ",
+          "block_type": "TEXT",
+          "reading_order": 9,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 330.1403503417969,
+            "x1": 526.9044799804688,
+            "y1": 345.6826477050781,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-9"
+        },
+        {
+          "page_number": 19,
+          "text": "Further, the actual control and management of the assessees were not in ",
+          "block_type": "TEXT",
+          "reading_order": 10,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 362.42034912109375,
+            "x1": 526.8965454101562,
+            "y1": 377.962646484375,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-10"
+        },
+        {
+          "page_number": 19,
+          "text": "Mauritius but in the USA with Mr. Charles P. Coleman, the beneficial owner of ",
+          "block_type": "TEXT",
+          "reading_order": 11,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 394.5803527832031,
+            "x1": 526.4437255859375,
+            "y1": 410.1226501464844,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-11"
+        },
+        {
+          "page_number": 19,
+          "text": "the entire group structure. Accordingly, AAR Nos. 04/2019, 05/2019 and ",
+          "block_type": "TEXT",
+          "reading_order": 12,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 426.7403259277344,
+            "x1": 526.7376708984375,
+            "y1": 442.2826232910156,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-12"
+        },
+        {
+          "page_number": 19,
+          "text": "07/2019 were dismissed, with the AAR holding that the transaction in respect of ",
+          "block_type": "TEXT",
+          "reading_order": 13,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 459.04034423828125,
+            "x1": 526.5595092773438,
+            "y1": 474.5826416015625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-13"
+        },
+        {
+          "page_number": 19,
+          "text": "which the ruling was sought was prima facie designed for avoidance of tax and ",
+          "block_type": "TEXT",
+          "reading_order": 14,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 491.2003479003906,
+            "x1": 526.6990356445312,
+            "y1": 506.7426452636719,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-14"
+        },
+        {
+          "page_number": 19,
+          "text": "fell within clause (iii) of the proviso to Section 245R(2) of the Act. In view ",
+          "block_type": "TEXT",
+          "reading_order": 15,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 523.3603515625,
+            "x1": 526.6123046875,
+            "y1": 538.9026489257812,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-15"
+        },
+        {
+          "page_number": 19,
+          "text": "thereof, the AAR held that it was not obliged to render findings on the merits of ",
+          "block_type": "TEXT",
+          "reading_order": 16,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 555.640380859375,
+            "x1": 526.4161987304688,
+            "y1": 571.1826782226562,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-16"
+        },
+        {
+          "page_number": 19,
+          "text": "the question whether the assessees were entitled to the benefits of the DTAA ",
+          "block_type": "TEXT",
+          "reading_order": 17,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 587.8003540039062,
+            "x1": 526.9302978515625,
+            "y1": 603.3426513671875,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-17"
+        },
+        {
+          "page_number": 19,
+          "text": "between India and Mauritius in respect of the sale of shares of Flipkart, a private ",
+          "block_type": "TEXT",
+          "reading_order": 18,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 619.9903564453125,
+            "x1": 526.9161376953125,
+            "y1": 635.5326538085938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-18"
+        },
+        {
+          "page_number": 19,
+          "text": "company incorporated under the laws of Singapore, or on the taxability of ",
+          "block_type": "TEXT",
+          "reading_order": 19,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 652.2703247070312,
+            "x1": 526.8748168945312,
+            "y1": 667.8126220703125,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-19"
+        },
+        {
+          "page_number": 19,
+          "text": "capital gains arising therefrom. The assessees had sought to derive benefit from ",
+          "block_type": "TEXT",
+          "reading_order": 20,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 684.4303588867188,
+            "x1": 526.5866088867188,
+            "y1": 699.97265625,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-20"
+        },
+        {
+          "page_number": 19,
+          "text": "Article 13(3A) of the DTAA, contending that acquisitions of shares prior to ",
+          "block_type": "TEXT",
+          "reading_order": 21,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 716.59033203125,
+            "x1": 526.724609375,
+            "y1": 732.1326293945312,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-21"
+        },
+        {
+          "page_number": 19,
+          "text": "01.04.2017 stood grandfathered and that gains arising therefrom were exempt ",
+          "block_type": "TEXT",
+          "reading_order": 22,
+          "source_coordinates": {
+            "x0": 72.02400207519531,
+            "y0": 748.8663330078125,
+            "x1": 526.6481323242188,
+            "y1": 764.4086303710938,
+            "unit": "PDF_POINT",
+            "origin": "TOP_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-19-block-22"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    },
+    {
+      "page_number": 20,
+      "parser": "DOCLING",
+      "status": "PARSED",
+      "blocks": [
+        {
+          "page_number": 20,
+          "text": "20",
+          "block_type": "TEXT",
+          "reading_order": 0,
+          "source_coordinates": {
+            "x0": 292.13,
+            "y0": 792.72,
+            "x1": 303.36726000000004,
+            "y1": 803.76,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-20-block-0"
+        },
+        {
+          "page_number": 20,
+          "text": "from taxation. As the shares of Flipkart, Singapore, had been admittedly acquired prior to 01.04.2017, the assessees claimed exemption from capital gains tax. The AAR rejected the claim, holding that the assessees were mere conduit companies, lacking commercial substance, and were disentitled to claim DTAA benefits.",
+          "block_type": "TEXT",
+          "reading_order": 1,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 625.70128,
+            "x1": 523.0309200000004,
+            "y1": 766.5497200000001,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-20-block-1"
+        },
+        {
+          "page_number": 20,
+          "text": "6.10. In conclusion, the AAR held that the entire arrangement entered into by the assessees was intended to claim benefits under the DTAA in a manner not contemplated by the lawmakers and constituted an arrangement for avoidance of tax in India. Consequently, the bar under clause (iii) of the proviso to Section 245R(2) of the Act was held to be squarely applicable, and the applications filed by the assessees were rejected.",
+          "block_type": "TEXT",
+          "reading_order": 2,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 432.47128,
+            "x1": 523.36444,
+            "y1": 605.50972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-20-block-2"
+        },
+        {
+          "page_number": 20,
+          "text": "(B) HIGH COURT",
+          "block_type": "TEXT",
+          "reading_order": 3,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 384.14573818181816,
+            "x1": 199.78544,
+            "y1": 395.95508,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-20-block-3"
+        },
+        {
+          "page_number": 20,
+          "text": "6.11. On the preliminary objections raised by the Revenue, the High Court found that the Commissioner of Income Tax 13 , after referring to a detailed examination conducted by the Department during the Section 197 certification process, had concluded that the question of chargeability of capital gains and the identification of the beneficial owner, upon piercing the corporate veil, had already been determined. In light of the same, and in the absence of any change in factual circumstances, the CIT had urged the AAR to reject the applications made by the respondents. The High Court observed that the tone and tenor of",
+          "block_type": "TEXT",
+          "reading_order": 4,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 126.54128000000003,
+            "x1": 523.46356,
+            "y1": 364.01972,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-20-block-4"
+        },
+        {
+          "page_number": 20,
+          "text": "13 For short, \"CIT\"",
+          "block_type": "OTHER",
+          "reading_order": 5,
+          "source_coordinates": {
+            "x0": 72.024,
+            "y0": 72.44928000000004,
+            "x1": 154.81776000000002,
+            "y1": 83.08727999999996,
+            "unit": "PDF_POINT",
+            "origin": "BOTTOM_LEFT"
+          },
+          "confidence": null,
+          "block_id": "page-20-block-5"
+        }
+      ],
+      "failure": null,
+      "warnings": []
+    }
+  ],
+  "document_failure": null
+}
