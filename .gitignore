@@ -4,3 +4,5 @@
 .pytest_cache/
 .uv-cache/
 .pytest-tmp-ontology-review/
+.ruff_cache/
+.pytest-*/
