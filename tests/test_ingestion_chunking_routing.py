@@ -4,7 +4,6 @@ from pydantic import ValidationError
 from src.ingestion.chunking import (
     ChunkingConfig,
     ChunkingPreparation,
-    PreparedPage,
     prepare_document_for_chunking,
 )
 from src.ingestion.parser_contracts import (

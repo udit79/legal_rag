@@ -242,6 +242,7 @@ def test_structured_parser_preserves_docling_coordinate_origin_and_bounds(
     tmp_path: Path,
     coord_origin: CoordOrigin,
     expected_origin: str,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     source = make_pdf(tmp_path / "structured.pdf", page_count=2)
     bbox = SimpleNamespace(
@@ -257,13 +258,13 @@ def test_structured_parser_preserves_docling_coordinate_origin_and_bounds(
         text = None
         prov = [SimpleNamespace(page_no=2, bbox=bbox)]
 
-        def export_to_markdown(self, *, doc):
-            assert doc is not None
-            return "| Item |\n| --- |\n| Contract review |"
-
     class FakeDocument:
         def iterate_items(self) -> Iterable[tuple[object, object]]:
             yield Table(), 0
+
+    class FakeTableSerializer:
+        def serialize(self, *, item):
+            return SimpleNamespace(text="| Item |\n| --- |\n| Contract review |")
 
     class FakeResult:
         status: object
@@ -288,6 +289,10 @@ def test_structured_parser_preserves_docling_coordinate_origin_and_bounds(
             assert not raises_on_error
             return FakeResult()
 
+    monkeypatch.setattr(
+        "src.ingestion.parsers._captionless_table_serializer",
+        lambda document: FakeTableSerializer(),
+    )
     page = StructuredParser(converter=FakeConverter()).parse_page(source, 2)
 
     tables = [block for block in page.blocks if block.block_type == "TABLE"]

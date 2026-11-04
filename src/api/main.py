@@ -67,7 +67,7 @@ async def check_neo4j(db:DbConnect=Depends(get_db)):
     except ConnectionError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=f"Instance connection is not established."
+                    detail="Instance connection is not established."
                 )from exc
     query:LiteralString="RETURN 'System is Ready' AS connection_test"
     try:
@@ -76,30 +76,30 @@ async def check_neo4j(db:DbConnect=Depends(get_db)):
     except ServiceUnavailable as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Neo4j server is unreachable or unavailable."
+            detail="Neo4j server is unreachable or unavailable."
         )from exc
     except SessionExpired as exc:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"The database session has expired, often due to a connection problem."
+                detail="The database session has expired, often due to a connection problem."
             )from exc
     except ConnectionError as exc:
                     raise HTTPException(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        detail=f"Instance connection is not established."
+                        detail="Instance connection is not established."
                     )from exc
     except AuthError as exc:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"The required database dependency cannot be used because authentication failed. Also log this as a configuration/operational error"
+                detail="The required database dependency cannot be used because authentication failed. Also log this as a configuration/operational error"
             )from exc
     except DriverError as exc:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"driver or connectivity failure"
+                detail="driver or connectivity failure"
             )from exc
     except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unanticipated programming errors or failures not classified as dependency outages."
+                detail="Unanticipated programming errors or failures not classified as dependency outages."
             )from exc

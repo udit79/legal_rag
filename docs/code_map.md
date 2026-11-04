@@ -146,7 +146,7 @@ routing, M5 TEXT/OTHER packing, M6 isolated TABLE/IMAGE handling, and final
 reports. `segmentation.py` implements the six M3 boundary primitives and the
 M4 recursive boundary ladder. `chunk_document()` builds each `ChunkSource`
 from the canonical block and atom offsets, preserving exact source slices and
-the configured separator policy. Algorithm version is `1.2.0`. See
+the configured separator and overlap policy. Algorithm version is `1.3.0`. See
 [`blp1_chunking.md`](blp1_chunking.md) for the BLP-1 algorithm and its current
 limits. `block_id` is deterministic from one-based page number and zero-based
 reading order within a canonical document representation, but may change if

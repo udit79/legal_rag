@@ -1,3 +1,5 @@
+import pytest
+
 from src.ingestion.contracts import DocumentFeatures, PageFeatures
 from src.ingestion.router import route_document
 
@@ -20,8 +22,6 @@ def make_features(*counts: tuple[int, int, int]) -> DocumentFeatures:
         page_count=len(pages),
         pages=pages,
     )
-
-import pytest
 
 @pytest.mark.parametrize(
     ("counts", "expected_route"),

@@ -1,5 +1,5 @@
 from typing import Annotated, Literal
-from pydantic import BaseModel,ConfigDict,Field,StringConstraints,computed_field,model_validator
+from pydantic import BaseModel,ConfigDict,Field,StringConstraints,model_validator
 from src.ingestion.contracts import DocumentDisposition, PositiveInt
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -28,12 +28,27 @@ class CanonicalBlock(BaseModel):
     text: str
     block_type: BlockType
     reading_order: NonNegativeInt
+    block_id: NonEmptyStr = Field(default="", validate_default=True)
     source_coordinates: SourceCoordinates
     confidence: Annotated[float, Field(ge=0.0, le=100.0)] | None = None
-    @computed_field
-    @property
-    def block_id(self) -> str:
-        return canonical_block_id(self.page_number, self.reading_order)
+
+    @model_validator(mode="before")
+    @classmethod
+    def assign_default_block_id(cls, value: object) -> object:
+        if isinstance(value, dict) and "block_id" not in value:
+            value = dict(value)
+            value["block_id"] = canonical_block_id(
+                value["page_number"], value["reading_order"]
+            )
+        return value
+
+    @model_validator(mode="after")
+    def validate_block_id_scope(self) -> "CanonicalBlock":
+        prefix = f"page-{self.page_number}-block-"
+        suffix = self.block_id.removeprefix(prefix)
+        if not self.block_id.startswith(prefix) or not suffix.isascii() or not suffix.isdecimal():
+            raise ValueError("Block ID must retain its page-scoped canonical format")
+        return self
 
 def canonical_block_id(page_number: int, reading_order: int) -> str:return f"page-{page_number}-block-{reading_order}"
 
@@ -60,6 +75,9 @@ class CanonicalPage(BaseModel):
         reading_orders = tuple(block.reading_order for block in self.blocks)
         if reading_orders != tuple(range(len(self.blocks))):
             raise ValueError("Block reading order must be contiguous and ascending")
+        block_ids = tuple(block.block_id for block in self.blocks)
+        if len(block_ids) != len(set(block_ids)):
+            raise ValueError("Block IDs must be unique within a page")
         if self.status == "FAILED":
             if self.failure is None or self.blocks:
                 raise ValueError(

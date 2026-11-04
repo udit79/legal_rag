@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from bisect import bisect_left
 from collections.abc import Iterable
 from typing import Annotated, Literal
 
@@ -26,7 +27,7 @@ from src.ingestion.parser_contracts import (
     ParserFailure,
 )
 
-CHUNKING_ALGORITHM_VERSION = "1.2.0"
+CHUNKING_ALGORITHM_VERSION = "1.3.0"
 PROVISION_MARKER_PATTERNS = (
     r"(?m)^[ \t]*(?!20[0-9]{2}\.[ \t]+[A-Z])[0-9]+(?:\.[0-9]+)*(?:[.)])?(?=[ \t]|$)",
     (
@@ -84,6 +85,10 @@ class ChunkingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, validate_default=True)
 
     max_chunk_chars: Annotated[int, Field(ge=16, strict=True)] = 1500
+    overlap_chars: Annotated[int, Field(ge=0, strict=True)] = Field(
+        default=100,
+        description="Maximum source context repeated between adjacent text chunks; capped at one quarter of the chunk budget.",
+    )
     synthetic_separator: _NonEmptyLiteralString = "\n\n"
     marker_breaks: bool = Field(default=True, strict=True)
     marker_break_min_pct: Annotated[int, Field(ge=0, le=100, strict=True)] = 25
@@ -511,7 +516,30 @@ def _pack_page_text_blocks(
             raise InvalidChunkingStateError(
                 "Atom packer received a block outside its isolated block group"
             )
-        result = segment_oversized_text(block.text, config)
+        overlap_limit = (
+            min(config.overlap_chars, config.max_chunk_chars // 4)
+            if block.block_type in {"TEXT", "OTHER"}
+            else 0
+        )
+        segmentation_config = (
+            config.model_copy(
+                update={
+                    "max_chunk_chars": config.max_chunk_chars - overlap_limit
+                }
+            )
+            if overlap_limit
+            else config
+        )
+        result = segment_oversized_text(block.text, segmentation_config)
+        from src.ingestion.segmentation import (
+            _grapheme_boundaries,
+            paragraph_boundaries,
+        )
+
+        paragraph_starts = set(paragraph_boundaries(block.text))
+        safe_grapheme_boundaries = (
+            _grapheme_boundaries(block.text) if overlap_limit else ()
+        )
         unsafe_grapheme_cuts += sum(
             split.tier is BoundaryTier.GRAPHEME_HARD_CUT
             and split.is_grapheme_safe is False
@@ -545,7 +573,42 @@ def _pack_page_text_blocks(
                         raise InvalidChunkingStateError(
                             "A single M4 atom exceeds the configured chunk budget"
                         )
+                    previous_source = current_sources[-1]
+                    overlap_start = atom.start - overlap_limit
+                    can_overlap = (
+                        overlap_limit > 0
+                        and not starts_marker
+                        and atom.start not in paragraph_starts
+                        and previous_source.block_id == block.block_id
+                        and previous_source.end_offset == atom.start
+                    )
+                    if can_overlap:
+                        boundary_index = bisect_left(
+                            safe_grapheme_boundaries, atom.start - overlap_limit
+                        )
+                        if boundary_index < len(safe_grapheme_boundaries):
+                            boundary = safe_grapheme_boundaries[boundary_index]
+                            if boundary < atom.start:
+                                overlap_start = boundary
+                            else:
+                                overlap_start = atom.start
                     finish_chunk()
+                    if can_overlap and overlap_start < atom.start:
+                        overlap_text = block.text[overlap_start : atom.start]
+                        current_text_parts.append(overlap_text)
+                        current_length = len(overlap_text)
+                        current_sources.append(
+                            ChunkSource(
+                                page_number=block.page_number,
+                                block_id=block.block_id,
+                                block_reading_order=block.reading_order,
+                                block_type=block.block_type,
+                                source_text_length=len(block.text),
+                                start_offset=overlap_start,
+                                end_offset=atom.start,
+                            )
+                        )
+                        last_block_id = block.block_id
                     continue
 
                 if separator:

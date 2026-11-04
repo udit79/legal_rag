@@ -39,6 +39,8 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
+from src.ingestion.parsers import _docling_deprecation_compat
+
 
 def _find_corpus_dir() -> Path:
     here = Path(__file__).resolve().parent
@@ -210,7 +212,11 @@ def _expected_csv(relative_path: str) -> list[list[str]]:
 @pytest.fixture(scope="session")
 def docling_layout_converter() -> DocumentConverter:
     """Docling structured layout/table parsing without running its OCR engine."""
-    options = PdfPipelineOptions(do_ocr=False, do_table_structure=True)
+    options = PdfPipelineOptions(
+        do_ocr=False,
+        do_table_structure=True,
+        generate_page_images=True,
+    )
     return DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
     )
@@ -223,6 +229,7 @@ def docling_rapidocr_converter() -> DocumentConverter:
         do_ocr=True,
         ocr_options=RapidOcrOptions(),
         do_table_structure=True,
+        generate_page_images=True,
     )
     return DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
@@ -331,7 +338,8 @@ def test_docling_converts_ruled_and_borderless_tables(
     docling_layout_converter: DocumentConverter,
 ) -> None:
     source = pdf_path(4)
-    result = docling_layout_converter.convert(source)
+    with _docling_deprecation_compat():
+        result = docling_layout_converter.convert(source)
     doc = _assert_docling_success(result, source)
     tables = list(doc.tables)
     shapes_by_page: dict[int | None, list[tuple[int, int]]] = {}
@@ -360,7 +368,9 @@ def test_docling_preserves_multicolumn_clause_order(
     docling_layout_converter: DocumentConverter,
 ) -> None:
     source = pdf_path(5)
-    doc = _assert_docling_success(docling_layout_converter.convert(source), source)
+    with _docling_deprecation_compat():
+        converted = docling_layout_converter.convert(source)
+    doc = _assert_docling_success(converted, source)
     markdown = _docling_markdown(doc)
     expected: list[str] = []
     for page_spec in DOCS[5]["pages"]:
@@ -379,7 +389,9 @@ def test_docling_extracts_watermarked_document_body(
     docling_layout_converter: DocumentConverter,
 ) -> None:
     source = pdf_path(8)
-    doc = _assert_docling_success(docling_layout_converter.convert(source), source)
+    with _docling_deprecation_compat():
+        converted = docling_layout_converter.convert(source)
+    doc = _assert_docling_success(converted, source)
     markdown = norm(_docling_markdown(doc))
     for page_spec in DOCS[8]["pages"]:
         for block in expected_blocks(page_spec["ground_truth"]):
@@ -451,7 +463,8 @@ def test_docling_rapidocr_recovers_scanned_invoice_markers(
     docling_rapidocr_converter: DocumentConverter,
 ) -> None:
     source = pdf_path(2)
-    result = docling_rapidocr_converter.convert(source)
+    with _docling_deprecation_compat():
+        result = docling_rapidocr_converter.convert(source)
     doc = _assert_docling_success(result, source)
     actual = compact(_docling_markdown(doc))
     for marker in DOCS[2]["pages"][0]["ocr_tokens_must_contain"]:

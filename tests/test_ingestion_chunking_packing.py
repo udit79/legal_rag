@@ -42,7 +42,11 @@ def document(*pages):
 
 
 def run(*pages, config=None):
-    return chunk_document(document(*pages), "legal-doc", config or ChunkingConfig())
+    return chunk_document(
+        document(*pages),
+        "legal-doc",
+        config or ChunkingConfig(overlap_chars=0),
+    )
 
 
 def test_packs_one_block_and_multiple_blocks_with_synthetic_separator():
@@ -70,7 +74,7 @@ def test_closes_chunk_when_next_atom_would_exceed_character_budget():
     text = "abcdefghijklmnopqrstu"
     result = run(
         parsed_page(1, block(1, 0, "TEXT", text)),
-        config=ChunkingConfig(max_chunk_chars=16),
+        config=ChunkingConfig(max_chunk_chars=16, overlap_chars=0),
     )
 
     assert [chunk.text for chunk in result.document.chunks] == [text[:16], text[16:]]
@@ -86,7 +90,7 @@ def test_contiguous_atoms_from_one_block_merge_into_one_source_range():
     text = "One. Two. Three. Four. Five."
     result = run(
         parsed_page(1, block(1, 0, "TEXT", text)),
-        config=ChunkingConfig(max_chunk_chars=16),
+        config=ChunkingConfig(max_chunk_chars=16, overlap_chars=0),
     )
 
     assert len(result.document.chunks) > 1
@@ -98,6 +102,53 @@ def test_contiguous_atoms_from_one_block_merge_into_one_source_range():
     assert "".join(chunk.text for chunk in result.document.chunks) == text
 
 
+def test_paragraph_boundaries_do_not_receive_overlap_and_long_paragraphs_do():
+    paragraphs = "First paragraph.\n\nSecond paragraph."
+    paragraph_result = run(
+        parsed_page(1, block(1, 0, "TEXT", paragraphs)),
+        config=ChunkingConfig(max_chunk_chars=24, overlap_chars=8),
+    )
+    assert [chunk.text for chunk in paragraph_result.document.chunks] == [
+        "First paragraph.\n\n",
+        "Second paragraph.",
+    ]
+    assert paragraph_result.document.chunks[0].sources[0].end_offset == (
+        paragraph_result.document.chunks[1].sources[0].start_offset
+    )
+
+    long_paragraph = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    overlap_result = run(
+        parsed_page(1, block(1, 0, "TEXT", long_paragraph)),
+        config=ChunkingConfig(max_chunk_chars=16, overlap_chars=4),
+    )
+    chunks = overlap_result.document.chunks
+    assert all(len(chunk.text) <= 16 for chunk in chunks)
+    assert [chunk.text for chunk in chunks] == [
+        long_paragraph[:12],
+        long_paragraph[8:24],
+        long_paragraph[20:36],
+        long_paragraph[32:48],
+        long_paragraph[44:],
+    ]
+    assert [
+        (chunk.sources[0].start_offset, chunk.sources[0].end_offset)
+        for chunk in chunks
+    ] == [(0, 12), (8, 24), (20, 36), (32, 48), (44, len(long_paragraph))]
+
+    sentences = "The first sentence stays intact. The second sentence stays intact too."
+    sentence_result = run(
+        parsed_page(1, block(1, 0, "TEXT", sentences)),
+        config=ChunkingConfig(max_chunk_chars=48, overlap_chars=8),
+    )
+    assert sentence_result.document.chunks[0].text == "The first sentence stays intact. "
+    second_chunk = sentence_result.document.chunks[1]
+    second_source = second_chunk.sources[0]
+    assert second_source.start_offset is not None
+    assert second_source.end_offset == len(sentences)
+    assert second_chunk.text == sentences[second_source.start_offset :]
+    assert second_source.start_offset < len("The first sentence stays intact. ")
+
+
 def test_chunks_are_isolated_by_page_and_strong_marker_can_close_a_chunk():
     page_one = parsed_page(
         1,
@@ -107,7 +158,9 @@ def test_chunks_are_isolated_by_page_and_strong_marker_can_close_a_chunk():
     result = run(
         page_one,
         page_two,
-        config=ChunkingConfig(max_chunk_chars=16, marker_break_min_pct=25),
+        config=ChunkingConfig(
+            max_chunk_chars=16, overlap_chars=0, marker_break_min_pct=25
+        ),
     )
 
     assert all(
@@ -137,6 +190,7 @@ def test_marker_break_config_controls_strong_marker_closing(
         parsed_page(1, block(1, 0, "TEXT", text)),
         config=ChunkingConfig(
             max_chunk_chars=16,
+            overlap_chars=0,
             marker_breaks=marker_breaks,
             marker_break_min_pct=marker_break_min_pct,
         ),
@@ -152,7 +206,9 @@ def test_weak_list_marker_does_not_trigger_r2_chunk_closing():
     text = "Start.\n(a) xxxxxxxx more content to exceed the maximum size"
     result = run(
         parsed_page(1, block(1, 0, "TEXT", text)),
-        config=ChunkingConfig(max_chunk_chars=16, marker_break_min_pct=25),
+        config=ChunkingConfig(
+            max_chunk_chars=16, overlap_chars=0, marker_break_min_pct=25
+        ),
     )
 
     marker_chunk = next(chunk for chunk in result.document.chunks if "(a)" in chunk.text)
@@ -193,7 +249,7 @@ def test_separator_counts_toward_budget_but_has_no_source_range():
             block(1, 0, "TEXT", "1234567"),
             block(1, 1, "OTHER", "ABCDEFG"),
         ),
-        config=ChunkingConfig(max_chunk_chars=16),
+        config=ChunkingConfig(max_chunk_chars=16, overlap_chars=0),
     )
     overflow = run(
         parsed_page(
@@ -201,7 +257,7 @@ def test_separator_counts_toward_budget_but_has_no_source_range():
             block(1, 0, "TEXT", "12345678"),
             block(1, 1, "OTHER", "ABCDEFG"),
         ),
-        config=ChunkingConfig(max_chunk_chars=16),
+        config=ChunkingConfig(max_chunk_chars=16, overlap_chars=0),
     )
 
     assert exact.document.chunks[0].text == "1234567\n\nABCDEFG"
@@ -225,7 +281,7 @@ def test_sources_reconstruct_eligible_blocks_exactly_once_and_output_is_determin
         ),
         parsed_page(2, block(2, 0, "TEXT", "Second page.")),
     )
-    config = ChunkingConfig(max_chunk_chars=16)
+    config = ChunkingConfig(max_chunk_chars=16, overlap_chars=0)
     result = run(*pages, config=config)
     repeated = run(*pages, config=config)
     source_texts = {

@@ -2,7 +2,7 @@
 
 BLP-1 (Block-Anchored Ladder Packer) is the implemented chunking strategy for
 canonical ingestion output. The implementation currently uses algorithm
-version **1.2.0**. Its entry point is `chunk_document()` in
+version **1.3.0**. Its entry point is `chunk_document()` in
 `src/ingestion/chunking.py`; it returns a `ChunkingResult` containing a
 `ChunkedDocument` and a `ChunkingReport`.
 
@@ -28,6 +28,7 @@ settings. Defaults include:
 | Setting | Default | Effect |
 | --- | --- | --- |
 | `max_chunk_chars` | `1500` | Hard maximum measured in Python string characters, including synthetic separators. |
+| `overlap_chars` | `100` | Maximum repeated source context at a split inside a paragraph; capped at one quarter of the chunk budget. Set to `0` to disable. |
 | `synthetic_separator` | `"\n\n"` | Added only between different source blocks packed into one ordinary-text chunk. |
 | `marker_breaks` | `True` | Enables provision boundaries and M5 strong-marker chunk closing. |
 | `marker_break_min_pct` | `25` | M5 strong-marker closing threshold as a percentage of the character budget. |
@@ -36,9 +37,9 @@ settings. Defaults include:
 
 The configuration digest is SHA-256 over canonical JSON with sorted keys and
 fixed separators. It includes all settings, including provision-marker
-patterns, abbreviations, separators, thresholds, and grapheme backoff. The
+patterns, abbreviations, separators, thresholds, overlap, and grapheme backoff. The
 policy identifier is `5c-<semantic-version>+<first-12-hex-of-config-digest>`;
-the current semantic version is `1.2.0`. An implementation change that
+the current semantic version is `1.3.0`. An implementation change that
 changes chunk output under the same settings requires a semantic-version
 change; an optimization that preserves output does not.
 
@@ -97,6 +98,16 @@ from a different block. If it exceeds the hard limit, the current chunk is
 closed and the atom is retried. Consecutive atoms from the same block receive
 no separator; adjacent source ranges in that chunk are merged into one
 `ChunkSource` range.
+
+When an ordinary text block contains a paragraph that must cross a chunk
+boundary, the next chunk repeats up to `overlap_chars` of the preceding source
+text. Repeated context retains its original source offsets, counts toward the
+hard character budget, and starts at a grapheme-safe boundary. Paragraph
+boundaries do not receive overlap. The repeated ranges intentionally overlap
+across chunks; their union still reconstructs each eligible source block
+exactly once. Page isolation takes precedence: no overlap is copied across a
+physical page boundary, so a paragraph continuing on the next page remains
+split between page-local chunks.
 
 ## M6: TABLE and IMAGE groups
 

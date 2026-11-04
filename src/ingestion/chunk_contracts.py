@@ -1,7 +1,7 @@
 from typing import Final, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
-from src.ingestion.parser_contracts import BlockType, canonical_block_id
+from src.ingestion.parser_contracts import BlockType
 
 TEXT_BEARING_BLOCK_TYPES: Final[frozenset[BlockType]] = frozenset(
     {"TEXT", "TABLE", "OTHER"}
@@ -30,14 +30,10 @@ class ChunkSource(BaseModel):
 
     @model_validator(mode="after")
     def validate_source_range(self) -> Self:
-        expected_block_id = canonical_block_id(
-            self.page_number, self.block_reading_order
-        )
-        if self.block_id != expected_block_id:
-            raise ValueError(
-                "block_id must identify the page and reading-order position"
-            )
-
+        prefix = f"page-{self.page_number}-block-"
+        suffix = self.block_id.removeprefix(prefix)
+        if not self.block_id.startswith(prefix) or not suffix.isascii() or not suffix.isdecimal():
+            raise ValueError("block_id must retain its page-scoped canonical format")
         offsets = (
             self.source_text_length,
             self.start_offset,

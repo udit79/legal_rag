@@ -361,10 +361,13 @@ def test_chunk_source_requires_block_id_and_chunked_document_requires_document_i
         ChunkedDocument.model_validate(document)
 
 
-def test_chunk_source_rejects_identity_that_does_not_match_page_and_order():
+def test_chunk_source_allows_stable_identity_across_reading_order_repair():
     data = source_data(block_reading_order=2)
     data["block_id"] = "page-1-block-0"
-    with pytest.raises(ValidationError, match="identify the page"):
+    assert ChunkSource.model_validate(data).block_id == "page-1-block-0"
+
+    data["block_id"] = "page-2-block-0"
+    with pytest.raises(ValidationError, match="page-scoped"):
         ChunkSource.model_validate(data)
 
 
@@ -402,7 +405,9 @@ def test_chunked_document_distinguishes_blocks_with_identical_text():
             origin="TOP_LEFT",
         ),
     )
-    second = first.model_copy(update={"reading_order": 1})
+    second = first.model_copy(
+        update={"reading_order": 1, "block_id": "page-1-block-1"}
+    )
     assert first.text == second.text
     assert first.block_id != second.block_id
     assert first.model_dump()["block_id"] == first.block_id

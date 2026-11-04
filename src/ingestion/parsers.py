@@ -1,23 +1,50 @@
+from __future__ import annotations
+
 import csv
 import io
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+import warnings
+from contextlib import contextmanager
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol, cast
+from typing import TYPE_CHECKING, Iterator, Literal, Protocol, cast
 
 import pymupdf
 
 from src.ingestion.parser_contracts import (
     CanonicalBlock,
     CanonicalPage,
+    ParserFailure,
     SourceCoordinates,
 )
 
+if TYPE_CHECKING:
+    from docling_core.transforms.serializer.markdown import MarkdownDocSerializer
+    from docling_core.types.doc.items.node import NodeItem
+
 OCR_DUPLICATE_OVERLAP_THRESHOLD = 0.8
 NATIVE_WORD_GAP_EM_THRESHOLD = 0.25
+_COVER_APPEAL_NUMBER = re.compile(r"\bcivil\s+appeal\s+no\.", re.IGNORECASE)
+_COVER_SUPREME_COURT = re.compile(r"\bsupreme\s+court\s+of\s+india\b", re.IGNORECASE)
+_COVER_VERSUS = re.compile(r"\bversus\b", re.IGNORECASE)
+_COVER_APPELLANT = re.compile(r"\bappellant\s*\(s\)", re.IGNORECASE)
+_COVER_RESPONDENT = re.compile(r"\brespondent\s*\(s\)", re.IGNORECASE)
+
+
+@dataclass
+class _VisualRow:
+    top: float
+    bottom: float
+    blocks: list[CanonicalBlock]
+
+    @property
+    def center(self) -> float:
+        return (self.top + self.bottom) / 2
 
 
 class PageParser(Protocol):
@@ -25,7 +52,7 @@ class PageParser(Protocol):
 
 
 class DoclingDocument(Protocol):
-    def iterate_items(self) -> Iterable[tuple[object, object]]: ...
+    def iterate_items(self) -> Iterable[tuple[NodeItem, int]]: ...
 
 
 class DoclingResult(Protocol):
@@ -73,6 +100,77 @@ def _page_status(
     if all(block.block_type == "VECTOR" for block in blocks):
         return "VECTOR_ONLY"
     return "PARSED"
+
+
+def _repair_multi_appeal_cover_order(
+    blocks: tuple[CanonicalBlock, ...],
+) -> tuple[CanonicalBlock, ...]:
+    """Repair only a confidently detected, geometrically readable appeal cover."""
+    texts = [block.text for block in blocks]
+    if not (
+        any(_COVER_SUPREME_COURT.search(text) for text in texts)
+        and sum(bool(_COVER_APPEAL_NUMBER.search(text)) for text in texts) >= 2
+        and sum(bool(_COVER_VERSUS.search(text)) for text in texts) >= 2
+        and sum(bool(_COVER_APPELLANT.search(text)) for text in texts) >= 2
+        and sum(bool(_COVER_RESPONDENT.search(text)) for text in texts) >= 2
+    ):
+        return blocks
+    coordinates = [block.source_coordinates for block in blocks]
+    if any(
+        coordinate.unit != "PDF_POINT"
+        or coordinate.origin != coordinates[0].origin
+        or coordinate.x1 <= coordinate.x0
+        or coordinate.y1 <= coordinate.y0
+        for coordinate in coordinates
+    ):
+        return blocks
+
+    # Convert both supported coordinate origins into a top-left y interval.
+    rows: list[_VisualRow] = []
+    positioned = []
+    for block in blocks:
+        box = block.source_coordinates
+        top, bottom = (
+            (box.y0, box.y1) if box.origin == "TOP_LEFT" else (-box.y1, -box.y0)
+        )
+        positioned.append((block, top, bottom))
+    positioned.sort(key=lambda item: ((item[1] + item[2]) / 2, item[0].reading_order))
+
+    for block, top, bottom in positioned:
+        row = next(
+            (
+                candidate
+                for candidate in rows
+                if min(bottom, candidate.bottom) - max(top, candidate.top)
+                >= 0.5 * min(bottom - top, candidate.bottom - candidate.top)
+                or abs((top + bottom) / 2 - candidate.center) <= 3.0
+            ),
+            None,
+        )
+        if row is None:
+            rows.append(_VisualRow(top=top, bottom=bottom, blocks=[block]))
+        else:
+            row.top = min(row.top, top)
+            row.bottom = max(row.bottom, bottom)
+            row.blocks.append(block)
+
+    ordered_rows = sorted(rows, key=lambda row: (row.top, row.center))
+    ordered = [
+        block
+        for row in ordered_rows
+        for block in sorted(
+            row.blocks,
+            key=lambda block: (block.source_coordinates.x0, block.reading_order),
+        )
+    ]
+    if len(ordered) != len(blocks) or len({block.block_id for block in ordered}) != len(
+        blocks
+    ):
+        return blocks
+    return tuple(
+        block.model_copy(update={"reading_order": index})
+        for index, block in enumerate(ordered)
+    )
 
 
 def _normalize_text_line(text: str) -> str:
@@ -323,6 +421,164 @@ class FastTextParser:
         )
 
 
+def _captionless_table_serializer(
+    document: DoclingDocument,
+) -> MarkdownDocSerializer:
+    from docling_core.transforms.serializer.markdown import (
+        MarkdownDocSerializer,
+        MarkdownParams,
+    )
+    from docling_core.types.doc.labels import DocItemLabel
+    from docling_core.types.doc.document import DoclingDocument as CoreDoclingDocument
+
+    default_params = MarkdownParams()
+    params = MarkdownParams(labels=default_params.labels - {DocItemLabel.CAPTION})
+    return MarkdownDocSerializer(doc=cast(CoreDoclingDocument, document), params=params)
+
+
+@contextmanager
+def _docling_deprecation_compat() -> Iterator[None]:
+    # Docling 2.145 accesses these deprecated compatibility fields internally.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="^deprecated$",
+            category=DeprecationWarning,
+            module=r"docling\.models\.stages\.ocr\.rapid_ocr_model",
+        )
+        warnings.filterwarnings(
+            "ignore",
+            message=r"^`force_full_page_ocr` is deprecated; set `mode=OcrMode\.FULL_PAGE` instead\.$",
+            category=DeprecationWarning,
+            module=r"pydantic\.main",
+        )
+        yield
+
+
+def _recover_native_text_under_empty_images(
+    source: Path,
+    page_number: int,
+    blocks: tuple[CanonicalBlock, ...],
+) -> tuple[CanonicalBlock, ...]:
+    empty_images = [
+        block
+        for block in blocks
+        if block.block_type == "IMAGE"
+        and not block.text.strip()
+        and block.source_coordinates.unit == "PDF_POINT"
+    ]
+    if not empty_images:
+        return ()
+
+    represented_text = " ".join(
+        _normalize_text_line(block.text) for block in blocks if block.text.strip()
+    )
+    recovered: list[CanonicalBlock] = []
+    with pymupdf.open(source) as document:
+        if document.needs_pass:
+            return ()
+        if page_number < 1 or page_number > document.page_count:
+            return ()
+        page = document.load_page(page_number - 1)
+        page_height = page.rect.height
+        image_regions = [
+            pymupdf.Rect(
+                block.source_coordinates.x0,
+                (
+                    page_height - block.source_coordinates.y1
+                    if block.source_coordinates.origin == "BOTTOM_LEFT"
+                    else block.source_coordinates.y0
+                ),
+                block.source_coordinates.x1,
+                (
+                    page_height - block.source_coordinates.y0
+                    if block.source_coordinates.origin == "BOTTOM_LEFT"
+                    else block.source_coordinates.y1
+                ),
+            )
+            for block in empty_images
+        ]
+        _check_page_content_streams(document, page)
+        text_data = page.get_text("dict", sort=False)
+        if not isinstance(text_data, dict):
+            return ()
+        raw_blocks_value = text_data.get("blocks", [])
+        if not isinstance(raw_blocks_value, list):
+            return ()
+
+        def add_run(run: list[tuple[str, pymupdf.Rect]]) -> None:
+            if not run:
+                return
+            text = "\n".join(line_text for line_text, _ in run)
+            normalized = _normalize_text_line(text)
+            if not normalized or normalized in represented_text:
+                return
+            x0 = min(rect.x0 for _, rect in run)
+            y0 = min(rect.y0 for _, rect in run)
+            x1 = max(rect.x1 for _, rect in run)
+            y1 = max(rect.y1 for _, rect in run)
+            recovered.append(
+                CanonicalBlock(
+                    page_number=page_number,
+                    text=text,
+                    block_type="TEXT",
+                    reading_order=len(blocks) + len(recovered),
+                    source_coordinates=_coordinates(
+                        (x0, page.rect.height - y1, x1, page.rect.height - y0),
+                        unit="PDF_POINT",
+                        origin="BOTTOM_LEFT",
+                    ),
+                )
+            )
+
+        for raw_block_value in raw_blocks_value:
+            if not isinstance(raw_block_value, dict):
+                continue
+            raw_block = cast(dict[str, object], raw_block_value)
+            if raw_block.get("type") != 0:
+                continue
+            raw_lines = raw_block.get("lines", [])
+            if not isinstance(raw_lines, list):
+                continue
+            run: list[tuple[str, pymupdf.Rect]] = []
+            for raw_line in raw_lines:
+                if not isinstance(raw_line, dict):
+                    add_run(run)
+                    run = []
+                    continue
+                line = cast(dict[str, object], raw_line)
+                spans = line.get("spans", [])
+                direction = line.get("dir", (1.0, 0.0))
+                bbox = line.get("bbox")
+                if (
+                    not isinstance(spans, list)
+                    or not all(isinstance(span, dict) for span in spans)
+                    or not isinstance(direction, (tuple, list))
+                    or len(direction) != 2
+                    or not isinstance(bbox, (tuple, list))
+                    or len(bbox) != 4
+                ):
+                    add_run(run)
+                    run = []
+                    continue
+                text = _join_native_spans(
+                    spans, (float(direction[0]), float(direction[1]))
+                )
+                rect = pymupdf.Rect(*(float(value) for value in bbox))
+                overlaps_image = any(
+                    _overlap_relative_to_smaller(rect, region) >= 0.8
+                    for region in image_regions
+                )
+                if text.strip() and overlaps_image:
+                    run.append((text, rect))
+                else:
+                    add_run(run)
+                    run = []
+            add_run(run)
+
+    return tuple(recovered)
+
+
 class StructuredParser:
     """Extract layout-aware text and tables with Docling, one page at a time."""
 
@@ -348,11 +604,13 @@ class StructuredParser:
                     do_ocr=True,
                     ocr_options=RapidOcrOptions(),
                     do_table_structure=True,
+                    generate_page_images=True,
                 )
             else:
                 options = PdfPipelineOptions(
                     do_ocr=False,
                     do_table_structure=True,
+                    generate_page_images=True,
                 )
             self._converter = cast(
                 DoclingConverter,
@@ -366,11 +624,12 @@ class StructuredParser:
 
     def parse_page(self, source: Path, page_number: int) -> CanonicalPage:
         converter = self._get_converter()
-        result = converter.convert(
-            source,
-            page_range=(page_number, page_number),
-            raises_on_error=False,
-        )
+        with _docling_deprecation_compat():
+            result = converter.convert(
+                source,
+                page_range=(page_number, page_number),
+                raises_on_error=False,
+            )
         status = result.status
         status_name = str(
             getattr(
@@ -384,6 +643,7 @@ class StructuredParser:
 
         document = result.document
         blocks: list[CanonicalBlock] = []
+        table_serializer: MarkdownDocSerializer | None = None
         for item, _ in document.iterate_items():
             provenances = getattr(item, "prov", None) or ()
             page_provenance = next(
@@ -407,8 +667,9 @@ class StructuredParser:
             raw_label = getattr(item, "label", "")
             label = str(getattr(raw_label, "value", raw_label)).casefold()
             if "table" in label:
-                export_table = getattr(item, "export_to_markdown")
-                text = export_table(doc=document)
+                if table_serializer is None:
+                    table_serializer = _captionless_table_serializer(document)
+                text = table_serializer.serialize(item=item).text
                 block_type = "TABLE"
             else:
                 value = getattr(item, "text", None)
@@ -460,6 +721,25 @@ class StructuredParser:
             )
 
         canonical_blocks = tuple(blocks)
+        recovered_blocks = _recover_native_text_under_empty_images(
+            source, page_number, canonical_blocks
+        )
+        warnings = ()
+        if recovered_blocks:
+            canonical_blocks += recovered_blocks
+            warnings = (
+                ParserFailure(
+                    parser="PYMUPDF",
+                    code="NATIVE_TEXT_RECOVERED",
+                    message=(
+                        f"Recovered {len(recovered_blocks)} native text block(s) "
+                        "from regions overlapping empty Docling image blocks. "
+                        "Recovered blocks are inserted into visual row order for "
+                        "recognized multi-appeal covers."
+                    ),
+                ),
+            )
+        canonical_blocks = _repair_multi_appeal_cover_order(canonical_blocks)
         if not canonical_blocks:
             visual_page = FastTextParser().parse_page(source, page_number)
             return visual_page.model_copy(update={"parser": "DOCLING+PYMUPDF"})
@@ -468,6 +748,7 @@ class StructuredParser:
             parser=self.parser_name,
             status=_page_status(canonical_blocks),
             blocks=canonical_blocks,
+            warnings=warnings,
         )
 
 

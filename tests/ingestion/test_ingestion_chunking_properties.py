@@ -245,6 +245,7 @@ def chunking_config(*, include_image_text: bool | None = None) -> SearchStrategy
         marker_breaks=st.booleans(),
         marker_break_min_pct=st.sampled_from([0, 25, 50, 75, 100]),
         grapheme_backoff_chars=st.sampled_from([0, 4, 16, 32]),
+        overlap_chars=st.sampled_from([0, 4, 8, 100]),
         include_image_text=image_setting,
     )
 
@@ -262,7 +263,7 @@ def _assert_block_coverage(
     block: CanonicalBlock,
     config: ChunkingConfig,
 ) -> None:
-    ranges = sorted(
+    ranges = [
         (
             source.start_offset,
             source.end_offset,
@@ -270,15 +271,21 @@ def _assert_block_coverage(
         for chunk in result.document.chunks
         for source in chunk.sources
         if source.block_id == block.block_id
-    )
+    ]
     cursor = 0
     reconstructed: list[str] = []
+    allowed_overlap = (
+        min(config.overlap_chars, config.max_chunk_chars // 4)
+        if block.block_type in {"TEXT", "OTHER"}
+        else 0
+    )
     for start, end in ranges:
         assert start is not None and end is not None
         assert 0 <= start < end <= len(block.text)
-        assert start == cursor
-        reconstructed.append(block.text[start:end])
-        cursor = end
+        assert start <= cursor
+        assert cursor - start <= allowed_overlap
+        reconstructed.append(block.text[max(start, cursor) : end])
+        cursor = max(cursor, end)
     assert cursor == len(block.text)
     assert "".join(reconstructed) == block.text
 
