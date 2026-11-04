@@ -377,11 +377,11 @@ def segment_oversized_text(
         (0, len(text), None, 0)
     ]
     ladder = (
-        (BoundaryTier.PARAGRAPH, paragraph_boundaries),
-        (BoundaryTier.PROVISION_MARKER, provision_marker_boundaries),
-        (BoundaryTier.SENTENCE, sentence_boundaries),
-        (BoundaryTier.LINE, line_boundaries),
-        (BoundaryTier.WORD, word_boundaries),
+        BoundaryTier.PARAGRAPH,
+        BoundaryTier.PROVISION_MARKER,
+        BoundaryTier.SENTENCE,
+        BoundaryTier.LINE,
+        BoundaryTier.WORD,
     )
 
     while pending:
@@ -395,12 +395,19 @@ def segment_oversized_text(
         selected_tier_index = -1
         selected_boundaries: tuple[int, ...] = ()
         for tier_index in range(tier_start, len(ladder)):
-            tier, detector = ladder[tier_index]
+            tier = ladder[tier_index]
             if tier is BoundaryTier.PROVISION_MARKER and not settings.marker_breaks:
                 continue
-            positions = detector(piece, settings) if tier in {
-                BoundaryTier.PROVISION_MARKER, BoundaryTier.SENTENCE
-            } else detector(piece)
+            if tier is BoundaryTier.PARAGRAPH:
+                positions = paragraph_boundaries(piece)
+            elif tier is BoundaryTier.PROVISION_MARKER:
+                positions = provision_marker_boundaries(piece, settings)
+            elif tier is BoundaryTier.SENTENCE:
+                positions = sentence_boundaries(piece, settings)
+            elif tier is BoundaryTier.LINE:
+                positions = line_boundaries(piece)
+            else:
+                positions = word_boundaries(piece)
             if positions:
                 selected_tier = tier
                 selected_tier_index = tier_index

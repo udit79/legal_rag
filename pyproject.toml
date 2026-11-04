@@ -8,6 +8,8 @@ dependencies = [
     "docling>=2.145.0",
     "dotenv>=0.9.9",
     "fastapi>=0.159.1",
+    "httpx>=0.28.1",
+    "langgraph>=1.2.19,<2",
     "neo4j>=6.4.1",
     "numpy>=2.5.4",
     "onnxruntime>=1.31.1",
@@ -29,4 +31,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     "hypothesis>=6.170.14",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "live_cdm: makes real ScaleDown API calls; opt in with CPCR_LIVE_CDM=1",
 ]

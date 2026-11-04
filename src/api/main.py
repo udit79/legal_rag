@@ -1,9 +1,12 @@
 from fastapi import FastAPI,Depends,Request,HTTPException,status
 from typing import LiteralString
 from contextlib import asynccontextmanager
+import httpx
+from dotenv import load_dotenv
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from src.observability.telemetry import configure_telemetry
 from src.infrastructure.neo4j_client import create_db_connect,DbConnect,run_query
+from src.ingestion.scaledown_client import ScaleDownClient
 from neo4j.exceptions import ServiceUnavailable,SessionExpired,AuthError,DriverError
 from pydantic import BaseModel
 class HealthResponse(BaseModel):
@@ -16,7 +19,13 @@ class ErrorResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Application starting up...")
+    load_dotenv()
     provider, _ = configure_telemetry()
+    scaledown_http_client = httpx.AsyncClient(timeout=30.0)
+    app.state.scaledown_http_client = scaledown_http_client
+    app.state.scaledown_client = ScaleDownClient(
+        http_client=scaledown_http_client
+    )
     db_connection = None
     instrumented = False
     try:
@@ -37,9 +46,12 @@ async def lifespan(app: FastAPI):
                     await db_connection.close()
             finally:
                 try:
-                    provider.force_flush(timeout_millis=10000)
+                    await scaledown_http_client.aclose()
                 finally:
-                    provider.shutdown()
+                    try:
+                        provider.force_flush(timeout_millis=10000)
+                    finally:
+                        provider.shutdown()
     print("Application shutting down...")
 app=FastAPI(lifespan=lifespan)
 def get_db(request:Request)->DbConnect:

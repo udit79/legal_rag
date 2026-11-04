@@ -9,3 +9,4 @@
 docs/m0_*
 .hypothesis
 tmp/
+.mypy_cache/
