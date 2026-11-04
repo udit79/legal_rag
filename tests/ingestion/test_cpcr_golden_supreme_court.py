@@ -79,7 +79,7 @@ def test_supreme_court_canonical_runs_through_live_cpcr_pipeline() -> None:
     async def run_graph() -> list[dict[str, object]]:
         async with httpx.AsyncClient(timeout=30.0) as http_client:
             client = ScaleDownClient(http_client=http_client)
-            graph = build_cpcr_graph(CountingLiveClient(client))
+            graph = build_cpcr_graph(CountingLiveClient(client), document)
             final_states = []
             for candidate, decision in zip(candidates, decisions, strict=True):
                 gateway_result = GatewayResult(
@@ -101,11 +101,17 @@ def test_supreme_court_canonical_runs_through_live_cpcr_pipeline() -> None:
     final_states = asyncio.run(run_graph())
     assert canonical.page_count == 20
     assert document.source_page_count == canonical.page_count
-    assert len(candidates) == canonical.page_count - 1
     assert [
         (candidate.source.page_number, candidate.target.page_number)
         for candidate in candidates
-    ] == [(page, page + 1) for page in range(1, canonical.page_count)]
+    ] == sorted(
+        (candidate.source.page_number, candidate.target.page_number)
+        for candidate in candidates
+    )
+    assert all(
+        candidate.target.page_number == candidate.source.page_number + 1
+        for candidate in candidates
+    )
     assert len({candidate.candidate_id for candidate in candidates}) == len(candidates)
     assert len(final_states) == len(candidates)
     assert Counter(

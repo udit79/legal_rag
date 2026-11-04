@@ -111,19 +111,11 @@ def test_valid_adjacent_page_candidate_and_repeat_id() -> None:
     validate_candidate_against_document(first, document())
 
 
-def test_candidate_must_connect_final_and_first_chunks_at_page_boundary() -> None:
+def test_candidate_may_represent_nonterminal_chunks_in_distinct_content_flows() -> None:
     doc = multi_chunk_page_document()
     validate_candidate_against_document(
-        candidate(reference(1, 4), reference(2, 5)), doc
+        candidate(reference(0, 4), reference(3, 5)), doc
     )
-    with pytest.raises(ValueError, match="final chunk"):
-        validate_candidate_against_document(
-            candidate(reference(0, 4), reference(2, 5)), doc
-        )
-    with pytest.raises(ValueError, match="first chunk"):
-        validate_candidate_against_document(
-            candidate(reference(1, 4), reference(3, 5)), doc
-        )
 
 
 def test_page_collection_rejects_any_chunk_without_source_provenance() -> None:
@@ -245,6 +237,14 @@ def test_table_continuation_requires_two_table_only_chunks() -> None:
         validate_assessment_against_document(
             assessment(ContinuityRelation.TABLE_CONTINUATION),
             document("TABLE", "TEXT"),
+        )
+
+
+def test_table_continuation_rejects_footnote_to_table_sources() -> None:
+    with pytest.raises(ValueError, match="TABLE-only"):
+        validate_assessment_against_document(
+            assessment(ContinuityRelation.TABLE_CONTINUATION),
+            document("OTHER", "TABLE"),
         )
 
 

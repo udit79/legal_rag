@@ -19,7 +19,9 @@ _CONTINUITY_QUESTION: Mapping[str, Any] = {
     "type": "choice",
     "instructions": (
         "Determine the logical relationship between these two chunks from "
-        "adjacent physical pages."
+        "adjacent physical pages. Use UNKNOWN rather than guessing when the "
+        "excerpts do not provide direct evidence of continuation or independence; "
+        "page adjacency alone is not evidence of continuity."
     ),
     "criteria": {
         "SAME_PARAGRAPH": (
@@ -31,7 +33,10 @@ _CONTINUITY_QUESTION: Mapping[str, Any] = {
             "page boundary."
         ),
         "NO_CONTINUATION": "The chunks represent independent content.",
-        "UNKNOWN": "The evidence is insufficient or contradictory.",
+        "UNKNOWN": (
+            "The excerpts provide insufficient or contradictory direct evidence "
+            "to determine the relationship. Prefer this label over guessing."
+        ),
     },
 }
 
@@ -117,7 +122,16 @@ class ScaleDownClient:
         except ValueError as exc:
             raise ScaleDownResponseError("ScaleDown response was not valid JSON") from exc
         try:
-            return adapt_scaledown_response(response_body, request)
+            result = adapt_scaledown_response(response_body, request)
+            if result.request_id is None:
+                request_id = (
+                    response.headers.get("x-amzn-requestid")
+                    or response.headers.get("x-request-id")
+                    or response.headers.get("request-id")
+                )
+                if request_id:
+                    result = result.model_copy(update={"request_id": request_id})
+            return result
         except (TypeError, ValueError, ValidationError) as exc:
             raise ScaleDownResponseError(
                 "ScaleDown response did not match the expected classification shape"

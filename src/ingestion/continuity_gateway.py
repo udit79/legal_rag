@@ -69,13 +69,22 @@ def _text_block_group(chunk: Chunk) -> bool:
     )
 
 
-def _first_nonblank_line(text: str) -> str:
+def _first_nonblank_line(text: str, page_number: int) -> str:
     lines = re.split(r"\r\n|\r|\n", text)
-    return next((line for line in lines if line.strip()), "")
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # Some parsers place a printed folio at the start of the next-page
+        # chunk. Ignore it only when it exactly matches that physical page.
+        if stripped.isascii() and stripped.isdecimal() and int(stripped) == page_number:
+            continue
+        return line
+    return ""
 
 
-def _starts_strong_provision(text: str) -> bool:
-    first_line = _first_nonblank_line(text)
+def _starts_strong_provision(text: str, page_number: int) -> bool:
+    first_line = _first_nonblank_line(text, page_number)
     return any(
         re.match(pattern, first_line) is not None
         for pattern in STRONG_PROVISION_MARKER_PATTERNS
@@ -151,7 +160,7 @@ def evaluate_candidate(
                 "SOFT_HYPHEN_WORD_CONTINUATION",
             )
         if _ends_at_sentence_boundary(source_chunk.text) and _starts_strong_provision(
-            target_chunk.text
+            target_chunk.text, candidate.target.page_number
         ):
             return _result(
                 GatewayDecision.REJECT,

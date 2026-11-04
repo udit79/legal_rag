@@ -88,9 +88,23 @@ def test_client_sends_expected_decisions_request_and_parses_response() -> None:
         "SOURCE PAGE 4:\n  source text \n\n\nTARGET PAGE 5:\n\ttarget text  "
     )
     assert body["questions"]["continuity_relation"]["type"] == "choice"
+    assert "UNKNOWN" in body["questions"]["continuity_relation"]["criteria"]
+    assert "Prefer this label over guessing" in body["questions"]["continuity_relation"]["criteria"]["UNKNOWN"]
     assert "test-secret" not in json.dumps(body)
     assert result.candidate_id == "candidate-1"
     assert result.model_id == "classify-1"
+
+
+def test_client_uses_provider_request_id_response_header_when_body_omits_it() -> None:
+    result = run_classify(
+        lambda request: httpx.Response(
+            200,
+            json=successful_response(),
+            headers={"x-amzn-requestid": "provider-trace-123"},
+        )
+    )
+
+    assert result.request_id == "provider-trace-123"
 
 
 def test_client_trims_explicit_api_key_before_authentication() -> None:

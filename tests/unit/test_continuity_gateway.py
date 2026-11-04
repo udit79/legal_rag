@@ -35,22 +35,24 @@ def make_pair(
     target_text: str,
     source_type: str = "TEXT",
     target_type: str = "TEXT",
+    source_page: int = 1,
+    target_page: int = 2,
 ) -> tuple[ContinuityCandidate, ChunkedDocument]:
     chunks = (
         Chunk(
             index=0,
             text=source_text,
-            sources=(make_source(1, source_text, source_type),),
+            sources=(make_source(source_page, source_text, source_type),),
         ),
         Chunk(
             index=1,
             text=target_text,
-            sources=(make_source(2, target_text, target_type),),
+            sources=(make_source(target_page, target_text, target_type),),
         ),
     )
     document = ChunkedDocument(
         document_id="gateway-doc",
-        source_page_count=2,
+        source_page_count=target_page,
         policy_version=CHUNKING_VERSION,
         chunks=chunks,
     )
@@ -59,10 +61,14 @@ def make_pair(
             document.document_id, CHUNKING_VERSION, 0, 1
         ),
         source=ChunkReference(
-            document_id=document.document_id, chunk_index=0, page_number=1
+            document_id=document.document_id,
+            chunk_index=0,
+            page_number=source_page,
         ),
         target=ChunkReference(
-            document_id=document.document_id, chunk_index=1, page_number=2
+            document_id=document.document_id,
+            chunk_index=1,
+            page_number=target_page,
         ),
         chunking_policy_version=CHUNKING_VERSION,
         candidate_policy_version="cpcr-candidate-1",
@@ -172,6 +178,31 @@ def test_completed_sentence_before_strong_section_marker_is_rejected() -> None:
     assert result.decision is GatewayDecision.REJECT
     assert result.relation_type is ContinuityRelation.NO_CONTINUATION
     assert result.evidence_codes == ("COMPLETED_SENTENCE_BEFORE_STRONG_PROVISION",)
+
+
+def test_matching_printed_page_number_is_not_a_provision_marker() -> None:
+    candidate, document = make_pair(
+        "The preceding discussion ends here.", "12", source_page=11, target_page=12
+    )
+
+    result = evaluate_candidate(candidate, document)
+
+    assert result.decision is GatewayDecision.DEFER
+    assert result.relation_type is None
+
+
+def test_printed_page_number_is_ignored_before_real_provision_marker() -> None:
+    candidate, document = make_pair(
+        "The preceding discussion ends here.",
+        "12\nSection 5 — New provision",
+        source_page=11,
+        target_page=12,
+    )
+
+    result = evaluate_candidate(candidate, document)
+
+    assert result.decision is GatewayDecision.REJECT
+    assert result.relation_type is ContinuityRelation.NO_CONTINUATION
 
 
 @pytest.mark.parametrize(

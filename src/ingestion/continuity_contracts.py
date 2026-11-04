@@ -147,14 +147,13 @@ def validate_candidate_against_document(
         or candidate.target.document_id != document.document_id
     ):
         raise ValueError("Candidate document ID does not match document")
-    source_chunk = _chunk_for_reference(document, candidate.source)
-    target_chunk = _chunk_for_reference(document, candidate.target)
-    source_page_chunks = _chunks_on_page(document, candidate.source.page_number)
-    target_page_chunks = _chunks_on_page(document, candidate.target.page_number)
-    if source_chunk.index != max(chunk.index for chunk in source_page_chunks):
-        raise ValueError("Source must be the final chunk on its page")
-    if target_chunk.index != min(chunk.index for chunk in target_page_chunks):
-        raise ValueError("Target must be the first chunk on its page")
+    _chunk_for_reference(document, candidate.source)
+    _chunk_for_reference(document, candidate.target)
+    # Candidate selection is flow-aware: a page boundary may have independent
+    # text and table candidates, so references need not be the page's global
+    # final and first chunks. Page locality and adjacency remain mandatory.
+    _chunks_on_page(document, candidate.source.page_number)
+    _chunks_on_page(document, candidate.target.page_number)
 
 
 def validate_assessment_against_document(

@@ -54,6 +54,103 @@ def test_generates_final_to_first_candidate_for_adjacent_pages() -> None:
     validate_candidate_against_document(candidates[0], document)
 
 
+def test_selects_main_text_and_table_flows_independently() -> None:
+    def source(page: int, order: int, block_type: str, text: str) -> ChunkSource:
+        return ChunkSource(
+            page_number=page,
+            block_id=f"page-{page}-block-{order}",
+            block_reading_order=order,
+            block_type=block_type,
+            source_text_length=len(text),
+            start_offset=0,
+            end_offset=len(text),
+        )
+
+    chunks = (
+        Chunk(index=0, text="Main text continues", sources=(source(1, 0, "TEXT", "Main text continues"),)),
+        Chunk(index=1, text="2 For short, defined term", sources=(source(1, 1, "OTHER", "2 For short, defined term"),)),
+        Chunk(index=2, text="Table 2 row", sources=(source(1, 2, "TABLE", "Table 2 row"),)),
+        Chunk(index=3, text="2", sources=(source(2, 0, "TEXT", "2"),)),
+        Chunk(index=4, text="text resumes", sources=(source(2, 1, "TEXT", "text resumes"),)),
+        Chunk(index=5, text="continued row", sources=(source(2, 2, "TABLE", "continued row"),)),
+    )
+    document = ChunkedDocument(
+        document_id="doc-1",
+        source_page_count=2,
+        policy_version=POLICY_VERSION,
+        chunks=chunks,
+    )
+
+    candidates = generate_continuity_candidates(document, "cpcr-candidate-1")
+
+    assert len(candidates) == 2
+    assert [
+        (item.source.chunk_index, item.target.chunk_index) for item in candidates
+    ] == [(0, 4), (2, 5)]
+
+
+def test_footnotes_and_printed_page_number_are_not_text_flow_candidates() -> None:
+    def chunk(index: int, page: int, text: str, block_type: str = "OTHER") -> Chunk:
+        return Chunk(
+            index=index,
+            text=text,
+            sources=(ChunkSource(
+                page_number=page,
+                block_id=f"page-{page}-block-0",
+                block_reading_order=0,
+                block_type=block_type,
+                source_text_length=len(text),
+                start_offset=0,
+                end_offset=len(text),
+            ),),
+        )
+
+    document = ChunkedDocument(
+        document_id="doc-1",
+        source_page_count=2,
+        policy_version=POLICY_VERSION,
+        chunks=(
+            chunk(0, 1, "The main paragraph continues"),
+            chunk(1, 1, "1 In short, defined as the Act"),
+            chunk(2, 2, "2", "TEXT"),
+            chunk(3, 2, "The next paragraph"),
+            chunk(4, 2, "2 (2012) 6 SCC 613"),
+        ),
+    )
+
+    candidates = generate_continuity_candidates(document, "cpcr-candidate-1")
+
+    assert len(candidates) == 1
+    assert (candidates[0].source.chunk_index, candidates[0].target.chunk_index) == (
+        0,
+        3,
+    )
+
+
+def test_cover_page_blocks_do_not_create_main_text_flow() -> None:
+    source_text = (
+        "REPORTABLE\nIN THE SUPREME COURT OF INDIA\n"
+        "CIVIL APPEAL NO. 262 OF 2026\nTHE AUTHORITY FOR ADVANCE RULINGS\n"
+        ".... APPELLANT(S)\nVERSUS\nTIGER GLOBAL INTERNATIONAL HOLDINGS\n"
+        ".... RESPONDENT(S)"
+    )
+    target_text = (
+        "The present appeals arise from a final judgment and common order "
+        "passed by the High Court."
+    )
+    document = ChunkedDocument(
+        document_id="doc-1",
+        source_page_count=2,
+        policy_version=POLICY_VERSION,
+        chunks=(
+            Chunk(index=0, text=source_text, sources=(make_source(1),)),
+            Chunk(index=1, text=target_text, sources=(make_source(2),)),
+        ),
+    )
+
+    assert generate_continuity_candidates(document, "cpcr-candidate-1") == ()
+
+
 @pytest.mark.parametrize(
     ("page_count", "pages"),
     [

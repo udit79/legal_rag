@@ -1,4 +1,6 @@
-"""Structural candidate generation for adjacent-page continuity."""
+"""Content-role-aware structural candidate generation for page boundaries."""
+
+import re
 
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
 from src.ingestion.continuity_contracts import (
@@ -8,12 +10,101 @@ from src.ingestion.continuity_contracts import (
     validate_candidate_against_document,
 )
 
+_FOOTNOTE_PREFIX = re.compile(
+    r"(?is)^\s*\d{1,3}\s+(?:"
+    r"for short\b|in short\b|hereinafter\b|see\b|"
+    r"\(?\d{4}\)?\s+\d+\s+[A-Z]|"
+    r"\(\d{4}\)\s+\d+\s+[A-Z])"
+)
+_NUMBER_ONLY = re.compile(r"^\d{1,4}$")
+_COVER_MARKER = re.compile(
+    r"(?i)\b(?:reportable|civil appeal no\.|appellant\(s\)|"
+    r"respondent\(s\)|versus|in the supreme court)\b"
+)
+
+
+def _is_cover_matter(text: str) -> bool:
+    letters = [char for char in text if char.isalpha()]
+    lowercase_ratio = (
+        sum(char.islower() for char in letters) / len(letters) if letters else 0.0
+    )
+    return bool(_COVER_MARKER.search(text)) and lowercase_ratio < 0.4
+
+
+def _content_role(chunk: Chunk, page_number: int) -> str | None:
+    """Identify chunk roles used for continuity, excluding obvious footnotes.
+
+    Role inference is intentionally narrow because the chunk schema carries
+    block type and reading order but no semantic content-role annotation.
+    """
+    block_types = {source.block_type for source in chunk.sources}
+    if block_types == {"TABLE"}:
+        return "TABLE"
+    if not block_types <= {"TEXT", "OTHER"}:
+        return None
+
+    compact = chunk.text.strip()
+    if _NUMBER_ONLY.fullmatch(compact) and int(compact) == page_number:
+        return None
+    if _FOOTNOTE_PREFIX.match(chunk.text):
+        return None
+    if _is_cover_matter(chunk.text):
+        return None
+    return "TEXT"
+
+
+def _role_boundary_chunks(
+    chunks_by_page: dict[int, list[Chunk]], page_number: int, role: str
+) -> tuple[Chunk, ...]:
+    return tuple(
+        chunk
+        for chunk in chunks_by_page.get(page_number, ())
+        if _content_role(chunk, page_number) == role
+    )
+
+
+def _candidate(
+    document: ChunkedDocument,
+    source_chunk: Chunk,
+    target_chunk: Chunk,
+    candidate_policy_version: str,
+) -> ContinuityCandidate:
+    source_page = source_chunk.sources[0].page_number
+    target_page = target_chunk.sources[0].page_number
+    candidate = ContinuityCandidate(
+        candidate_id=deterministic_candidate_id(
+            document.document_id,
+            document.policy_version,
+            source_chunk.index,
+            target_chunk.index,
+        ),
+        source=ChunkReference(
+            document_id=document.document_id,
+            chunk_index=source_chunk.index,
+            page_number=source_page,
+        ),
+        target=ChunkReference(
+            document_id=document.document_id,
+            chunk_index=target_chunk.index,
+            page_number=target_page,
+        ),
+        chunking_policy_version=document.policy_version,
+        candidate_policy_version=candidate_policy_version,
+    )
+    validate_candidate_against_document(candidate, document)
+    return candidate
+
 
 def generate_continuity_candidates(
     document: ChunkedDocument,
     candidate_policy_version: str,
 ) -> tuple[ContinuityCandidate, ...]:
-    """Generate one candidate for each populated adjacent physical-page pair."""
+    """Generate independent text-flow and table-flow candidates per boundary.
+
+    Obvious printed page numbers and conventionally numbered footnotes are not
+    treated as main text. For each flow, the last source-side and first target-
+    side chunk are selected by canonical reading order (chunk index).
+    """
     if (
         not isinstance(candidate_policy_version, str)
         or not candidate_policy_version
@@ -36,43 +127,30 @@ def generate_continuity_candidates(
             raise ValueError(f"Chunk {chunk.index} has cross-page provenance")
         page_number = next(iter(pages))
         if not 1 <= page_number <= document.source_page_count:
-            raise ValueError(
-                f"Chunk {chunk.index} references an invalid page number"
-            )
+            raise ValueError(f"Chunk {chunk.index} references an invalid page number")
         chunks_by_page.setdefault(page_number, []).append(chunk)
 
     candidates: list[ContinuityCandidate] = []
     for page_number in range(1, document.source_page_count):
-        source_chunks = chunks_by_page.get(page_number, [])
-        target_chunks = chunks_by_page.get(page_number + 1, [])
-        if not source_chunks or not target_chunks:
-            continue
-
-        source_chunk = max(source_chunks, key=lambda chunk: chunk.index)
-        target_chunk = min(target_chunks, key=lambda chunk: chunk.index)
-        source = ChunkReference(
-            document_id=document.document_id,
-            chunk_index=source_chunk.index,
-            page_number=page_number,
+        boundary_candidates: list[ContinuityCandidate] = []
+        for role in ("TEXT", "TABLE"):
+            source_chunks = _role_boundary_chunks(chunks_by_page, page_number, role)
+            target_chunks = _role_boundary_chunks(chunks_by_page, page_number + 1, role)
+            if not source_chunks or not target_chunks:
+                continue
+            boundary_candidates.append(
+                _candidate(
+                    document,
+                    max(source_chunks, key=lambda chunk: chunk.index),
+                    min(target_chunks, key=lambda chunk: chunk.index),
+                    candidate_policy_version,
+                )
+            )
+        candidates.extend(
+            sorted(
+                boundary_candidates,
+                key=lambda item: (item.source.chunk_index, item.target.chunk_index),
+            )
         )
-        target = ChunkReference(
-            document_id=document.document_id,
-            chunk_index=target_chunk.index,
-            page_number=page_number + 1,
-        )
-        candidate = ContinuityCandidate(
-            candidate_id=deterministic_candidate_id(
-                document.document_id,
-                document.policy_version,
-                source_chunk.index,
-                target_chunk.index,
-            ),
-            source=source,
-            target=target,
-            chunking_policy_version=document.policy_version,
-            candidate_policy_version=candidate_policy_version,
-        )
-        validate_candidate_against_document(candidate, document)
-        candidates.append(candidate)
 
     return tuple(candidates)
