@@ -1,4 +1,7 @@
-from fastapi import FastAPI,Depends,Request,HTTPException,status
+from fastapi import FastAPI,Depends,Request,HTTPException,status,UploadFile,File
+from fastapi.concurrency import run_in_threadpool
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import LiteralString
 from contextlib import asynccontextmanager
 import httpx
@@ -7,6 +10,12 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from src.observability.telemetry import configure_telemetry
 from src.infrastructure.neo4j_client import create_db_connect,DbConnect,run_query
 from src.ingestion.scaledown_client import ScaleDownClient
+from src.ingestion.pipeline import (
+    CPCRIngestionResponse,
+    classify_page_continuity,
+    ingest_pdf,
+)
+from src.ingestion.preflight import InvalidPdfError
 from neo4j.exceptions import ServiceUnavailable,SessionExpired,AuthError,DriverError
 from pydantic import BaseModel
 class HealthResponse(BaseModel):
@@ -54,12 +63,69 @@ async def lifespan(app: FastAPI):
                         provider.shutdown()
     print("Application shutting down...")
 app=FastAPI(lifespan=lifespan)
+MAX_INGESTION_UPLOAD_BYTES = 50 * 1024 * 1024
 def get_db(request:Request)->DbConnect:
     return request.app.state.db
 
 @app.get("/health",summary="Check API liveness",description=("Reports whether the API process is running. ""Does not check external dependencies such as Neo4j."),tags=["Health"],response_description="The API process is alive.",response_model=HealthResponse)
 def check_health():
     return {"health":"System is healthy"}
+
+
+@app.post(
+    "/ingestion",
+    summary="Ingest a PDF",
+    description=(
+        "Runs PDF preflight, page routing, parsing, chunking and page "
+        "continuity review. Returns CPCR results and crops for image blocks "
+        "with no recognized text; canonical output is not included."
+    ),
+    tags=["Ingestion"],
+    response_model=CPCRIngestionResponse,
+)
+async def ingest_pdf_endpoint(
+    request: Request, file: UploadFile = File(...)
+) -> CPCRIngestionResponse:
+    if file.content_type not in {"application/pdf", "application/octet-stream"}:
+        await file.close()
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Upload must be a PDF file",
+        )
+
+    with TemporaryDirectory(prefix="graph-rag-ingestion-") as temp_dir:
+        source = Path(temp_dir) / "upload.pdf"
+        total_bytes = 0
+        try:
+            with source.open("wb") as destination:
+                while data := await file.read(1024 * 1024):
+                    total_bytes += len(data)
+                    if total_bytes > MAX_INGESTION_UPLOAD_BYTES:
+                        raise HTTPException(
+                            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            detail="PDF upload exceeds the 50 MiB limit",
+                        )
+                    destination.write(data)
+            if total_bytes == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Uploaded PDF is empty",
+                )
+            ingestion = await run_in_threadpool(ingest_pdf, source)
+            cpcr = await classify_page_continuity(
+                ingestion, request.app.state.scaledown_client
+            )
+            return CPCRIngestionResponse(
+                cpcr=cpcr,
+                unrecognized_images=ingestion.unrecognized_images,
+            )
+        except InvalidPdfError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
+        finally:
+            await file.close()
+
 @app.get("/health/ready",summary="Check API readiness",description=("Checks whether the application can communicate with Neo4j ""and execute a lightweight readiness query."),tags=["Health"],
     responses={
         503: {

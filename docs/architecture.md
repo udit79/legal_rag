@@ -3,16 +3,16 @@
 ## Purpose and current scope
 
 This repository is a foundation for a document-backed graph RAG system focused
-on enterprise risk concepts. It currently defines a health/readiness API,
-Neo4j connectivity, OpenTelemetry tracing, graph-domain validation, and
-contracts and PDF preflight for the beginning of a document-ingestion
-workflow.
+on enterprise risk concepts. It provides a health/readiness API, Neo4j
+connectivity, OpenTelemetry tracing, graph-domain validation, and an
+end-to-end PDF ingestion endpoint covering preflight, page routing, parser
+dispatch, BLP-1 chunking, and CPCR continuity classification.
 
 The ingestion contracts and state describe how stages can exchange small,
 typed values. PDF preflight and deterministic per-page route selection are
 implemented, as are replaceable PyMuPDF, Docling, and OCR page parsers with a
-shared canonical output contract. Artifact storage, graph writes, and an
-end-to-end workflow runner are not yet implemented.
+shared canonical output contract. Persistent artifact storage and graph writes
+are not yet implemented.
 See [code_map.md](code_map.md) for the file tree and a function/class-to-file
 index.
 
@@ -20,13 +20,14 @@ index.
 
 | Area | Location | Responsibility |
 | --- | --- | --- |
-| API | `src/api/main.py` | FastAPI application, lifecycle setup, liveness and readiness endpoints. |
+| API | `src/api/main.py` | FastAPI application, lifecycle setup, health endpoints, and multipart PDF ingestion endpoint. |
 | Ingestion contracts | `src/ingestion/contracts.py` | Pydantic models for document references, per-page/document features, and page/document route plans. |
 | PDF preflight | `src/ingestion/preflight.py` | SHA-256, file size, page count, and per-page text, image, and drawing counts. |
 | Ingestion routing | `src/ingestion/router.py` | Deterministic per-page route selection from validated document features. |
 | Parser output contract | `src/ingestion/parser_contracts.py` | Canonical document/page/block models, source coordinates, statuses, and explicit failures. |
 | Parser adapters | `src/ingestion/parsers.py` | PyMuPDF native text, Docling structured/table parsing, and Tesseract or RapidOCR. |
 | Parser dispatch | `src/ingestion/dispatcher.py` | Selects an adapter per page and preserves page-level failures without dropping remaining pages. |
+| Ingestion pipeline | `src/ingestion/pipeline.py` | Traces preflight, routing, per-page parsing, chunking, internal image crops, and CPCR classification. |
 | Ingestion state | `src/ingestion/state.py` | Typed workflow state and structured stage-error shape. |
 | Domain ontology | `src/domain/ontology.py` | Node/relation types and allowed directed relationship triples. |
 | Graph schema | `src/domain/graph_schema.py` | Required properties and validation for graph nodes. |
@@ -129,6 +130,20 @@ source coordinates. Coordinates identify their units and origin: PyMuPDF and
 OCR use top-left PDF points, while Docling provenance retains the origin
 reported by Docling (`TOPLEFT` or `BOTTOMLEFT`). OCR confidence is retained
 when available.
+
+`POST /ingestion` accepts a multipart `file` upload (`application/pdf`, up to
+50 MiB). It runs preflight, routing, parsing, BLP-1 chunking and CPCR, and
+returns the CPCR result and base64 PNG crops for `IMAGE` blocks with blank
+canonical text. Canonical output and chunking details are not included in the
+response. Each crop retains page, block, reading-order, and coordinate
+provenance.
+
+The pipeline emits nested OpenTelemetry spans named `ingestion.run`,
+`ingestion.preflight`, `ingestion.routing`, `ingestion.parsing`,
+`ingestion.parser.page`, `ingestion.chunking`, `ingestion.image_crops`, and
+`ingestion.cpcr.candidate`. Per-page spans include route, parser name, status,
+block count, and warning count, making slow parser pages visible. Text and
+image bytes are not attached to span attributes.
 
 `FastTextParser` preserves line boundaries inside each native text block by
 joining PyMuPDF lines with newline characters. On OCR routes, native text and

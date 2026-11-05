@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import pymupdf
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 
 from src.ingestion.contracts import DocumentRoutePlan, PageRouteDecision
 from src.ingestion.parser_contracts import (
@@ -9,6 +11,28 @@ from src.ingestion.parser_contracts import (
     ParserFailure,
 )
 from src.ingestion.parsers import FastTextParser, OcrParser, PageParser, StructuredParser
+
+_TRACER = trace.get_tracer("graph_rag.ingestion.dispatcher")
+
+
+def _parse_page_with_span(
+    parser: PageParser, source: Path, page_number: int, route: str
+) -> CanonicalPage:
+    parser_name = getattr(parser, "parser_name", type(parser).__name__)
+    with _TRACER.start_as_current_span("ingestion.parser.page") as span:
+        span.set_attribute("ingestion.page.number", page_number)
+        span.set_attribute("ingestion.page.route", route)
+        span.set_attribute("ingestion.parser.name", parser_name)
+        try:
+            page = parser.parse_page(source, page_number)
+        except Exception as exc:
+            span.record_exception(exc)
+            span.set_status(Status(StatusCode.ERROR, type(exc).__name__))
+            raise
+        span.set_attribute("ingestion.page.status", page.status)
+        span.set_attribute("ingestion.page.block_count", len(page.blocks))
+        span.set_attribute("ingestion.page.warning_count", len(page.warnings))
+        return page
 
 
 def _failed_page(
@@ -109,7 +133,9 @@ def dispatch_document(
     for decision in route_plan.decisions:
         if decision.route == "SKIP_BLANK":
             try:
-                page = blank_validator.parse_page(source, decision.page_number)
+                page = _parse_page_with_span(
+                    blank_validator, source, decision.page_number, decision.route
+                )
                 if page.status == "BLANK":
                     pages.append(
                         CanonicalPage(
@@ -161,7 +187,9 @@ def dispatch_document(
             continue
 
         try:
-            parsed_page = parser.parse_page(source, decision.page_number)
+            parsed_page = _parse_page_with_span(
+                parser, source, decision.page_number, decision.route
+            )
             if parsed_page.page_number != decision.page_number:
                 raise ValueError(
                     f"Parser returned page {parsed_page.page_number} for "

@@ -9,11 +9,10 @@ placeholder does not imply that a workflow uses it yet.
 ```text
 .
 ├── main.py                         # Simple greeting script (not the API)
-├── test_ontology.py                # Empty legacy/test placeholder at repository root
 ├── src/
 │   ├── api/
 │   │   ├── __init__.py             # Empty package marker
-│   │   └── main.py                 # FastAPI app, lifecycle, health endpoints
+│   │   └── main.py                 # FastAPI app, lifecycle, health and PDF ingestion endpoints
 │   ├── domain/
 │   │   ├── graph_schema.py         # Graph-node properties and validation
 │   │   ├── ontology.py             # Domain enums and relationship validation
@@ -27,6 +26,7 @@ placeholder does not imply that a workflow uses it yet.
 │   │   ├── dispatcher.py           # Per-page parser routing and failure records
 │   │   ├── parser_contracts.py     # Canonical document/page/block models
 │   │   ├── parsers.py              # PyMuPDF, Docling, and OCR adapters
+│   │   ├── pipeline.py             # End-to-end orchestration, spans, and unrecognized-image crops
 │   │   ├── preflight.py            # PDF inspection
 │   │   ├── router.py               # Deterministic per-page route selection
 │   │   └── state.py                # Workflow type declarations
@@ -38,13 +38,10 @@ placeholder does not imply that a workflow uses it yet.
 │   ├── code_map.md                 # This file: source and symbol index
 │   └── domain_model.md             # Risk graph domain definitions
 └── tests/
-    ├── test_ingestion_adapters.py
-    ├── test_graph_schema.py
-    ├── test_ingestion_contracts.py
-    ├── test_ingestion_preflight.py
-    ├── test_neo4j_connection.py
-    ├── test_ontology.py
-    └── test_telemetry.py
+    ├── fixtures/test_ingestion_parser_integration.py
+    ├── ingestion/                  # Golden parser/chunker and cover-order regressions
+    ├── test_ingestion_*.py         # Ingestion contracts, adapters, routing, chunking
+    └── test_telemetry.py           # Telemetry smoke check
 ```
 
 ## Implemented symbols by file
@@ -54,9 +51,8 @@ placeholder does not imply that a workflow uses it yet.
 | File | Implemented symbols |
 | --- | --- |
 | `main.py` | `main()` — prints a greeting; not the service entry point. |
-| `test_ontology.py` | Empty root-level placeholder; the active ontology tests are in `tests/test_ontology.py`. |
 | `src/__init__.py`, `src/api/__init__.py` | Empty package markers. |
-| `src/api/main.py` | `app`; response models `HealthResponse`, `ReadinessResponse`, `ErrorResponse`; `lifespan(app)` initializes telemetry and Neo4j and closes them on shutdown; `get_db(request)` retrieves the app's database connection; `check_health()` (`GET /health`); `check_neo4j(db)` (`GET /health/ready`) verifies the database and runs a readiness query. |
+| `src/api/main.py` | `app`; `POST /ingestion` accepts a multipart PDF and returns CPCR results plus crops for unrecognized images, without canonical output; `lifespan(app)` initializes telemetry, ScaleDown HTTP, and Neo4j clients and closes them on shutdown; health endpoints. |
 
 ### Domain and graph
 
@@ -75,7 +71,8 @@ placeholder does not imply that a workflow uses it yet.
 | `src/ingestion/parser_contracts.py` | `SourceCoordinates`, `CanonicalBlock`, `ParserFailure`, `CanonicalPage`, `CanonicalDocument`; validates block coordinates, page statuses, and complete original page order. `canonical_block_id(page_number, reading_order)` and serialized `CanonicalBlock.block_id` provide deterministic IDs within one canonical document representation. |
 | `src/ingestion/chunk_contracts.py` | `ChunkSource`, `Chunk`, `ChunkedDocument`, `TEXT_BEARING_BLOCK_TYPES`; immutable contracts for typed source provenance, Unicode text offsets, contiguous chunk indices, source page bounds, and policy version. No splitting algorithm is implemented. |
 | `src/ingestion/parsers.py` | `PageParser`; `FastTextParser.parse_page()` uses PyMuPDF; `StructuredParser.parse_page()` uses Docling, with optional RapidOCR for layout OCR; `OcrParser.parse_page()` uses Tesseract by default or RapidOCR. |
-| `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` sends `FAST_TEXT` to PyMuPDF, `STRUCTURED_PARSE` and `LAYOUT_OCR` to Docling, `OCR` to Tesseract, and validates `SKIP_BLANK` pages. It keeps parser failures attached to the affected page and continues in source order. |
+| `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` routes parsing per page and emits `ingestion.parser.page` spans with page, route, parser, status, block and warning attributes. It retains page failures and continues in source order. |
+| `src/ingestion/pipeline.py` | `ingest_pdf(path)` runs preflight, routing, parsing, chunking, and image crop extraction; `classify_page_continuity(ingestion, client)` evaluates CPCR candidates and classifies deferred candidates. `CPCRIngestionResponse` contains CPCR output and image crops, not canonical output. |
 | `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
 | `src/ingestion/router.py` | `MIN_NATIVE_TEXT_CHARACTERS` (50); `route_document(features, policy_version)` returns a validated plan with a deterministic decision for each page; `_route_page(page)` applies the per-page heuristics. |
 | `src/ingestion/__init__.py` | Empty package marker. |
