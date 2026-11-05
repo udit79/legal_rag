@@ -24,6 +24,11 @@ from src.security.ingestion_screening.enums import (
     ScreeningStage,
 )
 from src.security.ingestion_screening.policy import ScreeningPolicy
+from src.ingestion.screening.unicode_screening import (
+    mixed_script_tokens,
+    security_detection_view,
+    script_of,
+)
 
 _URL = re.compile(r"(?i)\bhttps?://[^\s<>\]\[(){}\"']+")
 _BIDI_CONTROLS = frozenset(
@@ -37,22 +42,8 @@ _TAG_FIRST = 0xE0000
 _TAG_LAST = 0xE007F
 _VALID_FLAG_TAG_EMOJI = frozenset(
     "\U0001F3F4" + "".join(chr(0xE0000 + ord(char)) for char in code) + "\U000E007F"
-    for code in ("eng", "sct", "wls")
+    for code in ("eng", "sct", "wls", "gbeng")
 )
-_CONFUSABLES = str.maketrans(
-    {
-        "а": "a", "А": "a", "в": "b", "В": "b", "с": "c", "С": "c",
-        "е": "e", "Е": "e", "һ": "h", "Н": "h", "і": "i", "І": "i",
-        "ј": "j", "Ј": "j", "к": "k", "К": "k", "м": "m", "М": "m",
-        "о": "o", "О": "o", "р": "p", "Р": "p", "ѕ": "s", "Ѕ": "s",
-        "т": "t", "Т": "t", "х": "x", "Х": "x", "у": "y", "У": "y",
-        "Α": "a", "α": "a", "Β": "b", "Ε": "e", "ε": "e", "Ι": "i",
-        "ι": "i", "Κ": "k", "κ": "k", "Μ": "m", "Ν": "n", "Ο": "o",
-        "ο": "o", "Ρ": "p", "ρ": "p", "Τ": "t", "τ": "t", "Χ": "x",
-        "χ": "x", "Υ": "y", "υ": "y",
-    }
-)
-_TOKEN_PATTERN = re.compile(r"[^\W_]+", re.UNICODE)
 
 
 @lru_cache(maxsize=256)
@@ -109,30 +100,28 @@ def _suspicious_zero_width_at(text: str, index: int) -> bool:
     )
 
 
-def _normalized_detection_view(text: str) -> tuple[str, tuple[int, ...]]:
-    normalized: list[str] = []
-    offsets: list[int] = []
+def _normalized_detection_view(
+    text: str,
+) -> tuple[str, tuple[tuple[int, int], ...]]:
+    detection_input = list(text)
     tag_replacements: dict[int, str] = {}
-    tag_indexes: set[int] = set()
     for start, end, _, valid_emoji in _tag_sequences(text):
-        tag_indexes.update(range(start, end))
         if not valid_emoji:
             for index in range(start, end):
                 codepoint = ord(text[index])
                 if 0xE0020 <= codepoint <= 0xE007E:
                     tag_replacements[index] = chr(codepoint - _TAG_FIRST)
-    for original_index, char in enumerate(text):
-        if original_index in tag_indexes:
-            replacement = tag_replacements.get(original_index)
-            if replacement:
-                normalized.append(replacement.casefold().translate(_CONFUSABLES))
-                offsets.append(original_index)
-            continue
-        if char in _BIDI_CONTROLS or _suspicious_zero_width_at(text, original_index):
-            continue
-        folded = unicodedata.normalize("NFKC", char).casefold().translate(_CONFUSABLES)
+    for index, replacement in tag_replacements.items():
+        detection_input[index] = replacement
+    skeleton_view = security_detection_view("".join(detection_input))
+    normalized: list[str] = []
+    offsets: list[tuple[int, int]] = []
+    for char, source_span in zip(
+        skeleton_view.text, skeleton_view.source_spans, strict=True
+    ):
+        folded = char.casefold()
         normalized.extend(folded)
-        offsets.extend([original_index] * len(folded))
+        offsets.extend([source_span] * len(folded))
     return "".join(normalized), tuple(offsets)
 
 
@@ -164,22 +153,7 @@ def _flag(
 
 
 def _script(char: str) -> str | None:
-    codepoint = ord(char)
-    if 0x0041 <= codepoint <= 0x024F:
-        return "LATIN"
-    if 0x0370 <= codepoint <= 0x03FF:
-        return "GREEK"
-    if 0x0400 <= codepoint <= 0x052F:
-        return "CYRILLIC"
-    if 0x0590 <= codepoint <= 0x05FF:
-        return "HEBREW"
-    if 0x0600 <= codepoint <= 0x06FF:
-        return "ARABIC"
-    if 0x0900 <= codepoint <= 0x097F:
-        return "DEVANAGARI"
-    if char.isascii() and char.isalpha():
-        return "LATIN"
-    return None
+    return script_of(char)
 
 
 def _integrity_flags(
@@ -336,19 +310,17 @@ def _integrity_flags(
             )
         )
 
-    for match in _TOKEN_PATTERN.finditer(text):
-        scripts = {_script(char) for char in match.group()}
-        scripts.discard(None)
-        if len(match.group()) >= policy.min_mixed_script_token_chars and len(scripts) > 1:
+    for start, end, scripts in mixed_script_tokens(text):
+        if end - start >= policy.min_mixed_script_token_chars:
             flags.append(
                 _flag(
                     "MIXED_SCRIPT_TOKEN",
                     ScreeningStage.G1_INTEGRITY,
                     FlagSeverity.MEDIUM,
                     DetectionView.RAW,
-                    match.start(),
-                    match.end(),
-                    text=match.group(),
+                    start,
+                    end,
+                    text=text[start:end],
                 )
             )
 
@@ -396,8 +368,8 @@ def _pattern_flags(
     for code, source_pattern, severity, is_hard in patterns:
         pattern = _compiled_pattern(source_pattern)
         for match in pattern.finditer(detection_text):
-            original_start = offset_map[match.start()]
-            original_end = offset_map[match.end() - 1] + 1
+            original_start = min(span[0] for span in offset_map[match.start() : match.end()])
+            original_end = max(span[1] for span in offset_map[match.start() : match.end()])
             matched_raw = text[original_start:original_end]
             urls = tuple(url.group().rstrip(".,;:!?") for url in _URL.finditer(match.group()))
             domains = tuple(
@@ -420,8 +392,8 @@ def _pattern_flags(
             )
             model_directed = model_directed or is_hard
     for match in _URL.finditer(detection_text):
-        original_start = offset_map[match.start()]
-        original_end = offset_map[match.end() - 1] + 1
+        original_start = min(span[0] for span in offset_map[match.start() : match.end()])
+        original_end = max(span[1] for span in offset_map[match.start() : match.end()])
         url = text[original_start:original_end].rstrip(".,;:!?")
         host = urlsplit(url).hostname
         flags.append(
@@ -480,13 +452,17 @@ def _boundary_flags(
             matched_offsets = []
             for normalized_offset in range(start, end):
                 if normalized_offset < len(source_map):
-                    matched_offsets.append((source.index, tail_start + source_map[normalized_offset]))
+                    source_span = source_map[normalized_offset]
+                    matched_offsets.append(
+                        (source.index, tail_start + source_span[0], tail_start + source_span[1])
+                    )
                 else:
                     target_offset = normalized_offset - len(source_map)
                     if target_offset < len(target_map):
-                        matched_offsets.append((target.index, target_map[target_offset]))
-            source_offsets = [offset for index, offset in matched_offsets if index == source.index]
-            target_offsets = [offset for index, offset in matched_offsets if index == target.index]
+                        target_span = target_map[target_offset]
+                        matched_offsets.append((target.index, target_span[0], target_span[1]))
+            source_offsets = [span for index, *span in matched_offsets if index == source.index]
+            target_offsets = [span for index, *span in matched_offsets if index == target.index]
             urls = (
                 (match.group().rstrip(".,;:!?"),)
                 if code == "URL_REFERENCE"
@@ -498,8 +474,8 @@ def _boundary_flags(
                 if (host := urlsplit(url).hostname) is not None
             )
             if source_offsets:
-                local_start = min(source_offsets)
-                local_end = max(source_offsets) + 1
+                local_start = min(offset for offset, _ in source_offsets)
+                local_end = max(offset for _, offset in source_offsets)
                 results.append(
                     (
                         source.index,
@@ -518,8 +494,8 @@ def _boundary_flags(
                     )
                 )
             if target_offsets:
-                target_start = min(target_offsets)
-                target_end = max(target_offsets) + 1
+                target_start = min(offset for offset, _ in target_offsets)
+                target_end = max(offset for _, offset in target_offsets)
                 results.append(
                     (
                         target.index,
@@ -545,6 +521,29 @@ class ScreeningService:
 
     def __init__(self, policy: ScreeningPolicy | None = None) -> None:
         self.policy = policy or ScreeningPolicy()
+
+    def screen_extracted_text(
+        self, text: str
+    ) -> tuple[AdmissionDecision, tuple[ScreeningFlag, ...]]:
+        """Apply the same local G1/G2 rules to OCR-derived image text."""
+        integrity_flags, rejected_tag = _integrity_flags(text, self.policy)
+        pattern_flags, _ = _pattern_flags(text, self.policy)
+        flags = tuple(integrity_flags + pattern_flags)
+        if rejected_tag:
+            decision = AdmissionDecision.REJECTED
+        elif any(
+            item.severity in {FlagSeverity.HIGH, FlagSeverity.CRITICAL}
+            for item in flags
+        ):
+            decision = AdmissionDecision.QUARANTINED
+        elif any(
+            item.severity in {FlagSeverity.LOW, FlagSeverity.MEDIUM}
+            for item in flags
+        ):
+            decision = AdmissionDecision.ADMITTED_FLAGGED
+        else:
+            decision = AdmissionDecision.ADMITTED
+        return decision, flags
 
     async def screen_batch(
         self,

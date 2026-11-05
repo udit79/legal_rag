@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import json
 import os
@@ -25,14 +24,23 @@ from neo4j.exceptions import AuthError, DriverError, ServiceUnavailable, Session
 from pydantic import BaseModel
 
 from src.infrastructure.neo4j_client import DbConnect, create_db_connect, run_query
-from src.ingestion.parsers import FastTextParser, OcrParser, StructuredParser
 from src.ingestion.pipeline import (
     CPCRIngestionResponse,
+    INGESTION_ROUTING_POLICY_VERSION,
     classify_page_continuity,
     ingest_pdf,
     revise_chunks_after_cpcr,
 )
+from src.ingestion.parser_worker.exceptions import (
+    ParserWorkerError,
+    ParserWorkerTimeout,
+)
+from src.ingestion.parser_worker.limits import MAX_PDF_PAGES, MAX_PDF_SIZE_BYTES
+from src.ingestion.parser_worker.runner import ParserWorkerRunner
+from src.ingestion.provenance.supabase_store import SupabaseProvenanceStore
+from src.ingestion.screening.image_screening import screen_image_crops
 from src.ingestion.preflight import InvalidPdfError
+from src.ingestion.router import route_document
 from src.ingestion.scaledown_client import ScaleDownClient
 from src.observability.telemetry import configure_telemetry
 from src.security.ingestion_screening.contracts import DocumentContext
@@ -48,17 +56,6 @@ from src.security.ingestion_screening.screening_service import ScreeningService
 _TRACER = trace.get_tracer("graph_rag.api")
 
 
-async def _release_idle_docling_models(
-    parsers: tuple[StructuredParser, ...],
-    idle_timeout_seconds: int,
-) -> None:
-    interval = max(1, min(60, idle_timeout_seconds // 4 or 1))
-    while True:
-        await asyncio.sleep(interval)
-        for parser in parsers:
-            await run_in_threadpool(parser.close_if_idle, idle_timeout_seconds)
-
-
 class HealthResponse(BaseModel):
     health: str
 class ReadinessResponse(BaseModel):
@@ -70,55 +67,37 @@ class ErrorResponse(BaseModel):
 async def lifespan(app: FastAPI):
     print("Application starting up...")
     load_dotenv()
-    idle_timeout_seconds = int(
-        os.environ.get("DOCLING_IDLE_TIMEOUT_SECONDS", "1800")
-    )
-    if idle_timeout_seconds < 0:
-        raise ValueError("DOCLING_IDLE_TIMEOUT_SECONDS must be non-negative")
     provider, _ = configure_telemetry()
     scaledown_http_client = httpx.AsyncClient(timeout=30.0)
     app.state.scaledown_http_client = scaledown_http_client
     app.state.scaledown_client = ScaleDownClient(
         http_client=scaledown_http_client
     )
-    idle_model_task = None
-    docling_parsers: tuple[StructuredParser, ...] = ()
+    parser_worker = ParserWorkerRunner()
+    app.state.parser_worker = parser_worker
     db_connection = None
     instrumented = False
     try:
-        fast_text_parser = FastTextParser()
-        structured_parser = StructuredParser()
-        layout_ocr_parser = StructuredParser(do_ocr=True)
-        ocr_parser = OcrParser()
         screening_policy = ScreeningPolicy()
         malware_scanner = ClamAVScanner()
         await run_in_threadpool(malware_scanner.initialize)
         app.state.screening_policy = screening_policy
         app.state.screening_service = ScreeningService(screening_policy)
-        app.state.malware_scanner = malware_scanner
-        docling_parsers = (structured_parser, layout_ocr_parser)
-
-        # Lifespan startup does not yield until both PDF pipelines and their
-        # model weights are initialized and ready for requests.
-        with _TRACER.start_as_current_span("ingestion.docling.initialize") as span:
-            span.set_attribute("ingestion.parser.pipeline", "PDF")
-            await run_in_threadpool(structured_parser.initialize)
-        with _TRACER.start_as_current_span(
-            "ingestion.docling.initialize_layout_ocr"
-        ) as span:
-            span.set_attribute("ingestion.parser.pipeline", "PDF_LAYOUT_OCR")
-            await run_in_threadpool(layout_ocr_parser.initialize)
-        app.state.ingestion_parsers = {
-            "fast_text": fast_text_parser,
-            "structured": structured_parser,
-            "layout_ocr": layout_ocr_parser,
-            "ocr": ocr_parser,
-        }
-        idle_model_task = asyncio.create_task(
-            _release_idle_docling_models(docling_parsers, idle_timeout_seconds),
-            name="docling-idle-model-release",
+        supabase_url = os.environ.get("SUPABASE_URL")
+        supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        if bool(supabase_url) != bool(supabase_key):
+            raise RuntimeError(
+                "Set both SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, or neither"
+            )
+        app.state.provenance_store = (
+            SupabaseProvenanceStore(
+                supabase_url, supabase_key, scaledown_http_client
+            )
+            if supabase_url and supabase_key
+            else None
         )
-
+        app.state.malware_scanner = malware_scanner
+        await parser_worker.start()
         FastAPIInstrumentor.instrument_app(app)
         instrumented = True
 
@@ -128,31 +107,26 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         try:
-            if idle_model_task is not None:
-                idle_model_task.cancel()
-                try:
-                    await idle_model_task
-                except asyncio.CancelledError:
-                    pass
-            for parser in docling_parsers:
-                await run_in_threadpool(parser.close)
             if instrumented:
                 FastAPIInstrumentor.uninstrument_app(app)
         finally:
             try:
-                if db_connection is not None:
-                    await db_connection.close()
+                await parser_worker.close()
             finally:
                 try:
-                    await scaledown_http_client.aclose()
+                    if db_connection is not None:
+                        await db_connection.close()
                 finally:
                     try:
-                        provider.force_flush(timeout_millis=10000)
+                        await scaledown_http_client.aclose()
                     finally:
-                        provider.shutdown()
+                        try:
+                            provider.force_flush(timeout_millis=10000)
+                        finally:
+                            provider.shutdown()
     print("Application shutting down...")
 app=FastAPI(lifespan=lifespan)
-MAX_INGESTION_UPLOAD_BYTES = 50 * 1024 * 1024
+MAX_INGESTION_UPLOAD_BYTES = MAX_PDF_SIZE_BYTES
 def get_db(request:Request)->DbConnect:
     return request.app.state.db
 
@@ -233,15 +207,39 @@ async def ingest_pdf_endpoint(
                         "file_screening": exc.record.model_dump(mode="json"),
                     },
                 ) from exc
-            parsers = request.app.state.ingestion_parsers
+            with _TRACER.start_as_current_span("ingestion.parser_worker") as span:
+                parsed = await request.app.state.parser_worker.parse_pdf(
+                    source, INGESTION_ROUTING_POLICY_VERSION
+                )
+                if parsed.features is None or parsed.route_plan is None or parsed.canonical is None:
+                    raise ParserWorkerError("Parser worker returned an incomplete document")
+                features = parsed.features
+                route_plan = parsed.route_plan
+                canonical = parsed.canonical
+                span.set_attribute("ingestion.parser_worker.page_count", features.page_count)
+            expected_route_plan = route_document(
+                features, INGESTION_ROUTING_POLICY_VERSION
+            )
+            if route_plan != expected_route_plan:
+                raise ParserWorkerError("Worker returned a route plan that failed validation")
+            if features.page_count > MAX_PDF_PAGES:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="PDF exceeds the parser worker's 500-page limit",
+                )
+            if file_screening.source_sha256 != features.content_sha256:
+                raise ParserWorkerError("Worker preflight digest differs from G0")
+            if file_screening.page_count != features.page_count:
+                raise ParserWorkerError("Worker preflight page count differs from G0")
+            if file_screening.file_size_bytes != features.file_size_bytes:
+                raise ParserWorkerError("Worker preflight file size differs from G0")
             ingestion = await run_in_threadpool(
                 ingest_pdf,
                 source,
                 file_screening=file_screening,
-                fast_text_parser=parsers["fast_text"],
-                structured_parser=parsers["structured"],
-                layout_ocr_parser=parsers["layout_ocr"],
-                ocr_parser=parsers["ocr"],
+                preflight_features=features,
+                prepared_route_plan=route_plan,
+                parsed_canonical_document=canonical,
             )
             canonical_json = json.dumps(
                 ingestion.canonical.model_dump(mode="json"),
@@ -300,6 +298,36 @@ async def ingest_pdf_endpoint(
                         "decision": AdmissionDecision.QUARANTINED.value,
                     },
                 ) from exc
+            with _TRACER.start_as_current_span("ingestion.image_ocr_screening") as span:
+                image_screening_results = await screen_image_crops(
+                    ingestion.unrecognized_images,
+                    ocr=request.app.state.parser_worker,
+                    screening_service=request.app.state.screening_service,
+                )
+                span.set_attribute(
+                    "ingestion.image_ocr.count", len(image_screening_results)
+                )
+                span.set_attribute(
+                    "ingestion.image_ocr.failed",
+                    sum(item.ocr_status == "FAILED" for item in image_screening_results),
+                )
+                span.set_attribute(
+                    "ingestion.image_ocr.flagged",
+                    sum(bool(item.flags) for item in image_screening_results),
+                )
+            provenance_store = request.app.state.provenance_store
+            if provenance_store is not None:
+                try:
+                    await provenance_store.persist_screened_document(
+                        screened,
+                        document_context,
+                        image_results=image_screening_results,
+                    )
+                except Exception as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail={"code": "PROVENANCE_PERSISTENCE_FAILED"},
+                    ) from exc
             cpcr = await classify_page_continuity(
                 ingestion,
                 request.app.state.scaledown_client,
@@ -318,6 +346,16 @@ async def ingest_pdf_endpoint(
         except InvalidPdfError as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
+        except ParserWorkerTimeout as exc:
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="PDF parsing exceeded the configured 60-second limit",
+            ) from exc
+        except ParserWorkerError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Isolated PDF parser is unavailable or failed",
             ) from exc
         finally:
             await file.close()

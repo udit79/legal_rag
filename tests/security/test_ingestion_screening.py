@@ -106,9 +106,14 @@ def test_bundled_clamav_runtime_is_discovered_and_initializes():
 
     scanner.initialize()
 
-    assert scanner.command[0].endswith(
-        "tools\\clamav\\1.5.4\\windows-x64\\clamscan.exe"
-    )
+    assert Path(scanner.command[0]).resolve() == (
+        Path(__file__).resolve().parents[2]
+        / "tools"
+        / "clamav"
+        / "1.5.4"
+        / "windows-x64"
+        / "clamscan.exe"
+    ).resolve()
     assert scanner.version == "ClamAV 1.5.4"
 
 
@@ -281,7 +286,7 @@ def test_legal_reference_to_ignoring_prior_instructions_is_not_model_directed():
     assert result.admission_records[0].decision == AdmissionDecision.ADMITTED
 
 
-def test_missing_tenant_or_uploader_provenance_fails_closed():
+def test_anonymous_public_upload_with_server_provenance_is_screenable():
     chunk = _chunk(0, 1, "Ordinary legal text.")
     result = asyncio.run(
         ScreeningService().screen_batch(
@@ -289,8 +294,8 @@ def test_missing_tenant_or_uploader_provenance_fails_closed():
         )
     )
 
-    assert result.report.quarantined_document is True
-    assert result.admission_records[0].decision == AdmissionDecision.QUARANTINED
+    assert result.report.quarantined_document is False
+    assert result.admission_records[0].decision == AdmissionDecision.ADMITTED
     assert result.document.chunks == (chunk,)
 
 

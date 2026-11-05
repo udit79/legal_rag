@@ -24,20 +24,20 @@ page/block metadata and base64 PNG data. Uploads are limited to 50 MiB. Set
 `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` to export HTTP, per-page parser, and
 ingestion-stage traces.
 
-Docling's normal and layout-OCR pipelines are initialized during server startup
-and reused between uploads. They are released after 30 minutes without a
-Docling parse by default. Set `DOCLING_IDLE_TIMEOUT_SECONDS` to change the idle
-period; set it to `0` to keep the pipelines resident until server shutdown.
+Docling runs in a persistent, restricted Docker parser worker. Build the image
+and configure the local ClamAV installation before starting the API; see
+[`docker/PARSER_WORKER.md`](docker/PARSER_WORKER.md) and
+[`tools/clamav/README.md`](tools/clamav/README.md).
 
-Windows x64 users get the ClamAV 1.5.4 runtime bundled under
-`tools/clamav/1.5.4/windows-x64`; `clamscan.exe` is selected automatically.
-Virus definitions are intentionally not committed. Initialize or update them
-once with the bundled `freshclam.exe` (see
-[`tools/clamav/README.md`](tools/clamav/README.md)). Set
-`CLAMAV_SCAN_COMMAND` only when overriding the bundled scanner. The current API
-has no authenticated tenant or uploader identity; in accordance with the
-fail-closed provenance policy, chunk admission remains quarantined until those
-identifiers are supplied by an authenticated API layer.
+The Windows x64 ClamAV scanner runtime is included under
+`tools/clamav/1.5.4/windows-x64` and runs on the Windows API host. The
+signature database, local configuration and logs are not committed. Configure
+`CLAMAV_BINARY` and `CLAMAV_DATABASE_DIRECTORY` in the local `.env`, then use
+`freshclam.exe` to populate/update the database; setup steps are in
+[`tools/clamav/README.md`](tools/clamav/README.md). G0 fails closed when the
+scanner or its signature database is unavailable. The API has no user login;
+anonymous uploads remain marked T3 and are still screened before parsing and
+CPCR.
 
 See [docs/architecture.md](docs/architecture.md) for the current component
 structure and data contracts. See [docs/code_map.md](docs/code_map.md) for

@@ -499,6 +499,9 @@ def ingest_pdf(
     structured_parser: PageParser | None = None,
     layout_ocr_parser: PageParser | None = None,
     ocr_parser: PageParser | None = None,
+    preflight_features: DocumentFeatures | None = None,
+    prepared_route_plan: DocumentRoutePlan | None = None,
+    parsed_canonical_document: CanonicalDocument | None = None,
 ) -> PdfIngestionResult:
     """Run preflight, routing, parsing, chunking and image preservation."""
     if (
@@ -506,11 +509,27 @@ def ingest_pdf(
         or file_screening.source_sha256 is None
     ):
         raise ValueError("PDF parsing requires an admitted G0 file-screening record")
+    prepared_values = (
+        preflight_features,
+        prepared_route_plan,
+        parsed_canonical_document,
+    )
+    if any(value is not None for value in prepared_values) and any(
+        value is None for value in prepared_values
+    ):
+        raise ValueError(
+            "Precomputed features, route plan and parsed canonical document "
+            "must be supplied together"
+        )
     settings = config or ChunkingConfig()
     with _TRACER.start_as_current_span("ingestion.run") as root_span:
         try:
             with _TRACER.start_as_current_span("ingestion.preflight") as span:
-                features = inspect_pdf(source)
+                features = (
+                    preflight_features
+                    if preflight_features is not None
+                    else inspect_pdf(source)
+                )
                 if file_screening.source_sha256 != features.content_sha256:
                     raise ValueError("G0 and PDF preflight source digests differ")
                 if file_screening.page_count != features.page_count:
@@ -520,23 +539,33 @@ def ingest_pdf(
                 span.set_attribute("ingestion.pdf.sha256", features.content_sha256)
 
             with _TRACER.start_as_current_span("ingestion.routing") as span:
-                route_plan = route_document(
-                    features, INGESTION_ROUTING_POLICY_VERSION
+                route_plan = (
+                    prepared_route_plan
+                    if prepared_route_plan is not None
+                    else route_document(features, INGESTION_ROUTING_POLICY_VERSION)
                 )
+                if route_plan.page_count != features.page_count:
+                    raise ValueError("Route plan page count differs from preflight")
                 span.set_attribute(
                     "ingestion.routes",
                     ",".join(decision.route for decision in route_plan.decisions),
                 )
 
             with _TRACER.start_as_current_span("ingestion.parsing") as span:
-                canonical = dispatch_document(
-                    source,
-                    route_plan,
-                    fast_text_parser=fast_text_parser,
-                    structured_parser=structured_parser,
-                    layout_ocr_parser=layout_ocr_parser,
-                    ocr_parser=ocr_parser,
+                canonical = (
+                    parsed_canonical_document
+                    if parsed_canonical_document is not None
+                    else dispatch_document(
+                        source,
+                        route_plan,
+                        fast_text_parser=fast_text_parser,
+                        structured_parser=structured_parser,
+                        layout_ocr_parser=layout_ocr_parser,
+                        ocr_parser=ocr_parser,
+                    )
                 )
+                if canonical.page_count != features.page_count:
+                    raise ValueError("Canonical page count differs from preflight")
                 span.set_attribute(
                     "ingestion.parsing.failed_pages",
                     sum(page.status == "FAILED" for page in canonical.pages),

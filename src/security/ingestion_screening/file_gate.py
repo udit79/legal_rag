@@ -46,8 +46,11 @@ class ClamAVScanner:
             if os.name == "nt" and bundled.is_file()
             else "clamscan"
         )
+        configured_binary = os.environ.get("CLAMAV_BINARY", "").strip()
         environment_command = os.environ.get("CLAMAV_SCAN_COMMAND")
-        if command is None and environment_command is None:
+        if command is None and configured_binary:
+            self.command = [configured_binary]
+        elif command is None and environment_command is None:
             self.command = [default_command]
         else:
             configured = command or environment_command or default_command
@@ -62,7 +65,7 @@ class ClamAVScanner:
         self.name = "ClamAV"
         self.version = "unknown"
         self.database_version = "unknown"
-        configured_database = os.environ.get("CLAMAV_DATABASE_DIRECTORY")
+        configured_database = os.environ.get("CLAMAV_DATABASE_DIRECTORY", "").strip()
         self.database_directory = (
             Path(configured_database)
             if configured_database
@@ -76,6 +79,10 @@ class ClamAVScanner:
     def _database_args(self) -> list[str]:
         if self.database_directory is None:
             return []
+        if not self.database_directory.is_dir():
+            raise FileNotFoundError(
+                f"ClamAV database directory does not exist: {self.database_directory}"
+            )
         return [f"--database={self.database_directory}"]
 
     def initialize(self) -> None:

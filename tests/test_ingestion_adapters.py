@@ -704,6 +704,7 @@ def test_dispatcher_selects_adapters_and_preserves_original_page_order(
     source = make_pdf(tmp_path / "mixed.pdf", page_count=4)
     fast = FakeParser("FAST_TEXT")
     structured = FakeParser("DOCLING")
+    layout_ocr = FakeParser("DOCLING")
     ocr = FakeParser("TESSERACT")
     plan = make_plan("FAST_TEXT", "STRUCTURED_PARSE", "OCR", "LAYOUT_OCR")
 
@@ -712,11 +713,13 @@ def test_dispatcher_selects_adapters_and_preserves_original_page_order(
         plan,
         fast_text_parser=fast,
         structured_parser=structured,
+        layout_ocr_parser=layout_ocr,
         ocr_parser=ocr,
     )
 
     assert fast.pages == [1]
-    assert structured.pages == [2, 4]
+    assert structured.pages == [2]
+    assert layout_ocr.pages == [4]
     assert ocr.pages == [3]
     assert [page.page_number for page in result.pages] == [1, 2, 3, 4]
     assert [page.parser for page in result.pages] == [

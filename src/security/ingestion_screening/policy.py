@@ -20,7 +20,7 @@ class ScreeningPolicy(BaseModel):
     version: NonEmptyStr = "isg-1.2.0"
     boundary_window_chars: Annotated[int, Field(ge=1, strict=True)] = 300
     max_file_bytes: Annotated[int, Field(ge=1, strict=True)] = 50 * 1024 * 1024
-    max_pdf_pages: Annotated[int, Field(ge=1, strict=True)] = 1000
+    max_pdf_pages: Annotated[int, Field(ge=1, strict=True)] = 500
     max_pdf_objects: Annotated[int, Field(ge=1, strict=True)] = 200_000
     max_nonprinting_ratio: Annotated[
         float, Field(ge=0.0, le=1.0, allow_inf_nan=False, strict=True)

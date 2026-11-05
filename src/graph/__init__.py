@@ -1,0 +1,1 @@
+"""Validated graph-write boundaries."""

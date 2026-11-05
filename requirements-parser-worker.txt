@@ -1,0 +1,4 @@
+docling>=2.145.0
+pydantic>=2.14.1
+pymupdf>=1.28.2
+rapidocr>=3.10.0
