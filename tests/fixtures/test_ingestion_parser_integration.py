@@ -35,6 +35,7 @@ import pymupdf
 import pytest
 from PIL import Image
 
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -218,7 +219,12 @@ def docling_layout_converter() -> DocumentConverter:
         generate_page_images=True,
     )
     return DocumentConverter(
-        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=options,
+                backend=PyPdfiumDocumentBackend,
+            )
+        }
     )
 
 
@@ -232,7 +238,12 @@ def docling_rapidocr_converter() -> DocumentConverter:
         generate_page_images=True,
     )
     return DocumentConverter(
-        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=options,
+                backend=PyPdfiumDocumentBackend,
+            )
+        }
     )
 
 

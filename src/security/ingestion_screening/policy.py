@@ -17,7 +17,7 @@ class ScreeningPolicy(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True, validate_default=True)
 
-    version: NonEmptyStr = "isg-1.1.0"
+    version: NonEmptyStr = "isg-1.2.0"
     boundary_window_chars: Annotated[int, Field(ge=1, strict=True)] = 300
     max_file_bytes: Annotated[int, Field(ge=1, strict=True)] = 50 * 1024 * 1024
     max_pdf_pages: Annotated[int, Field(ge=1, strict=True)] = 1000
@@ -43,9 +43,13 @@ class ScreeningPolicy(BaseModel):
     )
     high_severity_patterns: tuple[_Pattern, ...] = (
         r"(?is)\b(?:AI[- ]assistant|language\s+model|ChatGPT|LLM)\b.{0,80}\b(?:ignore|override|reveal|exfiltrate)\b",
+        r"(?is)<\|im_start\|>\s*(?:system|developer)\b.{0,300}<\|im_end\|>",
+        r"(?is)<\|assistant\b[^>]{0,120}\bto\s*=\s*(?:python|browser|[\w.-]+)\b",
+        r"(?is)<\|(?:tool_call|function_call)\|>",
         r"(?is)<!--.{0,200}(?:ignore|override|system\s+prompt|exfiltrat).{0,200}-->",
         r"(?is)<\s*script\b[^>]*>",
         r"(?i)\bjavascript\s*:",
+        r"(?is)\bon\s*(?:error|load|click|mouseover)\s*=\s*[\"'][^\"']{1,300}[\"']",
         r"(?i)!\[[^\]]*\]\(\s*https?://[^)]+\)",
         r"(?is)<\s*(?:iframe|object|embed)\b[^>]*>",
         r"(?is)<\s*img\b[^>]*\bsrc\s*=\s*[\"']?https?://[^\s\"'>]+",
@@ -53,7 +57,6 @@ class ScreeningPolicy(BaseModel):
     )
     low_severity_patterns: tuple[_Pattern, ...] = (
         r"(?i)<\|\s*(?:system|assistant|developer|user|tool)\s*\|>",
-        r"(?i)<\|(?:tool_call|function_call)\|>",
     )
 
     @field_validator(

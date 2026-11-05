@@ -94,6 +94,8 @@ class ClamAVScanner:
         self.database_version = (
             engine_and_database[1][:128] if len(engine_and_database) == 2 else "unknown"
         )
+        if self.database_version == "unknown":
+            raise RuntimeError("ClamAV signature database version is unavailable")
 
     def scan(self, path: Path) -> bool:
         result = subprocess.run(
@@ -267,17 +269,23 @@ def screen_pdf_file(
             if pdf.needs_pass:
                 raise ValueError("Encrypted PDFs are not accepted by G0")
             page_count = pdf.page_count
-            object_count = pdf.xref_length()
-            active_content_xrefs = []
-            active_token = re.compile(
-                r"/(?:JavaScript|JS|OpenAction|AA|Launch|EmbeddedFiles)\b"
+            object_count = (
+                pdf.xref_length() if page_count <= policy.max_pdf_pages else 0
             )
-            if object_count <= policy.max_pdf_objects:
+            active_content_xrefs = []
+            if page_count <= policy.max_pdf_pages and object_count <= policy.max_pdf_objects:
+                active_token = re.compile(
+                    r"/(?:JavaScript|JS|OpenAction|AA|Launch|EmbeddedFiles)\b"
+                )
                 for xref in range(1, object_count):
                     object_text = pdf.xref_object(xref, compressed=False)
                     if active_token.search(object_text):
                         active_content_xrefs.append(xref)
-            if pdf.embfile_count() > 0:
+            if (
+                page_count <= policy.max_pdf_pages
+                and object_count <= policy.max_pdf_objects
+                and pdf.embfile_count() > 0
+            ):
                 active_content_xrefs.append(-1)
     except Exception as exc:
         flag = ScreeningFlag(
@@ -296,26 +304,6 @@ def screen_pdf_file(
             scanner=scanner,
         )
         raise FileGateError("PDF structure could not be safely inspected", record) from exc
-
-    if object_count > policy.max_pdf_objects:
-        flag = ScreeningFlag(
-            code="PDF_OBJECT_LIMIT_EXCEEDED",
-            stage=ScreeningStage.G0_FILE,
-            severity=FlagSeverity.HIGH,
-            detection_view=DetectionView.RAW,
-            matched_value=str(object_count),
-        )
-        record = _record(
-            source_sha256=source_sha256,
-            file_size_bytes=file_size,
-            page_count=page_count,
-            policy=policy,
-            decision=AdmissionDecision.REJECTED,
-            flags=(flag,),
-            justification="PDF_OBJECT_LIMIT_EXCEEDED",
-            scanner=scanner,
-        )
-        raise FileGateError("PDF exceeds the configured object-count limit", record)
 
     if page_count > policy.max_pdf_pages:
         flag = ScreeningFlag(
@@ -336,6 +324,26 @@ def screen_pdf_file(
             scanner=scanner,
         )
         raise FileGateError("PDF exceeds the configured page-count limit", record)
+
+    if object_count > policy.max_pdf_objects:
+        flag = ScreeningFlag(
+            code="PDF_OBJECT_LIMIT_EXCEEDED",
+            stage=ScreeningStage.G0_FILE,
+            severity=FlagSeverity.HIGH,
+            detection_view=DetectionView.RAW,
+            matched_value=str(object_count),
+        )
+        record = _record(
+            source_sha256=source_sha256,
+            file_size_bytes=file_size,
+            page_count=page_count,
+            policy=policy,
+            decision=AdmissionDecision.REJECTED,
+            flags=(flag,),
+            justification="PDF_OBJECT_LIMIT_EXCEEDED",
+            scanner=scanner,
+        )
+        raise FileGateError("PDF exceeds the configured object-count limit", record)
 
     if active_content_xrefs:
         flag = ScreeningFlag(

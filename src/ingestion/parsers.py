@@ -633,6 +633,7 @@ class StructuredParser:
                 PdfPipelineOptions,
                 RapidOcrOptions,
             )
+            from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
             from docling.document_converter import DocumentConverter, PdfFormatOption
 
             if self.do_ocr:
@@ -652,7 +653,11 @@ class StructuredParser:
                 DoclingConverter,
                 DocumentConverter(
                     format_options={
-                        InputFormat.PDF: PdfFormatOption(pipeline_options=options)
+                        InputFormat.PDF: PdfFormatOption(
+                            pipeline_options=options,
+                            # Avoid the Windows docling-parse threaded renderer's heap corruption.
+                            backend=PyPdfiumDocumentBackend,
+                        )
                     }
                 ),
             )

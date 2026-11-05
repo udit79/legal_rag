@@ -1,8 +1,10 @@
 """Local, deterministic G1/G2/G4/G5 batch screening."""
 
+import asyncio
 import hashlib
 import re
 import unicodedata
+from functools import lru_cache
 from urllib.parse import urlsplit
 
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
@@ -33,8 +35,10 @@ _ALLOWED_CONTROLS = frozenset("\n\r\t\f")
 _LEGITIMATE_FORMAT_CONTROLS = _BIDI_CONTROLS | frozenset("\u200c\u200d")
 _TAG_FIRST = 0xE0000
 _TAG_LAST = 0xE007F
-_BLACK_FLAG = "\U0001F3F4"
-_CANCEL_TAG = "\U000E007F"
+_VALID_FLAG_TAG_EMOJI = frozenset(
+    "\U0001F3F4" + "".join(chr(0xE0000 + ord(char)) for char in code) + "\U000E007F"
+    for code in ("eng", "sct", "wls")
+)
 _CONFUSABLES = str.maketrans(
     {
         "а": "a", "А": "a", "в": "b", "В": "b", "с": "c", "С": "c",
@@ -48,6 +52,12 @@ _CONFUSABLES = str.maketrans(
         "χ": "x", "Υ": "y", "υ": "y",
     }
 )
+_TOKEN_PATTERN = re.compile(r"[^\W_]+", re.UNICODE)
+
+
+@lru_cache(maxsize=256)
+def _compiled_pattern(pattern: str) -> re.Pattern[str]:
+    return re.compile(pattern)
 
 
 def _digest(value: str) -> str:
@@ -65,12 +75,7 @@ def _tag_sequences(text: str) -> tuple[tuple[int, int, str, bool], ...]:
         while index < len(text) and _TAG_FIRST <= ord(text[index]) <= _TAG_LAST:
             index += 1
         end = index
-        valid_emoji = (
-            start > 0
-            and text[start - 1] == _BLACK_FLAG
-            and text[end - 1] == _CANCEL_TAG
-            and all(0xE0020 <= ord(char) <= 0xE007E for char in text[start : end - 1])
-        )
+        valid_emoji = start > 0 and text[start - 1 : end] in _VALID_FLAG_TAG_EMOJI
         decoded = "".join(
             chr(ord(char) - _TAG_FIRST)
             for char in text[start:end]
@@ -227,22 +232,30 @@ def _integrity_flags(
             )
         )
     else:
-        stack: list[int] = []
+        bidi_stack: list[tuple[str, int]] = []
         unbalanced: list[int] = []
         for index, char in enumerate(text):
             if char in "\u202a\u202b\u202d\u202e\u2066\u2067\u2068":
-                stack.append(index)
+                bidi_stack.append((char, index))
             elif char == "\u202c":
-                if stack:
-                    stack.pop()
+                if bidi_stack and bidi_stack[-1][0] in "\u202a\u202b\u202d\u202e":
+                    bidi_stack.pop()
                 else:
                     unbalanced.append(index)
             elif char == "\u2069":
-                if stack:
-                    stack.pop()
+                isolate_index = next(
+                    (
+                        stack_index
+                        for stack_index in range(len(bidi_stack) - 1, -1, -1)
+                        if bidi_stack[stack_index][0] in "\u2066\u2067\u2068"
+                    ),
+                    None,
+                )
+                if isolate_index is not None:
+                    del bidi_stack[isolate_index:]
                 else:
                     unbalanced.append(index)
-        unbalanced.extend(stack)
+        unbalanced.extend(index for _, index in bidi_stack)
         for index in unbalanced:
             flags.append(
                 _flag(
@@ -323,8 +336,7 @@ def _integrity_flags(
             )
         )
 
-    token_pattern = re.compile(r"[^\W_]+", re.UNICODE)
-    for match in token_pattern.finditer(text):
+    for match in _TOKEN_PATTERN.finditer(text):
         scripts = {_script(char) for char in match.group()}
         scripts.discard(None)
         if len(match.group()) >= policy.min_mixed_script_token_chars and len(scripts) > 1:
@@ -382,7 +394,7 @@ def _pattern_flags(
         for p in policy.low_severity_patterns
     ]
     for code, source_pattern, severity, is_hard in patterns:
-        pattern = re.compile(source_pattern)
+        pattern = _compiled_pattern(source_pattern)
         for match in pattern.finditer(detection_text):
             original_start = offset_map[match.start()]
             original_end = offset_map[match.end() - 1] + 1
@@ -437,7 +449,11 @@ def _boundary_flags(
     head_size = min(policy.boundary_window_chars, len(target.text))
     source_pages = {item.page_number for item in source.sources}
     target_pages = {item.page_number for item in target.sources}
-    if len(source_pages) != 1 or source_pages != target_pages:
+    if len(source_pages) != 1 or len(target_pages) != 1:
+        return []
+    source_page = next(iter(source_pages))
+    target_page = next(iter(target_pages))
+    if target_page not in {source_page, source_page + 1}:
         return []
     tail_start = len(source.text) - tail_size
     source_view, source_map = _normalized_detection_view(source.text[tail_start:])
@@ -457,7 +473,7 @@ def _boundary_flags(
         ("URL_REFERENCE", _URL.pattern, FlagSeverity.INFO)
     ]
     for code, source_pattern, severity in patterns:
-        for match in re.finditer(source_pattern, joined):
+        for match in _compiled_pattern(source_pattern).finditer(joined):
             start, end = match.span()
             if not (start < len(source_view) < end):
                 continue
@@ -531,6 +547,23 @@ class ScreeningService:
         self.policy = policy or ScreeningPolicy()
 
     async def screen_batch(
+        self,
+        chunks: tuple[Chunk, ...] | list[Chunk],
+        document_context: DocumentContext,
+        *,
+        document_id: str,
+        file_screening: FileScreeningRecord | None = None,
+    ) -> ScreenedChunkedDocument:
+        """Run the local batch screening pass without blocking the event loop."""
+        return await asyncio.to_thread(
+            self._screen_batch_sync,
+            chunks,
+            document_context,
+            document_id=document_id,
+            file_screening=file_screening,
+        )
+
+    def _screen_batch_sync(
         self,
         chunks: tuple[Chunk, ...] | list[Chunk],
         document_context: DocumentContext,

@@ -38,14 +38,15 @@ class DocumentContext(BaseModel):
 
     @property
     def has_required_provenance(self) -> bool:
-        return all(
-            (
-                self.source_id,
-                self.tenant_id,
-                self.uploader_id,
-                self.ingestion_run_id,
-            )
-        )
+        # Anonymous public uploads still have server-generated document and
+        # run identifiers. Tenant and uploader IDs are optional only for T3;
+        # authenticated tiers must retain both identity fields.
+        has_server_identity = bool(self.source_id and self.ingestion_run_id)
+        has_upload_identity = bool(self.tenant_id and self.uploader_id)
+        identity_pair_is_consistent = bool(self.tenant_id) == bool(self.uploader_id)
+        if self.trust_tier == TrustTier.T3_UNAUTHENTICATED_EXTERNAL:
+            return has_server_identity and identity_pair_is_consistent
+        return has_server_identity and has_upload_identity
 
 
 class ScreeningFlag(BaseModel):

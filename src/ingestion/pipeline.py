@@ -7,12 +7,12 @@ from pathlib import Path
 import pymupdf
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Literal, Self
 
 from src.ingestion.chunk_contracts import Chunk
 from src.ingestion.chunking import ChunkingConfig, ChunkingResult, chunk_document
-from src.ingestion.contracts import DocumentFeatures, DocumentRoutePlan
+from src.ingestion.contracts import DocumentFeatures, DocumentRoutePlan, NonNegativeInt
 from src.ingestion.continuity import generate_continuity_candidates
 from src.ingestion.continuity_contracts import (
     ContinuityCandidate,
@@ -116,6 +116,26 @@ class CPCRResult(BaseModel):
         return self
 
 
+class RevisedChunkAdmissionMapping(BaseModel):
+    """Maps one revised chunk to the original chunks and their screening records."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    revised_chunk_index: NonNegativeInt
+    original_chunk_indices: tuple[NonNegativeInt, ...] = Field(min_length=1)
+    admission_records: tuple[AdmissionRecord, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_original_records(self) -> Self:
+        if self.original_chunk_indices != tuple(
+            record.chunk_index for record in self.admission_records
+        ):
+            raise ValueError("Mapping indexes must match its original admission records")
+        if tuple(sorted(set(self.original_chunk_indices))) != self.original_chunk_indices:
+            raise ValueError("Original chunk indexes must be ordered and unique")
+        return self
+
+
 class RevisedChunkSet(BaseModel):
     """Chunks after applying positive CPCR page-continuity relationships."""
 
@@ -128,6 +148,7 @@ class RevisedChunkSet(BaseModel):
     chunks: tuple[Chunk, ...]
     merged_candidate_ids: tuple[str, ...]
     admission_records: tuple[AdmissionRecord, ...]
+    admission_mappings: tuple[RevisedChunkAdmissionMapping, ...]
     screening_report: ScreeningReport
 
     @model_validator(mode="after")
@@ -136,15 +157,28 @@ class RevisedChunkSet(BaseModel):
             range(len(self.chunks))
         ):
             raise ValueError("Revised chunk indices must be contiguous from zero")
+        if len(self.admission_mappings) != len(self.chunks):
+            raise ValueError("Every revised chunk must have one admission mapping")
+        original_records = {
+            record.chunk_index: record for record in self.admission_records
+        }
+        for chunk, mapping in zip(self.chunks, self.admission_mappings, strict=True):
+            if mapping.revised_chunk_index != chunk.index:
+                raise ValueError("Admission mapping index must match revised chunk index")
+            if any(
+                original_records.get(record.chunk_index) != record
+                for record in mapping.admission_records
+            ):
+                raise ValueError("Admission mapping records must come from original screening")
         return self
 
 
 class CPCRIngestionResponse(BaseModel):
-    """API response: revised chunks and preserved unrecognized-image crops."""
+    """Public API response: final chunks and preserved image crops only."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    revised_chunks: RevisedChunkSet
+    revised_chunks: tuple[Chunk, ...]
     unrecognized_images: tuple[UnrecognizedImageCrop, ...]
 
 
@@ -327,6 +361,10 @@ def revise_chunks_after_cpcr(
 
     ordered_components = sorted(components.values(), key=min)
     revised_chunks = []
+    admission_by_index = {
+        record.chunk_index: record for record in screened.admission_records
+    }
+    admission_mappings: list[RevisedChunkAdmissionMapping] = []
     for revised_index, component in enumerate(ordered_components):
         component_indices = sorted(component)
         originals = [chunks_by_index[index] for index in component_indices]
@@ -371,6 +409,16 @@ def revise_chunks_after_cpcr(
         revised_chunks.append(
             Chunk(index=revised_index, text=text, sources=sources)
         )
+        original_records = tuple(
+            admission_by_index[index] for index in component_indices
+        )
+        admission_mappings.append(
+            RevisedChunkAdmissionMapping(
+                revised_chunk_index=revised_index,
+                original_chunk_indices=tuple(component_indices),
+                admission_records=original_records,
+            )
+        )
 
     return RevisedChunkSet(
         document_id=original_document.document_id,
@@ -383,6 +431,7 @@ def revise_chunks_after_cpcr(
         chunks=tuple(revised_chunks),
         merged_candidate_ids=tuple(merged_candidate_ids),
         admission_records=screened.admission_records,
+        admission_mappings=tuple(admission_mappings),
         screening_report=screened.report,
     )
 

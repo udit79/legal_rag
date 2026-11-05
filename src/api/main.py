@@ -305,8 +305,14 @@ async def ingest_pdf_endpoint(
                 request.app.state.scaledown_client,
                 screened,
             )
+            if cpcr.outcome != "COMPLETED":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={"code": "CPCR_CLASSIFICATION_INCOMPLETE"},
+                )
+            revised = revise_chunks_after_cpcr(ingestion, cpcr, screened)
             return CPCRIngestionResponse(
-                revised_chunks=revise_chunks_after_cpcr(ingestion, cpcr, screened),
+                revised_chunks=revised.chunks,
                 unrecognized_images=ingestion.unrecognized_images,
             )
         except InvalidPdfError as exc:
