@@ -29,6 +29,16 @@ and reused between uploads. They are released after 30 minutes without a
 Docling parse by default. Set `DOCLING_IDLE_TIMEOUT_SECONDS` to change the idle
 period; set it to `0` to keep the pipelines resident until server shutdown.
 
+Windows x64 users get the ClamAV 1.5.4 runtime bundled under
+`tools/clamav/1.5.4/windows-x64`; `clamscan.exe` is selected automatically.
+Virus definitions are intentionally not committed. Initialize or update them
+once with the bundled `freshclam.exe` (see
+[`tools/clamav/README.md`](tools/clamav/README.md)). Set
+`CLAMAV_SCAN_COMMAND` only when overriding the bundled scanner. The current API
+has no authenticated tenant or uploader identity; in accordance with the
+fail-closed provenance policy, chunk admission remains quarantined until those
+identifiers are supplied by an authenticated API layer.
+
 See [docs/architecture.md](docs/architecture.md) for the current component
 structure and data contracts. See [docs/code_map.md](docs/code_map.md) for
 the file tree and a file-by-file index of implemented classes and functions.

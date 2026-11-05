@@ -10,3 +10,5 @@ docs/m0_*
 .hypothesis
 tmp/
 .mypy_cache/
+tools/clamav/*/windows-*/database/
+tools/clamav/*/windows-*/freshclam.local.conf

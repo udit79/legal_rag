@@ -54,13 +54,34 @@ def _content_role(chunk: Chunk, page_number: int) -> str | None:
 
 
 def _role_boundary_chunks(
-    chunks_by_page: dict[int, list[Chunk]], page_number: int, role: str
+    chunks_by_page: dict[int, list[Chunk]],
+    page_number: int,
+    role: str,
+    excluded_chunk_indices: frozenset[int],
 ) -> tuple[Chunk, ...]:
     return tuple(
         chunk
         for chunk in chunks_by_page.get(page_number, ())
-        if _content_role(chunk, page_number) == role
+        if chunk.index not in excluded_chunk_indices
+        and _content_role(chunk, page_number) == role
     )
+
+
+def _has_excluded_role_barrier(
+    chunks_by_page: dict[int, list[Chunk]],
+    page_number: int,
+    role: str,
+    excluded_chunk_indices: frozenset[int],
+) -> bool:
+    for chunk in chunks_by_page.get(page_number, ()):
+        if chunk.index not in excluded_chunk_indices:
+            continue
+        block_types = {source.block_type for source in chunk.sources}
+        if role == "TABLE" and block_types == {"TABLE"}:
+            return True
+        if role == "TEXT" and block_types <= {"TEXT", "OTHER"}:
+            return True
+    return False
 
 
 def _candidate(
@@ -98,6 +119,8 @@ def _candidate(
 def generate_continuity_candidates(
     document: ChunkedDocument,
     candidate_policy_version: str,
+    *,
+    excluded_chunk_indices: frozenset[int] = frozenset(),
 ) -> tuple[ContinuityCandidate, ...]:
     """Generate independent text-flow and table-flow candidates per boundary.
 
@@ -134,18 +157,37 @@ def generate_continuity_candidates(
     for page_number in range(1, document.source_page_count):
         boundary_candidates: list[ContinuityCandidate] = []
         for role in ("TEXT", "TABLE"):
-            source_chunks = _role_boundary_chunks(chunks_by_page, page_number, role)
-            target_chunks = _role_boundary_chunks(chunks_by_page, page_number + 1, role)
+            if _has_excluded_role_barrier(
+                chunks_by_page, page_number, role, excluded_chunk_indices
+            ) or _has_excluded_role_barrier(
+                chunks_by_page, page_number + 1, role, excluded_chunk_indices
+            ):
+                continue
+            source_chunks = _role_boundary_chunks(
+                chunks_by_page,
+                page_number,
+                role,
+                excluded_chunk_indices,
+            )
+            target_chunks = _role_boundary_chunks(
+                chunks_by_page,
+                page_number + 1,
+                role,
+                excluded_chunk_indices,
+            )
             if not source_chunks or not target_chunks:
                 continue
-            boundary_candidates.append(
-                _candidate(
-                    document,
-                    max(source_chunks, key=lambda chunk: chunk.index),
-                    min(target_chunks, key=lambda chunk: chunk.index),
-                    candidate_policy_version,
-                )
+            candidate = _candidate(
+                document,
+                max(source_chunks, key=lambda chunk: chunk.index),
+                min(target_chunks, key=lambda chunk: chunk.index),
+                candidate_policy_version,
             )
+            if (
+                candidate.source.chunk_index not in excluded_chunk_indices
+                and candidate.target.chunk_index not in excluded_chunk_indices
+            ):
+                boundary_candidates.append(candidate)
         candidates.extend(
             sorted(
                 boundary_candidates,

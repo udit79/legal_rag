@@ -33,6 +33,8 @@ placeholder does not imply that a workflow uses it yet.
 │   └── observability/
 │       ├── __init__.py             # Empty package marker
 │       └── telemetry.py            # OpenTelemetry setup
+│   └── security/
+│       └── ingestion_screening/     # ISG contracts, G0 file gate, local batch screening
 ├── docs/
 │   ├── architecture.md             # Components, behavior, and current scope
 │   ├── code_map.md                 # This file: source and symbol index
@@ -72,7 +74,12 @@ placeholder does not imply that a workflow uses it yet.
 | `src/ingestion/chunk_contracts.py` | `ChunkSource`, `Chunk`, `ChunkedDocument`, `TEXT_BEARING_BLOCK_TYPES`; immutable contracts for typed source provenance, Unicode text offsets, contiguous chunk indices, source page bounds, and policy version. No splitting algorithm is implemented. |
 | `src/ingestion/parsers.py` | `PageParser`; `FastTextParser.parse_page()` uses PyMuPDF; `StructuredParser.parse_page()` uses Docling, with optional RapidOCR for layout OCR; `OcrParser.parse_page()` uses Tesseract by default or RapidOCR. |
 | `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` routes parsing per page and emits `ingestion.parser.page` spans with page, route, parser, status, block and warning attributes. It retains page failures and continues in source order. |
-| `src/ingestion/pipeline.py` | `ingest_pdf(path)` runs preflight, routing, parsing, chunking, and image crop extraction; `classify_page_continuity(ingestion, client)` evaluates candidates; `revise_chunks_after_cpcr(ingestion, cpcr)` merges positive continuity pairs while retaining provenance. `CPCRIngestionResponse` contains revised chunks and image crops only. |
+| `src/ingestion/pipeline.py` | `ingest_pdf(path, file_screening=...)` requires an admitted G0 record before PDF preflight and parser dispatch; `classify_page_continuity(ingestion, client, screened)` requires the matching G0/G1-G5 result and excludes non-admitted chunks before CDM; `revise_chunks_after_cpcr(...)` merges positive continuity pairs while retaining provenance. `CPCRIngestionResponse` contains revised chunks and image crops only. |
+| `src/security/ingestion_screening/contracts.py` | Immutable G0-G5 sidecar contracts for file results, chunk flags, screening reports, admission records, and screened chunk sets. |
+| `src/security/ingestion_screening/policy.py` | `ScreeningPolicy`; versioned thresholds/patterns and canonical SHA-256 digest. |
+| `src/security/ingestion_screening/file_gate.py` | `screen_pdf_file()` checks PDF identity, file/page limits, active content, embedded files, and malware verdict before parsing. |
+| `src/security/ingestion_screening/screening_service.py` | `ScreeningService.screen_batch()` runs local G1/G2/G4/G5 checks once over the complete chunk batch. |
+| `tools/clamav/1.5.4/windows-x64/` | Bundled ClamAV 1.5.4 Windows x64 runtime files needed by `clamscan` and `freshclam`; debug symbols, static libraries, headers, manuals, and unused utilities are excluded. Virus definitions are local-only and ignored by Git. |
 | `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
 | `src/ingestion/router.py` | `MIN_NATIVE_TEXT_CHARACTERS` (50); `route_document(features, policy_version)` returns a validated plan with a deterministic decision for each page; `_route_page(page)` applies the per-page heuristics. |
 | `src/ingestion/__init__.py` | Empty package marker. |

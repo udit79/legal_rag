@@ -32,6 +32,13 @@ from src.ingestion.parser_contracts import CanonicalDocument, SourceCoordinates
 from src.ingestion.parsers import PageParser
 from src.ingestion.preflight import inspect_pdf
 from src.ingestion.router import route_document
+from src.security.ingestion_screening.contracts import (
+    AdmissionRecord,
+    FileScreeningRecord,
+    ScreeningReport,
+    ScreenedChunkedDocument,
+)
+from src.security.ingestion_screening.enums import AdmissionDecision
 
 INGESTION_ROUTING_POLICY_VERSION = "ingestion-router-1.0.0"
 MAX_CROP_PIXELS = 4_000_000
@@ -120,6 +127,8 @@ class RevisedChunkSet(BaseModel):
     merge_separator_policy: str
     chunks: tuple[Chunk, ...]
     merged_candidate_ids: tuple[str, ...]
+    admission_records: tuple[AdmissionRecord, ...]
+    screening_report: ScreeningReport
 
     @model_validator(mode="after")
     def validate_indices(self) -> Self:
@@ -142,11 +151,29 @@ class CPCRIngestionResponse(BaseModel):
 async def classify_page_continuity(
     ingestion: PdfIngestionResult,
     client: ClassificationClient,
+    screened: ScreenedChunkedDocument,
 ) -> CPCRResult:
     """Evaluate every adjacent-page candidate and classify only DEFER results."""
     document = ingestion.chunking.document
+    if screened.document != document:
+        raise ValueError("CPCR requires screening results for this exact chunked document")
+    if (
+        screened.report.file_screening is None
+        or screened.report.file_screening.decision != AdmissionDecision.ADMITTED
+    ):
+        raise ValueError("CPCR requires an admitted G0 file-screening record")
+    excluded_chunk_indices = frozenset(
+        result.chunk_index
+        for result in screened.report.chunk_results
+        if result.decision
+        not in {AdmissionDecision.ADMITTED, AdmissionDecision.ADMITTED_FLAGGED}
+    )
     chunks_by_index = {chunk.index: chunk for chunk in document.chunks}
-    candidates = generate_continuity_candidates(document, "cpcr-candidate-2")
+    candidates = generate_continuity_candidates(
+        document,
+        "cpcr-candidate-2",
+        excluded_chunk_indices=excluded_chunk_indices,
+    )
     graph = build_cpcr_graph(client, document)
     outcomes: list[CPCRCandidateResult] = []
 
@@ -233,10 +260,26 @@ async def classify_page_continuity(
 def revise_chunks_after_cpcr(
     ingestion: PdfIngestionResult,
     cpcr: CPCRResult,
+    screened: ScreenedChunkedDocument,
 ) -> RevisedChunkSet:
     """Merge components connected by positive, validated CPCR outcomes."""
     original_document = ingestion.chunking.document
-    chunks_by_index = {chunk.index: chunk for chunk in original_document.chunks}
+    if screened.document != original_document:
+        raise ValueError("Screening results do not match the document being revised")
+    admission_by_index = {
+        result.chunk_index: result.decision for result in screened.report.chunk_results
+    }
+    admitted_indices = {
+        chunk.index
+        for chunk in original_document.chunks
+        if admission_by_index.get(chunk.index)
+        in {AdmissionDecision.ADMITTED, AdmissionDecision.ADMITTED_FLAGGED}
+    }
+    chunks_by_index = {
+        chunk.index: chunk
+        for chunk in original_document.chunks
+        if chunk.index in admitted_indices
+    }
     parent = {index: index for index in chunks_by_index}
     merged_candidate_ids: list[str] = []
     merge_relations: dict[tuple[int, int], ContinuityRelation] = {}
@@ -273,7 +316,7 @@ def revise_chunks_after_cpcr(
         source_index = result.candidate.source.chunk_index
         target_index = result.candidate.target.chunk_index
         if source_index not in chunks_by_index or target_index not in chunks_by_index:
-            raise ValueError("CPCR result references a missing chunk")
+            continue
         union(source_index, target_index)
         merge_relations[(source_index, target_index)] = relation
         merged_candidate_ids.append(result.candidate.candidate_id)
@@ -288,18 +331,26 @@ def revise_chunks_after_cpcr(
         component_indices = sorted(component)
         originals = [chunks_by_index[index] for index in component_indices]
         text_parts = [originals[0].text]
-        for index, original in zip(component_indices[1:], originals[1:], strict=True):
+        component_relation_values = [
+            relation
+            for (source, target), relation in merge_relations.items()
+            if source in component and target in component
+        ]
+        default_relation = (
+            ContinuityRelation.SAME_PARAGRAPH
+            if ContinuityRelation.SAME_PARAGRAPH in component_relation_values
+            else ContinuityRelation.TABLE_CONTINUATION
+        )
+        for left_index, right_index, original in zip(
+            component_indices[:-1],
+            component_indices[1:],
+            originals[1:],
+            strict=True,
+        ):
             previous_text = text_parts[-1]
-            relation = merge_relations.get((component_indices[len(text_parts) - 1], index))
-            if relation is None:
-                relation = next(
-                    (
-                        relation_value
-                        for (source, target), relation_value in merge_relations.items()
-                        if source in component and target in component
-                    ),
-                    ContinuityRelation.SAME_PARAGRAPH,
-                )
+            relation = merge_relations.get(
+                (left_index, right_index), default_relation
+            )
             if relation == ContinuityRelation.TABLE_CONTINUATION:
                 separator = (
                     ""
@@ -331,6 +382,8 @@ def revise_chunks_after_cpcr(
         ),
         chunks=tuple(revised_chunks),
         merged_candidate_ids=tuple(merged_candidate_ids),
+        admission_records=screened.admission_records,
+        screening_report=screened.report,
     )
 
 
@@ -391,6 +444,7 @@ def crop_unrecognized_images(
 def ingest_pdf(
     source: Path,
     *,
+    file_screening: FileScreeningRecord,
     config: ChunkingConfig | None = None,
     fast_text_parser: PageParser | None = None,
     structured_parser: PageParser | None = None,
@@ -398,11 +452,20 @@ def ingest_pdf(
     ocr_parser: PageParser | None = None,
 ) -> PdfIngestionResult:
     """Run preflight, routing, parsing, chunking and image preservation."""
+    if (
+        file_screening.decision != AdmissionDecision.ADMITTED
+        or file_screening.source_sha256 is None
+    ):
+        raise ValueError("PDF parsing requires an admitted G0 file-screening record")
     settings = config or ChunkingConfig()
     with _TRACER.start_as_current_span("ingestion.run") as root_span:
         try:
             with _TRACER.start_as_current_span("ingestion.preflight") as span:
                 features = inspect_pdf(source)
+                if file_screening.source_sha256 != features.content_sha256:
+                    raise ValueError("G0 and PDF preflight source digests differ")
+                if file_screening.page_count != features.page_count:
+                    raise ValueError("G0 and PDF preflight page counts differ")
                 span.set_attribute("ingestion.pdf.size_bytes", features.file_size_bytes)
                 span.set_attribute("ingestion.pdf.page_count", features.page_count)
                 span.set_attribute("ingestion.pdf.sha256", features.content_sha256)

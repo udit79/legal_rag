@@ -157,6 +157,25 @@ converters are released after 1,800 seconds without a Docling parse; configure
 disable idle release. A later request recreates and initializes an evicted
 pipeline.
 
+## Ingestion screening
+
+The sidecar screening contracts and local G1/G2/G4/G5 batch service live under
+`src/security/ingestion_screening/`. G0 validates file identity and limits,
+inspects active PDF content, and calls the ClamAV adapter before parser
+dispatch. The screening service is invoked once for the complete original
+chunk batch after BLP-1. Quarantined or rejected chunk indexes are excluded
+from CPCR candidate selection without renumbering or compacting the original
+chunk positions. The endpoint places the screening report and admission
+records inside `revised_chunks`; original canonical blocks and chunk text are
+not mutated.
+
+The current API does not yet provide authenticated tenant or uploader IDs.
+Those missing required provenance fields therefore fail closed and quarantine
+chunks. G3 learned detection, parser process isolation, decompression-expansion
+limits, and G6 graph-write screening remain later work. The Windows x64 ClamAV
+runtime is bundled under `tools/clamav/`; its mutable signature database is
+kept local and ignored by Git.
+
 `FastTextParser` preserves line boundaries inside each native text block by
 joining PyMuPDF lines with newline characters. On OCR routes, native text and
 visual blocks are retained and OCR output is merged as additional text. To

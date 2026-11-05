@@ -1,4 +1,6 @@
 import asyncio
+import hashlib
+import json
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -33,6 +35,15 @@ from src.ingestion.pipeline import (
 from src.ingestion.preflight import InvalidPdfError
 from src.ingestion.scaledown_client import ScaleDownClient
 from src.observability.telemetry import configure_telemetry
+from src.security.ingestion_screening.contracts import DocumentContext
+from src.security.ingestion_screening.enums import AdmissionDecision, TrustTier
+from src.security.ingestion_screening.file_gate import (
+    ClamAVScanner,
+    FileGateError,
+    screen_pdf_file,
+)
+from src.security.ingestion_screening.policy import ScreeningPolicy
+from src.security.ingestion_screening.screening_service import ScreeningService
 
 _TRACER = trace.get_tracer("graph_rag.api")
 
@@ -79,6 +90,12 @@ async def lifespan(app: FastAPI):
         structured_parser = StructuredParser()
         layout_ocr_parser = StructuredParser(do_ocr=True)
         ocr_parser = OcrParser()
+        screening_policy = ScreeningPolicy()
+        malware_scanner = ClamAVScanner()
+        await run_in_threadpool(malware_scanner.initialize)
+        app.state.screening_policy = screening_policy
+        app.state.screening_service = ScreeningService(screening_policy)
+        app.state.malware_scanner = malware_scanner
         docling_parsers = (structured_parser, layout_ocr_parser)
 
         # Lifespan startup does not yield until both PDF pipelines and their
@@ -185,20 +202,111 @@ async def ingest_pdf_endpoint(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Uploaded PDF is empty",
                 )
+            screening_policy = request.app.state.screening_policy
+            try:
+                with _TRACER.start_as_current_span("ingestion.file_gate") as span:
+                    file_screening = await run_in_threadpool(
+                        screen_pdf_file,
+                        source,
+                        policy=screening_policy,
+                        scanner=request.app.state.malware_scanner,
+                        filename=file.filename,
+                    )
+                    span.set_attribute(
+                        "ingestion.screening.file_decision",
+                        file_screening.decision.value,
+                    )
+                    span.set_attribute(
+                        "ingestion.screening.file_bytes",
+                        file_screening.file_size_bytes,
+                    )
+            except FileGateError as exc:
+                error_status = (
+                    status.HTTP_503_SERVICE_UNAVAILABLE
+                    if "SCANNER" in exc.record.justification_codes[0]
+                    else status.HTTP_422_UNPROCESSABLE_ENTITY
+                )
+                raise HTTPException(
+                    status_code=error_status,
+                    detail={
+                        "code": exc.record.justification_codes[0],
+                        "file_screening": exc.record.model_dump(mode="json"),
+                    },
+                ) from exc
             parsers = request.app.state.ingestion_parsers
             ingestion = await run_in_threadpool(
                 ingest_pdf,
                 source,
+                file_screening=file_screening,
                 fast_text_parser=parsers["fast_text"],
                 structured_parser=parsers["structured"],
                 layout_ocr_parser=parsers["layout_ocr"],
                 ocr_parser=parsers["ocr"],
             )
+            canonical_json = json.dumps(
+                ingestion.canonical.model_dump(mode="json"),
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            span_context = trace.get_current_span().get_span_context()
+            run_id = (
+                f"{span_context.trace_id:032x}" if span_context.is_valid else None
+            )
+            document_context = DocumentContext(
+                source_id=ingestion.document_id,
+                tenant_id=None,
+                uploader_id=None,
+                ingestion_run_id=run_id,
+                source_sha256=ingestion.features.content_sha256,
+                canonical_document_digest=hashlib.sha256(
+                    canonical_json.encode("utf-8")
+                ).hexdigest(),
+                chunking_policy_version=ingestion.chunking.document.policy_version,
+                source_page_count=ingestion.features.page_count,
+                trust_tier=TrustTier.T3_UNAUTHENTICATED_EXTERNAL,
+            )
+            try:
+                with _TRACER.start_as_current_span("ingestion.screening") as span:
+                    screened = await request.app.state.screening_service.screen_batch(
+                        ingestion.chunking.document.chunks,
+                        document_context,
+                        document_id=ingestion.document_id,
+                        file_screening=file_screening,
+                    )
+                    span.set_attribute(
+                        "ingestion.screening.chunks",
+                        len(screened.report.chunk_results),
+                    )
+                    span.set_attribute(
+                        "ingestion.screening.quarantined",
+                        sum(
+                            record.decision == AdmissionDecision.QUARANTINED
+                            for record in screened.admission_records
+                        ),
+                    )
+                    span.set_attribute(
+                        "ingestion.screening.rejected",
+                        sum(
+                            record.decision == AdmissionDecision.REJECTED
+                            for record in screened.admission_records
+                        ),
+                    )
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "code": "SCREENING_FAILED",
+                        "decision": AdmissionDecision.QUARANTINED.value,
+                    },
+                ) from exc
             cpcr = await classify_page_continuity(
-                ingestion, request.app.state.scaledown_client
+                ingestion,
+                request.app.state.scaledown_client,
+                screened,
             )
             return CPCRIngestionResponse(
-                revised_chunks=revise_chunks_after_cpcr(ingestion, cpcr),
+                revised_chunks=revise_chunks_after_cpcr(ingestion, cpcr, screened),
                 unrecognized_images=ingestion.unrecognized_images,
             )
         except InvalidPdfError as exc:
