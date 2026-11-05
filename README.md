@@ -16,12 +16,18 @@ curl.exe -X POST http://localhost:8000/ingestion `
   -o ingestion-result.json
 ```
 
-The JSON response contains `cpcr` candidates, gateway decisions, ScaleDown
-classifications for deferred candidates, and `unrecognized_images` with
-page/block provenance and base64 PNG crops. A ScaleDown failure is recorded on
-that candidate and produces a partial CPCR outcome. Uploads are limited to
-50 MiB. Set `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` to export HTTP, per-page
-parser, and ingestion-stage traces.
+The JSON response contains only `revised_chunks` and `unrecognized_images`.
+Revised chunks merge positive `SAME_PARAGRAPH` and `TABLE_CONTINUATION`
+relationships; failed or non-positive classifications leave chunks separate.
+Each revised chunk retains source provenance, and image crops include
+page/block metadata and base64 PNG data. Uploads are limited to 50 MiB. Set
+`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` to export HTTP, per-page parser, and
+ingestion-stage traces.
+
+Docling's normal and layout-OCR pipelines are initialized during server startup
+and reused between uploads. They are released after 30 minutes without a
+Docling parse by default. Set `DOCLING_IDLE_TIMEOUT_SECONDS` to change the idle
+period; set it to `0` to keep the pipelines resident until server shutdown.
 
 See [docs/architecture.md](docs/architecture.md) for the current component
 structure and data contracts. See [docs/code_map.md](docs/code_map.md) for

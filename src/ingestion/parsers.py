@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import csv
+import gc
 import io
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+import threading
+import time
 import warnings
 from contextlib import contextmanager
 from collections.abc import Iterable
@@ -589,6 +592,39 @@ class StructuredParser:
     ) -> None:
         self._converter = converter
         self.do_ocr = do_ocr
+        self._converter_lock = threading.RLock()
+        self._last_used_at = time.monotonic()
+
+    def initialize(self) -> None:
+        """Load the Docling PDF pipeline before the parser serves requests."""
+        from docling.datamodel.base_models import InputFormat
+
+        with self._converter_lock:
+            converter = self._get_converter()
+            initialize_pipeline = getattr(converter, "initialize_pipeline", None)
+            if callable(initialize_pipeline):
+                initialize_pipeline(InputFormat.PDF)
+            self._last_used_at = time.monotonic()
+
+    def close_if_idle(self, idle_timeout_seconds: float) -> bool:
+        """Release cached pipeline references after the configured idle period."""
+        if idle_timeout_seconds <= 0:
+            return False
+        with self._converter_lock:
+            if (
+                self._converter is None
+                or time.monotonic() - self._last_used_at < idle_timeout_seconds
+            ):
+                return False
+            self._converter = None
+            gc.collect()
+            return True
+
+    def close(self) -> None:
+        """Release the cached converter and its initialized model pipeline."""
+        with self._converter_lock:
+            self._converter = None
+            gc.collect()
 
     def _get_converter(self) -> DoclingConverter:
         if self._converter is None:
@@ -623,13 +659,17 @@ class StructuredParser:
         return self._converter
 
     def parse_page(self, source: Path, page_number: int) -> CanonicalPage:
-        converter = self._get_converter()
-        with _docling_deprecation_compat():
-            result = converter.convert(
-                source,
-                page_range=(page_number, page_number),
-                raises_on_error=False,
-            )
+        with self._converter_lock:
+            converter = self._get_converter()
+            try:
+                with _docling_deprecation_compat():
+                    result = converter.convert(
+                        source,
+                        page_range=(page_number, page_number),
+                        raises_on_error=False,
+                    )
+            finally:
+                self._last_used_at = time.monotonic()
         status = result.status
         status_name = str(
             getattr(

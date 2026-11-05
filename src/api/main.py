@@ -1,23 +1,53 @@
-from fastapi import FastAPI,Depends,Request,HTTPException,status,UploadFile,File
-from fastapi.concurrency import run_in_threadpool
+import asyncio
+import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import LiteralString
-from contextlib import asynccontextmanager
+
 import httpx
 from dotenv import load_dotenv
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from fastapi.concurrency import run_in_threadpool
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from src.observability.telemetry import configure_telemetry
-from src.infrastructure.neo4j_client import create_db_connect,DbConnect,run_query
-from src.ingestion.scaledown_client import ScaleDownClient
+from opentelemetry import trace
+from neo4j.exceptions import AuthError, DriverError, ServiceUnavailable, SessionExpired
+from pydantic import BaseModel
+
+from src.infrastructure.neo4j_client import DbConnect, create_db_connect, run_query
+from src.ingestion.parsers import FastTextParser, OcrParser, StructuredParser
 from src.ingestion.pipeline import (
     CPCRIngestionResponse,
     classify_page_continuity,
     ingest_pdf,
+    revise_chunks_after_cpcr,
 )
 from src.ingestion.preflight import InvalidPdfError
-from neo4j.exceptions import ServiceUnavailable,SessionExpired,AuthError,DriverError
-from pydantic import BaseModel
+from src.ingestion.scaledown_client import ScaleDownClient
+from src.observability.telemetry import configure_telemetry
+
+_TRACER = trace.get_tracer("graph_rag.api")
+
+
+async def _release_idle_docling_models(
+    parsers: tuple[StructuredParser, ...],
+    idle_timeout_seconds: int,
+) -> None:
+    interval = max(1, min(60, idle_timeout_seconds // 4 or 1))
+    while True:
+        await asyncio.sleep(interval)
+        for parser in parsers:
+            await run_in_threadpool(parser.close_if_idle, idle_timeout_seconds)
+
+
 class HealthResponse(BaseModel):
     health: str
 class ReadinessResponse(BaseModel):
@@ -29,15 +59,49 @@ class ErrorResponse(BaseModel):
 async def lifespan(app: FastAPI):
     print("Application starting up...")
     load_dotenv()
+    idle_timeout_seconds = int(
+        os.environ.get("DOCLING_IDLE_TIMEOUT_SECONDS", "1800")
+    )
+    if idle_timeout_seconds < 0:
+        raise ValueError("DOCLING_IDLE_TIMEOUT_SECONDS must be non-negative")
     provider, _ = configure_telemetry()
     scaledown_http_client = httpx.AsyncClient(timeout=30.0)
     app.state.scaledown_http_client = scaledown_http_client
     app.state.scaledown_client = ScaleDownClient(
         http_client=scaledown_http_client
     )
+    idle_model_task = None
+    docling_parsers: tuple[StructuredParser, ...] = ()
     db_connection = None
     instrumented = False
     try:
+        fast_text_parser = FastTextParser()
+        structured_parser = StructuredParser()
+        layout_ocr_parser = StructuredParser(do_ocr=True)
+        ocr_parser = OcrParser()
+        docling_parsers = (structured_parser, layout_ocr_parser)
+
+        # Lifespan startup does not yield until both PDF pipelines and their
+        # model weights are initialized and ready for requests.
+        with _TRACER.start_as_current_span("ingestion.docling.initialize") as span:
+            span.set_attribute("ingestion.parser.pipeline", "PDF")
+            await run_in_threadpool(structured_parser.initialize)
+        with _TRACER.start_as_current_span(
+            "ingestion.docling.initialize_layout_ocr"
+        ) as span:
+            span.set_attribute("ingestion.parser.pipeline", "PDF_LAYOUT_OCR")
+            await run_in_threadpool(layout_ocr_parser.initialize)
+        app.state.ingestion_parsers = {
+            "fast_text": fast_text_parser,
+            "structured": structured_parser,
+            "layout_ocr": layout_ocr_parser,
+            "ocr": ocr_parser,
+        }
+        idle_model_task = asyncio.create_task(
+            _release_idle_docling_models(docling_parsers, idle_timeout_seconds),
+            name="docling-idle-model-release",
+        )
+
         FastAPIInstrumentor.instrument_app(app)
         instrumented = True
 
@@ -47,6 +111,14 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         try:
+            if idle_model_task is not None:
+                idle_model_task.cancel()
+                try:
+                    await idle_model_task
+                except asyncio.CancelledError:
+                    pass
+            for parser in docling_parsers:
+                await run_in_threadpool(parser.close)
             if instrumented:
                 FastAPIInstrumentor.uninstrument_app(app)
         finally:
@@ -77,8 +149,10 @@ def check_health():
     summary="Ingest a PDF",
     description=(
         "Runs PDF preflight, page routing, parsing, chunking and page "
-        "continuity review. Returns CPCR results and crops for image blocks "
-        "with no recognized text; canonical output is not included."
+        "continuity review, then applies positive continuity decisions to "
+        "the returned chunks. Returns revised chunks and crops for image "
+        "blocks with no recognized text; CPCR details and canonical output "
+        "are not included."
     ),
     tags=["Ingestion"],
     response_model=CPCRIngestionResponse,
@@ -111,12 +185,20 @@ async def ingest_pdf_endpoint(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Uploaded PDF is empty",
                 )
-            ingestion = await run_in_threadpool(ingest_pdf, source)
+            parsers = request.app.state.ingestion_parsers
+            ingestion = await run_in_threadpool(
+                ingest_pdf,
+                source,
+                fast_text_parser=parsers["fast_text"],
+                structured_parser=parsers["structured"],
+                layout_ocr_parser=parsers["layout_ocr"],
+                ocr_parser=parsers["ocr"],
+            )
             cpcr = await classify_page_continuity(
                 ingestion, request.app.state.scaledown_client
             )
             return CPCRIngestionResponse(
-                cpcr=cpcr,
+                revised_chunks=revise_chunks_after_cpcr(ingestion, cpcr),
                 unrecognized_images=ingestion.unrecognized_images,
             )
         except InvalidPdfError as exc:

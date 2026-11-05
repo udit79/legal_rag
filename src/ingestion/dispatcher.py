@@ -70,6 +70,7 @@ def _adapter_for_route(
     *,
     fast_text_parser: PageParser | None,
     structured_parser: PageParser | None,
+    layout_ocr_parser: PageParser | None,
     ocr_parser: PageParser | None,
 ) -> PageParser | None:
     if decision.route == "FAST_TEXT":
@@ -84,8 +85,8 @@ def _adapter_for_route(
         return ocr_parser if ocr_parser is not None else OcrParser()
     if decision.route == "LAYOUT_OCR":
         return (
-            structured_parser
-            if structured_parser is not None
+            layout_ocr_parser
+            if layout_ocr_parser is not None
             else StructuredParser(do_ocr=True)
         )
     return None
@@ -97,6 +98,7 @@ def dispatch_document(
     *,
     fast_text_parser: PageParser | None = None,
     structured_parser: PageParser | None = None,
+    layout_ocr_parser: PageParser | None = None,
     ocr_parser: PageParser | None = None,
 ) -> CanonicalDocument:
     """Parse routed pages independently and retain failures in page order."""
@@ -172,6 +174,7 @@ def dispatch_document(
                 decision,
                 fast_text_parser=fast_text_parser,
                 structured_parser=structured_parser,
+                layout_ocr_parser=layout_ocr_parser,
                 ocr_parser=ocr_parser,
             )
         parser = parser_by_route[decision.route]

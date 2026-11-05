@@ -52,7 +52,7 @@ placeholder does not imply that a workflow uses it yet.
 | --- | --- |
 | `main.py` | `main()` — prints a greeting; not the service entry point. |
 | `src/__init__.py`, `src/api/__init__.py` | Empty package markers. |
-| `src/api/main.py` | `app`; `POST /ingestion` accepts a multipart PDF and returns CPCR results plus crops for unrecognized images, without canonical output; `lifespan(app)` initializes telemetry, ScaleDown HTTP, and Neo4j clients and closes them on shutdown; health endpoints. |
+| `src/api/main.py` | `app`; `POST /ingestion` accepts a multipart PDF and returns revised chunks and crops for unrecognized images, without separate CPCR or canonical output; `lifespan(app)` loads reusable Docling pipelines, telemetry, ScaleDown HTTP, and Neo4j clients and closes/releases them on shutdown; health endpoints. |
 
 ### Domain and graph
 
@@ -72,7 +72,7 @@ placeholder does not imply that a workflow uses it yet.
 | `src/ingestion/chunk_contracts.py` | `ChunkSource`, `Chunk`, `ChunkedDocument`, `TEXT_BEARING_BLOCK_TYPES`; immutable contracts for typed source provenance, Unicode text offsets, contiguous chunk indices, source page bounds, and policy version. No splitting algorithm is implemented. |
 | `src/ingestion/parsers.py` | `PageParser`; `FastTextParser.parse_page()` uses PyMuPDF; `StructuredParser.parse_page()` uses Docling, with optional RapidOCR for layout OCR; `OcrParser.parse_page()` uses Tesseract by default or RapidOCR. |
 | `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` routes parsing per page and emits `ingestion.parser.page` spans with page, route, parser, status, block and warning attributes. It retains page failures and continues in source order. |
-| `src/ingestion/pipeline.py` | `ingest_pdf(path)` runs preflight, routing, parsing, chunking, and image crop extraction; `classify_page_continuity(ingestion, client)` evaluates CPCR candidates and classifies deferred candidates. `CPCRIngestionResponse` contains CPCR output and image crops, not canonical output. |
+| `src/ingestion/pipeline.py` | `ingest_pdf(path)` runs preflight, routing, parsing, chunking, and image crop extraction; `classify_page_continuity(ingestion, client)` evaluates candidates; `revise_chunks_after_cpcr(ingestion, cpcr)` merges positive continuity pairs while retaining provenance. `CPCRIngestionResponse` contains revised chunks and image crops only. |
 | `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
 | `src/ingestion/router.py` | `MIN_NATIVE_TEXT_CHARACTERS` (50); `route_document(features, policy_version)` returns a validated plan with a deterministic decision for each page; `_route_page(page)` applies the per-page heuristics. |
 | `src/ingestion/__init__.py` | Empty package marker. |

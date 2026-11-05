@@ -10,10 +10,14 @@ from opentelemetry.trace import Status, StatusCode
 from pydantic import BaseModel, ConfigDict, model_validator
 from typing import Literal, Self
 
+from src.ingestion.chunk_contracts import Chunk
 from src.ingestion.chunking import ChunkingConfig, ChunkingResult, chunk_document
 from src.ingestion.contracts import DocumentFeatures, DocumentRoutePlan
 from src.ingestion.continuity import generate_continuity_candidates
-from src.ingestion.continuity_contracts import ContinuityCandidate
+from src.ingestion.continuity_contracts import (
+    ContinuityCandidate,
+    ContinuityRelation,
+)
 from src.ingestion.continuity_gateway import (
     CONTINUITY_GATEWAY_POLICY_VERSION,
     GatewayDecision,
@@ -25,6 +29,7 @@ from src.ingestion.continuity_state import CPCRState
 from src.ingestion.continuity_cdm_contracts import CDMClassificationResult
 from src.ingestion.dispatcher import dispatch_document
 from src.ingestion.parser_contracts import CanonicalDocument, SourceCoordinates
+from src.ingestion.parsers import PageParser
 from src.ingestion.preflight import inspect_pdf
 from src.ingestion.router import route_document
 
@@ -104,12 +109,33 @@ class CPCRResult(BaseModel):
         return self
 
 
-class CPCRIngestionResponse(BaseModel):
-    """API response: continuity results and preserved unrecognized images."""
+class RevisedChunkSet(BaseModel):
+    """Chunks after applying positive CPCR page-continuity relationships."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    cpcr: CPCRResult
+    document_id: str
+    source_page_count: int
+    policy_version: str
+    merge_separator_policy: str
+    chunks: tuple[Chunk, ...]
+    merged_candidate_ids: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def validate_indices(self) -> Self:
+        if tuple(chunk.index for chunk in self.chunks) != tuple(
+            range(len(self.chunks))
+        ):
+            raise ValueError("Revised chunk indices must be contiguous from zero")
+        return self
+
+
+class CPCRIngestionResponse(BaseModel):
+    """API response: revised chunks and preserved unrecognized-image crops."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    revised_chunks: RevisedChunkSet
     unrecognized_images: tuple[UnrecognizedImageCrop, ...]
 
 
@@ -204,6 +230,110 @@ async def classify_page_continuity(
     )
 
 
+def revise_chunks_after_cpcr(
+    ingestion: PdfIngestionResult,
+    cpcr: CPCRResult,
+) -> RevisedChunkSet:
+    """Merge components connected by positive, validated CPCR outcomes."""
+    original_document = ingestion.chunking.document
+    chunks_by_index = {chunk.index: chunk for chunk in original_document.chunks}
+    parent = {index: index for index in chunks_by_index}
+    merged_candidate_ids: list[str] = []
+    merge_relations: dict[tuple[int, int], ContinuityRelation] = {}
+
+    def find(index: int) -> int:
+        root = index
+        while parent[root] != root:
+            root = parent[root]
+        while parent[index] != index:
+            next_index = parent[index]
+            parent[index] = root
+            index = next_index
+        return root
+
+    def union(source_index: int, target_index: int) -> None:
+        source_root = find(source_index)
+        target_root = find(target_index)
+        if source_root != target_root:
+            parent[target_root] = source_root
+
+    for result in cpcr.candidates:
+        if result.gateway_result.decision == GatewayDecision.ACCEPT:
+            relation = result.gateway_result.relation_type
+        elif result.classification_status == "CLASSIFIED" and result.cdm_result:
+            relation = result.cdm_result.relation_type
+        else:
+            continue
+
+        if relation not in {
+            ContinuityRelation.SAME_PARAGRAPH,
+            ContinuityRelation.TABLE_CONTINUATION,
+        }:
+            continue
+        source_index = result.candidate.source.chunk_index
+        target_index = result.candidate.target.chunk_index
+        if source_index not in chunks_by_index or target_index not in chunks_by_index:
+            raise ValueError("CPCR result references a missing chunk")
+        union(source_index, target_index)
+        merge_relations[(source_index, target_index)] = relation
+        merged_candidate_ids.append(result.candidate.candidate_id)
+
+    components: dict[int, list[int]] = {}
+    for chunk_index in chunks_by_index:
+        components.setdefault(find(chunk_index), []).append(chunk_index)
+
+    ordered_components = sorted(components.values(), key=min)
+    revised_chunks = []
+    for revised_index, component in enumerate(ordered_components):
+        component_indices = sorted(component)
+        originals = [chunks_by_index[index] for index in component_indices]
+        text_parts = [originals[0].text]
+        for index, original in zip(component_indices[1:], originals[1:], strict=True):
+            previous_text = text_parts[-1]
+            relation = merge_relations.get((component_indices[len(text_parts) - 1], index))
+            if relation is None:
+                relation = next(
+                    (
+                        relation_value
+                        for (source, target), relation_value in merge_relations.items()
+                        if source in component and target in component
+                    ),
+                    ContinuityRelation.SAME_PARAGRAPH,
+                )
+            if relation == ContinuityRelation.TABLE_CONTINUATION:
+                separator = (
+                    ""
+                    if previous_text.endswith(("\n", "\r"))
+                    or original.text.startswith(("\n", "\r"))
+                    else "\n"
+                )
+            else:
+                separator = (
+                    ""
+                    if previous_text[-1:].isspace()
+                    or original.text[:1].isspace()
+                    else " "
+                )
+            text_parts.append(separator + original.text)
+        text = "".join(text_parts)
+        sources = tuple(source for chunk in originals for source in chunk.sources)
+        revised_chunks.append(
+            Chunk(index=revised_index, text=text, sources=sources)
+        )
+
+    return RevisedChunkSet(
+        document_id=original_document.document_id,
+        source_page_count=original_document.source_page_count,
+        policy_version=original_document.policy_version,
+        merge_separator_policy=(
+            "SAME_PARAGRAPH: insert one space only when needed; "
+            "TABLE_CONTINUATION: insert one line break only when needed"
+        ),
+        chunks=tuple(revised_chunks),
+        merged_candidate_ids=tuple(merged_candidate_ids),
+    )
+
+
 def _set_error(span, error: Exception) -> None:
     span.record_exception(error)
     span.set_status(Status(StatusCode.ERROR, str(error)))
@@ -259,7 +389,13 @@ def crop_unrecognized_images(
 
 
 def ingest_pdf(
-    source: Path, *, config: ChunkingConfig | None = None
+    source: Path,
+    *,
+    config: ChunkingConfig | None = None,
+    fast_text_parser: PageParser | None = None,
+    structured_parser: PageParser | None = None,
+    layout_ocr_parser: PageParser | None = None,
+    ocr_parser: PageParser | None = None,
 ) -> PdfIngestionResult:
     """Run preflight, routing, parsing, chunking and image preservation."""
     settings = config or ChunkingConfig()
@@ -281,7 +417,14 @@ def ingest_pdf(
                 )
 
             with _TRACER.start_as_current_span("ingestion.parsing") as span:
-                canonical = dispatch_document(source, route_plan)
+                canonical = dispatch_document(
+                    source,
+                    route_plan,
+                    fast_text_parser=fast_text_parser,
+                    structured_parser=structured_parser,
+                    layout_ocr_parser=layout_ocr_parser,
+                    ocr_parser=ocr_parser,
+                )
                 span.set_attribute(
                     "ingestion.parsing.failed_pages",
                     sum(page.status == "FAILED" for page in canonical.pages),

@@ -133,10 +133,14 @@ when available.
 
 `POST /ingestion` accepts a multipart `file` upload (`application/pdf`, up to
 50 MiB). It runs preflight, routing, parsing, BLP-1 chunking and CPCR, and
-returns the CPCR result and base64 PNG crops for `IMAGE` blocks with blank
-canonical text. Canonical output and chunking details are not included in the
-response. Each crop retains page, block, reading-order, and coordinate
-provenance.
+returns revised chunks and base64 PNG crops for `IMAGE` blocks with blank
+canonical text. CPCR decisions are used internally and are not returned as a
+separate result. Positive `SAME_PARAGRAPH` and
+`TABLE_CONTINUATION` outcomes merge their referenced chunks; `NO_CONTINUATION`,
+`UNKNOWN`, and failed classifications leave them separate. Revised chunk
+sources retain the original page/block/offset provenance. Canonical output is
+not included in the response. Each crop retains page, block, reading-order,
+and coordinate provenance.
 
 The pipeline emits nested OpenTelemetry spans named `ingestion.run`,
 `ingestion.preflight`, `ingestion.routing`, `ingestion.parsing`,
@@ -144,6 +148,14 @@ The pipeline emits nested OpenTelemetry spans named `ingestion.run`,
 `ingestion.cpcr.candidate`. Per-page spans include route, parser name, status,
 block count, and warning count, making slow parser pages visible. Text and
 image bytes are not attached to span attributes.
+
+The FastAPI lifespan initializes and retains shared Docling PDF and layout-OCR
+parser instances before yielding readiness. Parser instances are reused for
+requests and protected by a lock during conversion. By default, their cached
+converters are released after 1,800 seconds without a Docling parse; configure
+`DOCLING_IDLE_TIMEOUT_SECONDS` to change this period, or set it to `0` to
+disable idle release. A later request recreates and initializes an evicted
+pipeline.
 
 `FastTextParser` preserves line boundaries inside each native text block by
 joining PyMuPDF lines with newline characters. On OCR routes, native text and
