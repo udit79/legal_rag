@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 import json
 import os
 import shutil
@@ -25,6 +27,7 @@ from src.ingestion.parser_worker.limits import (
     MAX_WORKER_RESPONSE_BYTES,
     MAX_OCR_BATCH_BYTES,
     MAX_OCR_BATCH_IMAGES,
+    MAX_SINGLE_PAGE_PDF_BYTES,
     WORKER_MOUNT_PATH,
 )
 from src.ingestion.parser_worker.result import (
@@ -33,6 +36,8 @@ from src.ingestion.parser_worker.result import (
     ImageOcrResponse,
     ParseWorkerRequest,
     ParseWorkerResponse,
+    PagePdfRequest,
+    PagePdfResponse,
 )
 
 
@@ -275,6 +280,94 @@ class ParserWorkerRunner:
                     "Image OCR results do not match the request order and IDs"
                 )
             return {item.image_id: item.text for item in response.results}
+
+    async def extract_page_pdf(
+        self, source: Path, page_number: int
+    ) -> tuple[bytes, float, float]:
+        """Return one page as a bounded PDF created inside the isolated worker."""
+        if not source.is_file():
+            raise ParserWorkerError("Parser input file does not exist")
+        if type(page_number) is not int or page_number < 1:
+            raise ParserWorkerError("Page number must be a positive integer")
+        if source.stat().st_size > MAX_PDF_SIZE_BYTES:
+            raise ParserWorkerError("PDF size is outside configured worker limits")
+
+        async with self._request_lock:
+            await self.start()
+            request_id = uuid.uuid4().hex
+            filename = f"{request_id}.pdf"
+            worker_file = self.shared_directory / filename
+            try:
+                await asyncio.to_thread(shutil.copyfile, source, worker_file)
+                request = PagePdfRequest(
+                    request_id=request_id,
+                    filename=filename,
+                    page_number=page_number,
+                )
+                try:
+                    raw = await asyncio.wait_for(
+                        self._exchange_payload(
+                            request.model_dump_json().encode("utf-8")
+                        ),
+                        timeout=self.execution_timeout_seconds,
+                    )
+                except TimeoutError as exc:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerTimeout(
+                        "Isolated page export exceeded the worker time limit"
+                    ) from exc
+                except (
+                    BrokenPipeError,
+                    ConnectionError,
+                    asyncio.IncompleteReadError,
+                ) as exc:
+                    detail = self._stderr_message()
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerUnavailable(
+                        "Parser worker exited during page export"
+                        f"{': ' + detail if detail else ''}"
+                    ) from exc
+                try:
+                    envelope = json.loads(raw)
+                    if envelope.get("type") == "error":
+                        failure = ParseWorkerResponse.model_validate(envelope)
+                        raise ParserWorkerParseError(
+                            "Parser worker page export failed "
+                            f"({failure.error_code}: {failure.error_type})"
+                        )
+                    response = PagePdfResponse.model_validate(envelope)
+                except ParserWorkerParseError:
+                    raise
+                except Exception as exc:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "Parser worker returned an invalid page export"
+                    ) from exc
+                if response.request_id != request_id or response.page_number != page_number:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "Parser worker page export does not match the request"
+                    )
+                try:
+                    page_pdf = base64.b64decode(
+                        response.data_base64, validate=True
+                    )
+                except (ValueError, binascii.Error) as exc:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "Parser worker page export is not valid base64"
+                    ) from exc
+                if (
+                    not page_pdf.startswith(b"%PDF-")
+                    or len(page_pdf) > MAX_SINGLE_PAGE_PDF_BYTES
+                ):
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "Parser worker page export failed PDF validation"
+                    )
+                return page_pdf, response.width_points, response.height_points
+            finally:
+                worker_file.unlink(missing_ok=True)
 
     async def _exchange(self, request: ParseWorkerRequest) -> ParseWorkerResponse:
         payload = await self._exchange_payload(

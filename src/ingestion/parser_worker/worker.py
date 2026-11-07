@@ -26,6 +26,7 @@ from src.ingestion.parser_worker.limits import (
     MAX_OCR_BATCH_BYTES,
     MAX_OCR_BATCH_IMAGES,
     MAX_OCR_IMAGE_BYTES,
+    MAX_SINGLE_PAGE_PDF_BYTES,
     WORKER_MOUNT_PATH,
 )
 from src.ingestion.parser_worker.result import (
@@ -34,6 +35,8 @@ from src.ingestion.parser_worker.result import (
     ImageOcrText,
     ParseWorkerRequest,
     ParseWorkerResponse,
+    PagePdfRequest,
+    PagePdfResponse,
 )
 
 
@@ -111,12 +114,14 @@ def _initialize_parsers() -> tuple[FastTextParser, StructuredParser, StructuredP
 def _handle(
     raw_request: bytes,
     parsers: tuple[FastTextParser, StructuredParser, StructuredParser, OcrParser],
-) -> ParseWorkerResponse | ImageOcrResponse:
+) -> ParseWorkerResponse | ImageOcrResponse | PagePdfResponse:
     request_id: str | None = None
     try:
         message_type = json.loads(raw_request).get("type")
         if message_type == "ocr_images":
             return _handle_image_ocr(raw_request, parsers)
+        if message_type == "page_pdf":
+            return _handle_page_pdf(raw_request)
         request = ParseWorkerRequest.model_validate_json(raw_request)
         request_id = request.request_id
         source = _pdf_path(request.filename)
@@ -144,6 +149,48 @@ def _handle(
             type="error",
             request_id=request_id or "0" * 32,
             error_code="PARSER_WORKER_FAILED",
+            error_type=type(exc).__name__,
+        )
+
+
+def _handle_page_pdf(raw_request: bytes) -> PagePdfResponse | ParseWorkerResponse:
+    request_id = "0" * 32
+    try:
+        request = PagePdfRequest.model_validate_json(raw_request)
+        request_id = request.request_id
+        source = _pdf_path(request.filename)
+        with pymupdf.open(source) as document:
+            if request.page_number > document.page_count:
+                raise ValueError("Requested page is outside the PDF")
+            page = document.load_page(request.page_number - 1)
+            width_points = float(page.rect.width)
+            height_points = float(page.rect.height)
+            single_page = pymupdf.open()
+            try:
+                single_page.insert_pdf(
+                    document,
+                    from_page=request.page_number - 1,
+                    to_page=request.page_number - 1,
+                )
+                pdf_bytes = single_page.tobytes(garbage=3, deflate=True)
+            finally:
+                single_page.close()
+        if not pdf_bytes or len(pdf_bytes) > MAX_SINGLE_PAGE_PDF_BYTES:
+            raise ValueError("Single-page PDF exceeds the worker response limit")
+        return PagePdfResponse(
+            type="page_pdf_result",
+            request_id=request_id,
+            page_number=request.page_number,
+            width_points=width_points,
+            height_points=height_points,
+            data_base64=base64.b64encode(pdf_bytes).decode("ascii"),
+        )
+    except Exception as exc:
+        print(traceback.format_exc(), file=sys.stderr, flush=True)
+        return ParseWorkerResponse(
+            type="error",
+            request_id=request_id,
+            error_code="PAGE_EXPORT_FAILED",
             error_type=type(exc).__name__,
         )
 

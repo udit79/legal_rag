@@ -29,6 +29,13 @@ and configure the local ClamAV installation before starting the API; see
 [`docker/PARSER_WORKER.md`](docker/PARSER_WORKER.md) and
 [`tools/clamav/README.md`](tools/clamav/README.md).
 
+If a page reaches the `ESCALATE` route, or local OCR returns no usable page
+text, the parser worker exports that page as a bounded single-page PDF and the
+API sends only that page to ScaleDown Extract. Its raw `ocr_text` is added as
+a canonical page text block with a fallback warning. This requires
+`SCALEDOWN_API_KEY`; the recovered block has page-level coordinates because
+Extract does not return word-level geometry.
+
 The Windows x64 ClamAV scanner runtime is included under
 `tools/clamav/1.5.4/windows-x64` and runs on the Windows API host. The
 signature database, local configuration and logs are not committed. Configure

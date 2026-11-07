@@ -74,3 +74,23 @@ class ImageOcrResponse(BaseModel):
     type: Literal["ocr_result"]
     request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     results: tuple[ImageOcrText, ...]
+
+
+class PagePdfRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["page_pdf"] = "page_pdf"
+    request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    filename: str = Field(pattern=r"^[0-9a-f]{32}\.pdf$")
+    page_number: int = Field(ge=1, strict=True)
+
+
+class PagePdfResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["page_pdf_result"]
+    request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    page_number: int = Field(ge=1, strict=True)
+    width_points: float = Field(gt=0, allow_inf_nan=False)
+    height_points: float = Field(gt=0, allow_inf_nan=False)
+    data_base64: NonEmptyStr

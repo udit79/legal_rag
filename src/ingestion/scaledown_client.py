@@ -1,11 +1,13 @@
 """Async ScaleDown client; SCALEDOWN_BASE_URL precedes legacy SCALEDOWN_API_BASE."""
 
+import base64
+import json
 import os
 from collections.abc import Mapping
 from typing import Any
 
 import httpx
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from src.ingestion.continuity_cdm_contracts import (
     CDMClassificationRequest,
@@ -15,6 +17,8 @@ from src.ingestion.continuity_cdm_contracts import (
 
 DEFAULT_SCALEDOWN_API_BASE = "https://api.scaledown.xyz"
 SCALEDOWN_DECISIONS_PATH = "/v1/scaledown"
+SCALEDOWN_CHAT_COMPLETIONS_PATH = "/v1/chat/completions"
+SCALEDOWN_EXTRACT_MODEL = "extract-1"
 _CONTINUITY_QUESTION: Mapping[str, Any] = {
     "type": "choice",
     "instructions": (
@@ -67,6 +71,14 @@ class ScaleDownServerError(ScaleDownError):
 
 class ScaleDownResponseError(ScaleDownError):
     """The service returned an invalid status or response payload."""
+
+
+class ScaleDownExtractResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    ocr_text: str
+    model_id: str
+    request_id: str | None = None
 
 
 class ScaleDownClient:
@@ -135,6 +147,87 @@ class ScaleDownClient:
         except (TypeError, ValueError, ValidationError) as exc:
             raise ScaleDownResponseError(
                 "ScaleDown response did not match the expected classification shape"
+            ) from exc
+
+    async def extract_document_text(
+        self,
+        document: bytes,
+        *,
+        document_mime_type: str = "application/pdf",
+    ) -> ScaleDownExtractResult:
+        """Ask Extract to OCR a document and return its raw recognized text."""
+        if not document:
+            raise ValueError("ScaleDown Extract document cannot be empty")
+        if document_mime_type not in {"application/pdf", "image/png"}:
+            raise ValueError("Unsupported ScaleDown Extract document MIME type")
+
+        api_key = self._resolve_api_key()
+        api_base = (
+            self._api_base
+            or os.environ.get("SCALEDOWN_BASE_URL")
+            or DEFAULT_SCALEDOWN_API_BASE
+        ).rstrip("/")
+        encoded_document = base64.b64encode(document).decode("ascii")
+        payload = {
+            "model": SCALEDOWN_EXTRACT_MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Read the visible text from this single PDF page.",
+                }
+            ],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "page_text",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "visible_text": {
+                                "type": "string",
+                                "description": "Visible text on this page",
+                            }
+                        },
+                    },
+                },
+            },
+            "document": encoded_document,
+            "document_mime_type": document_mime_type,
+        }
+        try:
+            response = await self._http_client.post(
+                f"{api_base}{SCALEDOWN_CHAT_COMPLETIONS_PATH}",
+                headers={"x-api-key": api_key},
+                json=payload,
+                timeout=self._timeout,
+            )
+        except httpx.TimeoutException as exc:
+            raise ScaleDownTimeoutError("ScaleDown Extract request timed out") from exc
+        except httpx.HTTPError as exc:
+            raise ScaleDownError("ScaleDown Extract transport request failed") from exc
+
+        self._raise_for_status(response)
+        try:
+            response_body = response.json()
+            model_id = response_body["model"]
+            message_content = response_body["choices"][0]["message"]["content"]
+            extracted = json.loads(message_content)
+            ocr_text = extracted["ocr_text"]
+            if model_id != SCALEDOWN_EXTRACT_MODEL:
+                raise ValueError("ScaleDown returned an unexpected Extract model")
+            if not isinstance(ocr_text, str) or not ocr_text.strip():
+                raise ValueError("ScaleDown Extract returned no page text")
+            request_id = response_body.get("id") or response.headers.get(
+                "x-amzn-requestid"
+            ) or response.headers.get("x-request-id")
+            return ScaleDownExtractResult(
+                ocr_text=ocr_text,
+                model_id=model_id,
+                request_id=request_id,
+            )
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError) as exc:
+            raise ScaleDownResponseError(
+                "ScaleDown Extract response did not contain valid OCR text"
             ) from exc
 
     def _resolve_api_key(self) -> str:

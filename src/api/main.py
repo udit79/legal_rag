@@ -42,6 +42,8 @@ from src.ingestion.screening.image_screening import screen_image_crops
 from src.ingestion.preflight import InvalidPdfError
 from src.ingestion.router import route_document
 from src.ingestion.scaledown_client import ScaleDownClient
+from src.ingestion.scaledown_client import ScaleDownError, ScaleDownTimeoutError
+from src.ingestion.scaledown_extraction import recover_escalated_pages
 from src.observability.telemetry import configure_telemetry
 from src.security.ingestion_screening.contracts import DocumentContext
 from src.security.ingestion_screening.enums import AdmissionDecision, TrustTier
@@ -233,6 +235,24 @@ async def ingest_pdf_endpoint(
                 raise ParserWorkerError("Worker preflight page count differs from G0")
             if file_screening.file_size_bytes != features.file_size_bytes:
                 raise ParserWorkerError("Worker preflight file size differs from G0")
+            with _TRACER.start_as_current_span(
+                "ingestion.scaledown_extract_fallback"
+            ) as span:
+                canonical = await recover_escalated_pages(
+                    source,
+                    canonical,
+                    route_plan,
+                    page_exporter=request.app.state.parser_worker,
+                    text_extractor=request.app.state.scaledown_client,
+                )
+                recovered_pages = sum(
+                    page.parser == "SCALEDOWN_EXTRACT"
+                    for page in canonical.pages
+                )
+                span.set_attribute(
+                    "ingestion.scaledown_extract.recovered_pages",
+                    recovered_pages,
+                )
             ingestion = await run_in_threadpool(
                 ingest_pdf,
                 source,
@@ -356,6 +376,16 @@ async def ingest_pdf_endpoint(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Isolated PDF parser is unavailable or failed",
+            ) from exc
+        except ScaleDownTimeoutError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail={"code": "SCALEDOWN_EXTRACT_TIMEOUT"},
+            ) from exc
+        except ScaleDownError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"code": "SCALEDOWN_EXTRACT_FAILED"},
             ) from exc
         finally:
             await file.close()
