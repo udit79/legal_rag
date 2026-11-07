@@ -94,7 +94,7 @@ class ParserWorkerRunner:
             "--init",
             "--name",
             self._container_name,
-            "--pull=never",
+            "--pull=missing",
             "--network=none",
             f"--memory={MAX_MEMORY_BYTES}",
             f"--memory-swap={MAX_MEMORY_BYTES}",

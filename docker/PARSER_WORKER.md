@@ -1,6 +1,14 @@
 # Isolated PDF parser worker
 
-Build the parser image from the repository root:
+The API uses the published image by default through `.env`:
+
+```dotenv
+PARSER_WORKER_IMAGE=ghcr.io/udit79/garph-rag-parser-worker:latest
+```
+
+Docker pulls it on first use if it is not cached. For a private GHCR package,
+authenticate the Docker CLI with `docker login ghcr.io` first. To build locally
+instead, use the repository root command:
 
 ```powershell
 docker build -f docker/parser-worker.Dockerfile -t garph-rag-parser-worker:latest .
