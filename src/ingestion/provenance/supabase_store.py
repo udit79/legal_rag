@@ -8,6 +8,7 @@ import json
 import httpx
 
 from src.ingestion.pipeline import CPCRResult, RevisedChunkSet
+from src.ingestion.retrieval_text import RETRIEVAL_TEXT_POLICY_VERSION
 from src.ingestion.screening.image_screening import ImageScreeningResult
 from src.security.ingestion_screening.contracts import DocumentContext, ScreenedChunkedDocument
 
@@ -119,6 +120,7 @@ class SupabaseProvenanceStore:
                 result.model_dump(mode="json") for result in cpcr.candidates
             ],
             "context_policy": revised.context_policy,
+            "retrieval_text_policy_version": RETRIEVAL_TEXT_POLICY_VERSION,
             "contextualized_candidate_ids": list(
                 revised.contextualized_candidate_ids
             ),
@@ -126,6 +128,15 @@ class SupabaseProvenanceStore:
                 {
                     "index": chunk.index,
                     "text": chunk.text,
+                    "retrieval_text": (
+                        chunk.retrieval_text
+                        if chunk.retrieval_text is not None
+                        else chunk.text
+                    ),
+                    "retrieval_text_edits": [
+                        edit.model_dump(mode="json")
+                        for edit in chunk.retrieval_text_edits
+                    ],
                     "chunk_sha256": hashlib.sha256(
                         chunk.text.encode("utf-8")
                     ).hexdigest(),

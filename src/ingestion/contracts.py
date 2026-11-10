@@ -9,7 +9,6 @@ Route = Literal[
     "LAYOUT_OCR",
     "SKIP_BLANK",
     "ESCALATE",
-    "REJECT",
 ]
 DecisionSource = Literal["RULES", "CDM", "FALLBACK"]
 DocumentDisposition = Literal["PROCESS", "REJECT_NO_CONTENT"]

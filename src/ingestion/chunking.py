@@ -26,6 +26,7 @@ from src.ingestion.parser_contracts import (
     PageParseStatus,
     ParserFailure,
 )
+from src.ingestion.retrieval_text import normalize_retrieval_chunks
 
 CHUNKING_ALGORITHM_VERSION = "1.4.0"
 PROVISION_MARKER_PATTERNS = (
@@ -957,6 +958,6 @@ def chunk_document(
         document_id=document_id,
         source_page_count=len(preparation.pages),
         policy_version=settings.policy_version(),
-        chunks=tuple(chunks),
+        chunks=normalize_retrieval_chunks(tuple(pages), tuple(chunks)),
     )
     return ChunkingResult(document=chunked_document, report=report)

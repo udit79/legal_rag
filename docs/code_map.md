@@ -71,16 +71,16 @@ placeholder does not imply that a workflow uses it yet.
 | `src/ingestion/contracts.py` | Type aliases `DocumentMediaType`, `Route`, `DecisionSource`, `DocumentDisposition`, `NonNegativeInt`, `PositiveInt`, `NonEmptyStr`; models and validation described below. |
 | `src/ingestion/preflight.py` | `PdfPreflightError`, `PdfNotFoundError`, `InvalidPdfError`; `inspect_pdf(path)` computes document hash/size and per-page PDF features. |
 | `src/ingestion/parser_contracts.py` | `SourceCoordinates`, `CanonicalBlock`, `ParserFailure`, `CanonicalPage`, `CanonicalDocument`; validates block coordinates, page statuses, and complete original page order. `canonical_block_id(page_number, reading_order)` and serialized `CanonicalBlock.block_id` provide deterministic IDs within one canonical document representation. |
-| `src/ingestion/chunk_contracts.py` | `ChunkSource`, `Chunk`, `ChunkedDocument`, `TEXT_BEARING_BLOCK_TYPES`; immutable contracts for typed source provenance, Unicode text offsets, contiguous chunk indices, source page bounds, and policy version. No splitting algorithm is implemented. |
+| `src/ingestion/chunk_contracts.py` | `ChunkSource`, `RetrievalTextEdit`, `Chunk`, `ChunkedDocument`, `TEXT_BEARING_BLOCK_TYPES`; immutable contracts for typed source provenance and reversible offsets between raw chunk text and its retrieval view. |
+| `src/ingestion/retrieval_text.py` | `normalize_retrieval_chunks()` keeps raw text untouched while removing exact first/last lines repeated on at least three pages and repairing text-only hyphenated line breaks. |
 | `src/ingestion/parsers.py` | `PageParser`; `FastTextParser.parse_page()` uses PyMuPDF; `StructuredParser.parse_page()` uses Docling, with optional RapidOCR for layout OCR; `OcrParser.parse_page()` uses Tesseract by default or RapidOCR. |
 | `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` routes parsing per page and emits `ingestion.parser.page` spans with page, route, parser, status, block and warning attributes. It retains page failures and continues in source order. |
-| `src/ingestion/pipeline.py` | `ingest_pdf(path, file_screening=...)` requires an admitted G0 record before parsing; `classify_page_continuity(ingestion, client, screened)` requires matching G0/G1-G5 results and excludes non-admitted chunks before CDM; `revise_chunks_after_cpcr(...)` adds bounded, source-backed overlap to positive paragraph continuations without concatenating whole chunks. `CPCRIngestionResponse` includes revised chunks, compact admission dispositions, and image crops with OCR/admission status. |
+| `src/ingestion/pipeline.py` | `ingest_pdf(...)` requires prepared preflight, route, canonical parse, crop results, and an admitted G0 record; parsing is performed by the isolated worker. `classify_page_continuity(ingestion, client, screened)` requires matching G0/G1-G5 results, excludes non-admitted chunks and table-only flows from CDM, classifies deferred candidates with bounded concurrency, and rejects results below 0.75 confidence. `revise_chunks_after_cpcr(...)` adds bounded, source-backed overlap to positive paragraph continuations without concatenating whole chunks. |
 | `src/security/ingestion_screening/contracts.py` | Immutable G0-G5 sidecar contracts for file results, chunk flags, screening reports, admission records, and screened chunk sets. |
 | `src/security/ingestion_screening/policy.py` | `ScreeningPolicy`; versioned thresholds/patterns and canonical SHA-256 digest. |
 | `src/security/ingestion_screening/file_gate.py` | `screen_pdf_file()` checks raw file identity, size and malware; `apply_pdf_structure_inspection()` applies page/object/active-content limits to inspection results produced inside the parser worker. |
 | `src/security/ingestion_screening/screening_service.py` | `ScreeningService.screen_batch()` runs local G1/G2/G4/G5 checks once over the complete chunk batch. |
 | `tools/clamav/1.5.4/windows-x64/` | Bundled ClamAV 1.5.4 Windows x64 runtime files needed by `clamscan` and `freshclam`; debug symbols, static libraries, headers, manuals, and unused utilities are excluded. Virus definitions are local-only and ignored by Git. |
-| `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
 | `src/ingestion/router.py` | `MIN_NATIVE_TEXT_CHARACTERS` (50); `route_document(features, policy_version)` returns a validated plan with a deterministic decision for each page; `_route_page(page)` applies the per-page heuristics. |
 | `src/ingestion/__init__.py` | Empty package marker. |
 
@@ -103,7 +103,7 @@ validated `DocumentRoutePlan`; document processing is not implemented yet.
 | `DocumentRef` | `document_id`, `source_ref`, and `filename` are non-empty strings; `media_type` is currently only `application/pdf`. |
 | `PageFeatures` | `page_number` is a positive, one-based integer; `text_char_count`, `image_count`, and `drawing_count` are non-negative integers. |
 | `DocumentFeatures` | `content_sha256` is a 64-digit hexadecimal SHA-256 normalized to lowercase; `file_size_bytes` and `page_count` are positive integers; `pages` is a tuple of `PageFeatures`. `validate_pages()` requires exactly `page_count` records numbered contiguously from 1. |
-| `RouteDecision` | `route` is one of `FAST_TEXT`, `STRUCTURED_PARSE`, `OCR`, `LAYOUT_OCR`, `SKIP_BLANK`, `ESCALATE`, or `REJECT`; `reason` and `policy_version` are non-empty strings; `decision_source` is `RULES`, `CDM`, or `FALLBACK`; `confidence` is optional and, when provided, is a strict number in the range 0–1. |
+| `RouteDecision` | `route` is one of `FAST_TEXT`, `STRUCTURED_PARSE`, `OCR`, `LAYOUT_OCR`, `SKIP_BLANK`, or `ESCALATE`; `reason` and `policy_version` are non-empty strings; `decision_source` is `RULES`, `CDM`, or `FALLBACK`; `confidence` is optional and, when provided, is a strict number in the range 0–1. |
 | `PageRouteDecision` | Extends `RouteDecision` with a positive `page_number`. |
 | `DocumentRoutePlan` | Contains positive `page_count`, a tuple of page `decisions`, and a required `document_disposition` (`PROCESS` or `REJECT_NO_CONTENT`). `validate_page_decisions()` requires one decision for every page, in ascending order, with a consistent `policy_version`. It rejects `PROCESS` if every page is `SKIP_BLANK`, and rejects `REJECT_NO_CONTENT` if any page is not `SKIP_BLANK`. |
 
@@ -111,12 +111,6 @@ All six models reject extra fields. `NonNegativeInt`, `PositiveInt`, and
 `NonEmptyStr` are reusable constrained types; `DocumentMediaType`, `Route`,
 `DecisionSource`, and `DocumentDisposition` restrict values to the literals
 listed above.
-
-`src/ingestion/state.py` is a separate workflow-state contract: `IngestionState`
-requires `document_ref` and `current_stage`, and optionally carries
-`features`, `route_decision`, `parsed_artifact_ref`, and `error`.
-`WorkflowError` requires an error `code` and `stage` and may include a
-`message`. These are type declarations, not state-transition functions.
 
 The parser output contract is separate from route decisions. `CanonicalBlock`
 requires an original one-based page number, text, block type, reading order,

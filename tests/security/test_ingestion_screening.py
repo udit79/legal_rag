@@ -11,7 +11,14 @@ from pydantic import ValidationError
 
 from src.security.ingestion_screening import file_gate
 from src.ingestion.chunk_contracts import Chunk, ChunkSource, ChunkedDocument
+from src.ingestion.contracts import (
+    DocumentFeatures,
+    DocumentRoutePlan,
+    PageFeatures,
+    PageRouteDecision,
+)
 from src.ingestion.pipeline import classify_page_continuity, ingest_pdf
+from src.ingestion.parser_contracts import CanonicalDocument, CanonicalPage
 from src.ingestion.parser_worker.result import PdfInspectionResponse
 from src.security.ingestion_screening.contracts import (
     DocumentContext,
@@ -271,8 +278,55 @@ def test_cpcr_rejects_screening_result_without_g0_record():
 
 
 def test_pdf_parser_entry_point_requires_admitted_g0_record():
-    with pytest.raises(TypeError, match="file_screening"):
-        ingest_pdf(Path("not-opened.pdf"))
+    policy = ScreeningPolicy()
+    rejected_file = FileScreeningRecord(
+        source_sha256=None,
+        file_size_bytes=100,
+        decision=AdmissionDecision.REJECTED,
+        screening_policy_version=policy.version,
+        screening_policy_digest=policy.digest(),
+        justification_codes=("FILE_REJECTED",),
+    )
+    features = DocumentFeatures(
+        content_sha256="a" * 64,
+        file_size_bytes=100,
+        page_count=1,
+        pages=(
+            PageFeatures(
+                page_number=1,
+                text_char_count=0,
+                image_count=0,
+                drawing_count=0,
+            ),
+        ),
+    )
+    route_plan = DocumentRoutePlan(
+        page_count=1,
+        decisions=(
+            PageRouteDecision(
+                page_number=1,
+                route="SKIP_BLANK",
+                reason="Blank",
+                decision_source="RULES",
+                policy_version="test",
+            ),
+        ),
+        document_disposition="REJECT_NO_CONTENT",
+    )
+    canonical = CanonicalDocument(
+        page_count=1,
+        document_disposition="REJECT_NO_CONTENT",
+        pages=(CanonicalPage(page_number=1, parser="NONE", status="BLANK"),),
+    )
+
+    with pytest.raises(ValueError, match="admitted G0"):
+        ingest_pdf(
+            file_screening=rejected_file,
+            preflight_features=features,
+            prepared_route_plan=route_plan,
+            parsed_canonical_document=canonical,
+            prepared_image_crops=(),
+        )
 
 
 def test_legal_reference_to_ignoring_prior_instructions_is_not_model_directed():

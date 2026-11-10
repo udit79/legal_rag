@@ -15,7 +15,6 @@ from src.ingestion.parser_contracts import (
 )
 from src.ingestion.scaledown_client import (
     ScaleDownExtractResult,
-    ScaleDownResponseError,
 )
 
 
@@ -50,9 +49,12 @@ async def recover_escalated_pages(
 
     recovered_pages: list[CanonicalPage] = []
     for page, decision in zip(canonical.pages, route_plan.decisions, strict=True):
-        should_recover = decision.route == "ESCALATE" or (
-            decision.route in {"OCR", "LAYOUT_OCR"}
-            and page.status in {"FAILED", "BLANK", "VECTOR_ONLY"}
+        has_text = any(
+            block.block_type in {"TEXT", "TABLE"} and block.text.strip()
+            for block in page.blocks
+        )
+        should_recover = decision.route in {"ESCALATE", "OCR", "LAYOUT_OCR"} and (
+            page.status in {"FAILED", "BLANK", "VECTOR_ONLY"} or not has_text
         )
         if not should_recover:
             recovered_pages.append(page)
@@ -65,16 +67,30 @@ async def recover_escalated_pages(
             page_pdf,
             document_mime_type="application/pdf",
         )
-        if not extracted.ocr_text.strip():
-            raise ScaleDownResponseError(
-                f"ScaleDown Extract returned blank text for page {page.page_number}"
-            )
-
         prior_failure = page.failure or ParserFailure(
             parser=decision.route,
             code="LOCAL_OCR_NO_TEXT",
             message="The local route produced no usable text.",
         )
+        if not extracted.ocr_text.strip():
+            no_text_warning = ParserFailure(
+                parser="SCALEDOWN_EXTRACT",
+                code="FALLBACK_NO_TEXT",
+                message=(
+                    f"ScaleDown Extract ({extracted.model_id}) found no text; "
+                    "the page was marked blank and skipped."
+                ),
+            )
+            recovered_pages.append(
+                CanonicalPage(
+                    page_number=page.page_number,
+                    parser="SCALEDOWN_EXTRACT",
+                    status="BLANK",
+                    warnings=page.warnings + (prior_failure, no_text_warning),
+                )
+            )
+            continue
+
         fallback_warning = ParserFailure(
             parser="SCALEDOWN_EXTRACT",
             code="FALLBACK_TEXT_RECOVERED",

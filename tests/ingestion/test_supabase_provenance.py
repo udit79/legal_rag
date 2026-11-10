@@ -127,5 +127,10 @@ def test_supabase_store_persists_final_cpcr_chunks_and_decisions():
     assert calls[0].url.path == "/rest/v1/rpc/persist_ingestion_cpcr_output"
     payload = json.loads(calls[0].content)
     assert payload["p_payload_digest"]
+    assert (
+        payload["p_payload"]["retrieval_text_policy_version"]
+        == "retrieval-text-1.0.0"
+    )
+    assert payload["p_payload"]["revised_chunks"][0]["retrieval_text"]
     assert payload["p_payload"]["revised_chunks"][0]["chunk_sha256"]
     assert payload["p_payload"]["admission_mappings"][0]["original_chunk_indices"] == [0]

@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.ingestion.contracts import DocumentFeatures, DocumentRoutePlan, NonEmptyStr
 from src.ingestion.parser_contracts import CanonicalDocument, SourceCoordinates
+from src.security.ingestion_screening.contracts import ScreeningFlag
+from src.security.ingestion_screening.enums import AdmissionDecision
 
 
 class ParseWorkerRequest(BaseModel):
@@ -153,6 +155,9 @@ class ImageCropOutput(ImageCropSpec):
     filename: NonEmptyStr
     media_type: Literal["image/png"] = "image/png"
     data_base64: NonEmptyStr
+    ocr_status: Literal["TEXT_FOUND", "NO_TEXT", "FAILED"] | None = None
+    screening_decision: AdmissionDecision | None = None
+    screening_flags: tuple[ScreeningFlag, ...] = ()
 
 
 class ImageCropResponse(BaseModel):

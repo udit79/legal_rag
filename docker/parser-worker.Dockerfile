@@ -18,10 +18,9 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY requirements-parser-worker.txt ./
-RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip install --no-cache-dir -r requirements-parser-worker.txt
-RUN python -m pip install --no-cache-dir "opentelemetry-api>=1.45.1"
+COPY requirements-parser-worker.lock ./
+RUN python -m pip install --no-cache-dir --require-hashes \
+    -r requirements-parser-worker.lock
 
 COPY src ./src
 COPY main.py ./

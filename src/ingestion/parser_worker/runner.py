@@ -24,12 +24,14 @@ from src.ingestion.parser_worker.exceptions import (
 from src.ingestion.parser_worker.limits import (
     MAX_EXECUTION_SECONDS,
     MAX_MEMORY_BYTES,
+    MAX_PDF_PAGES,
     MAX_PDF_SIZE_BYTES,
     MAX_WORKER_RESPONSE_BYTES,
     MAX_OCR_BATCH_BYTES,
     MAX_OCR_BATCH_IMAGES,
     MAX_SINGLE_PAGE_PDF_BYTES,
     WORKER_MOUNT_PATH,
+    pdf_execution_timeout_seconds,
 )
 from src.ingestion.parser_worker.result import (
     ImageCropRequest,
@@ -119,9 +121,11 @@ class ParserWorkerRunner:
             "/tmp:rw,noexec,nosuid,size=256m",
             "--volume",
             f"{host_work}:{WORKER_MOUNT_PATH}:ro",
-            "-i",
-            self.image,
         ]
+        for variable in ("TESSERACT_LANG", "TESSERACT_PSM"):
+            if value := os.environ.get(variable):
+                command.extend(("--env", f"{variable}={value}"))
+        command.extend(("-i", self.image))
         try:
             self._process = await asyncio.create_subprocess_exec(
                 *command,
@@ -155,7 +159,11 @@ class ParserWorkerRunner:
             raise ParserWorkerProtocolError("Parser worker sent no readiness message")
 
     async def parse_pdf(
-        self, source: Path, routing_policy_version: str
+        self,
+        source: Path,
+        routing_policy_version: str,
+        *,
+        page_count: int,
     ) -> ParseWorkerResponse:
         """Preflight and parse a PDF in the worker, validating its JSON response."""
         if not source.is_file():
@@ -165,6 +173,11 @@ class ParserWorkerRunner:
             raise ParserWorkerError("PDF size is outside configured worker limits")
         if not routing_policy_version.strip():
             raise ParserWorkerError("A routing policy version is required")
+        if type(page_count) is not int or not 1 <= page_count <= MAX_PDF_PAGES:
+            raise ParserWorkerError("PDF page count is outside configured worker limits")
+        request_timeout = pdf_execution_timeout_seconds(
+            page_count, self.execution_timeout_seconds
+        )
 
         async with self._request_lock:
             await self.start()
@@ -181,12 +194,13 @@ class ParserWorkerRunner:
                 try:
                     response = await asyncio.wait_for(
                         self._exchange(request),
-                        timeout=self.execution_timeout_seconds,
+                        timeout=request_timeout,
                     )
                 except TimeoutError as exc:
                     await self._stop_worker(force=True)
                     raise ParserWorkerTimeout(
-                        f"PDF parsing exceeded {self.execution_timeout_seconds} seconds"
+                        f"PDF parsing exceeded its {request_timeout}-second "
+                        "page-count-scaled time limit"
                     ) from exc
                 except (BrokenPipeError, ConnectionError, asyncio.IncompleteReadError) as exc:
                     detail = self._stderr_message()

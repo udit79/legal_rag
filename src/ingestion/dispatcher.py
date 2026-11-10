@@ -75,6 +75,8 @@ def _adapter_for_route(
 ) -> PageParser | None:
     if decision.route == "FAST_TEXT":
         return fast_text_parser if fast_text_parser is not None else FastTextParser()
+    if decision.route == "ESCALATE":
+        return fast_text_parser if fast_text_parser is not None else FastTextParser()
     if decision.route == "STRUCTURED_PARSE":
         return (
             structured_parser

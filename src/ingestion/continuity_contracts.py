@@ -90,13 +90,6 @@ class ContinuityAssessment(BaseModel):
     evidence_codes: tuple[NonEmptyStr, ...] = Field(min_length=1)
     assessment_policy_version: NonEmptyStr
 
-    @property
-    def is_positive_outcome(self) -> bool:
-        return self.relation_type in {
-            ContinuityRelation.SAME_PARAGRAPH,
-            ContinuityRelation.TABLE_CONTINUATION,
-        }
-
 
 def _chunk_for_reference(
     document: ChunkedDocument,

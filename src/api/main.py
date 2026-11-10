@@ -30,7 +30,6 @@ from src.ingestion.pipeline import (
     ChunkDisposition,
     CPCRIngestionResponse,
     INGESTION_ROUTING_POLICY_VERSION,
-    UnrecognizedImageCrop,
     classify_page_continuity,
     ingest_pdf,
     revise_chunks_after_cpcr,
@@ -239,7 +238,9 @@ async def ingest_pdf_endpoint(
                 ) from exc
             with _TRACER.start_as_current_span("ingestion.parser_worker") as span:
                 parsed = await request.app.state.parser_worker.parse_pdf(
-                    source, INGESTION_ROUTING_POLICY_VERSION
+                    source,
+                    INGESTION_ROUTING_POLICY_VERSION,
+                    page_count=file_screening.page_count,
                 )
                 if parsed.features is None or parsed.route_plan is None or parsed.canonical is None:
                     raise ParserWorkerError("Parser worker returned an incomplete document")
@@ -284,13 +285,9 @@ async def ingest_pdf_endpoint(
             worker_crops = await request.app.state.parser_worker.crop_unrecognized_images(
                 source, canonical
             )
-            prepared_image_crops = tuple(
-                UnrecognizedImageCrop.model_validate(crop.model_dump())
-                for crop in worker_crops
-            )
+            prepared_image_crops = worker_crops
             ingestion = await run_in_threadpool(
                 ingest_pdf,
-                source,
                 file_screening=file_screening,
                 preflight_features=features,
                 prepared_route_plan=route_plan,

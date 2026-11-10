@@ -664,6 +664,32 @@ def test_ocr_parser_parses_tesseract_tsv(monkeypatch, tmp_path: Path):
     assert_pdf_point_bounds(source, page)
 
 
+def test_tesseract_language_and_page_segmentation_are_configurable(
+    monkeypatch, tmp_path: Path
+):
+    captured_command: list[str] = []
+
+    def fake_run(command, **_kwargs):
+        captured_command.extend(command)
+        return SimpleNamespace(
+            returncode=0,
+            stdout="level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\ttext\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr("src.ingestion.parsers.subprocess.run", fake_run)
+    parser = OcrParser(
+        engine="tesseract",
+        tesseract_command="tesseract-test",
+        tesseract_language="eng+hin",
+        page_segmentation_mode=3,
+    )
+    parser._tesseract(tmp_path / "page.png")
+
+    assert captured_command[captured_command.index("-l") + 1] == "eng+hin"
+    assert captured_command[captured_command.index("--psm") + 1] == "3"
+
+
 class FakeParser:
     def __init__(self, parser_name: str, *, fail_page: int | None = None):
         self.parser_name = parser_name
@@ -728,6 +754,21 @@ def test_dispatcher_selects_adapters_and_preserves_original_page_order(
         "TESSERACT",
         "DOCLING",
     ]
+
+
+def test_dispatcher_tries_native_text_for_escalated_pages(tmp_path: Path):
+    source = make_pdf(tmp_path / "escalated.pdf")
+    fast = FakeParser("FAST_TEXT")
+
+    result = dispatch_document(
+        source,
+        make_plan("ESCALATE"),
+        fast_text_parser=fast,
+    )
+
+    assert fast.pages == [1]
+    assert result.pages[0].status == "PARSED"
+    assert result.pages[0].parser == "FAST_TEXT"
 
 
 def test_dispatcher_records_page_failure_without_dropping_later_pages(

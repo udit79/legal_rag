@@ -1,14 +1,12 @@
 import asyncio
 
-import pytest
-
 from src.ingestion.contracts import DocumentRoutePlan, PageRouteDecision
 from src.ingestion.parser_contracts import (
     CanonicalDocument,
     CanonicalPage,
     ParserFailure,
 )
-from src.ingestion.scaledown_client import ScaleDownExtractResult, ScaleDownResponseError
+from src.ingestion.scaledown_client import ScaleDownExtractResult
 from src.ingestion.scaledown_extraction import recover_escalated_pages
 
 
@@ -87,16 +85,122 @@ def test_escalated_short_text_page_is_recovered_with_source_failure_visible():
     assert page.warnings[1].code == "FALLBACK_TEXT_RECOVERED"
 
 
-def test_escalated_page_with_no_extracted_text_fails_explicitly():
+def test_escalated_page_with_no_extracted_text_is_marked_blank():
     canonical, plan = _inputs()
 
-    with pytest.raises(ScaleDownResponseError, match="blank text"):
-        asyncio.run(
-            recover_escalated_pages(
-                source=None,
-                canonical=canonical,
-                route_plan=plan,
-                page_exporter=PageExporter(),
-                text_extractor=TextExtractor("  \n"),
-            )
+    recovered = asyncio.run(
+        recover_escalated_pages(
+            source=None,
+            canonical=canonical,
+            route_plan=plan,
+            page_exporter=PageExporter(),
+            text_extractor=TextExtractor("  \n"),
         )
+    )
+
+    page = recovered.pages[0]
+    assert page.status == "BLANK"
+    assert page.blocks == ()
+    assert page.warnings[-1].code == "FALLBACK_NO_TEXT"
+
+
+def test_escalated_page_with_native_text_does_not_call_extract():
+    _, plan = _inputs()
+    canonical = CanonicalDocument(
+        page_count=1,
+        document_disposition="PROCESS",
+        pages=(
+            CanonicalPage(
+                page_number=1,
+                parser="FAST_TEXT",
+                status="PARSED",
+                blocks=(
+                    {
+                        "page_number": 1,
+                        "text": "Dated: 5 March 2026",
+                        "block_type": "TEXT",
+                        "reading_order": 0,
+                        "source_coordinates": {
+                            "x0": 0,
+                            "y0": 0,
+                            "x1": 612,
+                            "y1": 792,
+                            "unit": "PDF_POINT",
+                            "origin": "TOP_LEFT",
+                        },
+                    },
+                ),
+            ),
+        ),
+    )
+
+    class UnexpectedExtractor:
+        async def extract_document_text(self, document, *, document_mime_type):
+            raise AssertionError("Native text should avoid the external OCR call")
+
+    recovered = asyncio.run(
+        recover_escalated_pages(
+            source=None,
+            canonical=canonical,
+            route_plan=plan,
+            page_exporter=PageExporter(),
+            text_extractor=UnexpectedExtractor(),
+        )
+    )
+    assert recovered.pages[0].blocks[0].text == "Dated: 5 March 2026"
+
+
+def test_ocr_page_with_empty_image_block_is_recovered():
+    _, escalate_plan = _inputs()
+    plan = DocumentRoutePlan(
+        page_count=1,
+        decisions=(
+            PageRouteDecision(
+                page_number=1,
+                route="OCR",
+                reason="Scanned page",
+                decision_source="RULES",
+                policy_version="router-test-1",
+            ),
+        ),
+        document_disposition="PROCESS",
+    )
+    canonical = CanonicalDocument(
+        page_count=1,
+        document_disposition="PROCESS",
+        pages=(
+            CanonicalPage(
+                page_number=1,
+                parser="TESSERACT",
+                status="PARSED",
+                blocks=(
+                    {
+                        "page_number": 1,
+                        "text": "",
+                        "block_type": "IMAGE",
+                        "reading_order": 0,
+                        "source_coordinates": {
+                            "x0": 0,
+                            "y0": 0,
+                            "x1": 612,
+                            "y1": 792,
+                            "unit": "PDF_POINT",
+                            "origin": "TOP_LEFT",
+                        },
+                    },
+                ),
+            ),
+        ),
+    )
+    assert escalate_plan.decisions[0].route == "ESCALATE"
+
+    recovered = asyncio.run(
+        recover_escalated_pages(
+            source=None,
+            canonical=canonical,
+            route_plan=plan,
+            page_exporter=PageExporter(),
+            text_extractor=TextExtractor("OCR recovered"),
+        )
+    )
+    assert recovered.pages[0].blocks[0].text == "OCR recovered"

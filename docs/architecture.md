@@ -28,7 +28,6 @@ index.
 | Parser adapters | `src/ingestion/parsers.py` | PyMuPDF native text, Docling structured/table parsing, and Tesseract or RapidOCR. |
 | Parser dispatch | `src/ingestion/dispatcher.py` | Selects an adapter per page and preserves page-level failures without dropping remaining pages. |
 | Ingestion pipeline | `src/ingestion/pipeline.py` | Traces preflight, routing, per-page parsing, chunking, internal image crops, and CPCR classification. |
-| Ingestion state | `src/ingestion/state.py` | Typed workflow state and structured stage-error shape. |
 | Domain ontology | `src/domain/ontology.py` | Node/relation types and allowed directed relationship triples. |
 | Graph schema | `src/domain/graph_schema.py` | Required properties and validation for graph nodes. |
 | Neo4j infrastructure | `src/infrastructure/neo4j_client.py` | Async driver setup, connectivity verification, session access, and query execution. |
@@ -81,7 +80,7 @@ zero-page inputs raise `InvalidPdfError`. Other filesystem read errors remain
 Records the selected processing route and its rationale:
 
 - `route`: `FAST_TEXT`, `STRUCTURED_PARSE`, `OCR`, `LAYOUT_OCR`,
-  `SKIP_BLANK`, `ESCALATE`, or `REJECT`.
+  `SKIP_BLANK`, or `ESCALATE`.
 - `reason`: non-empty explanatory text.
 - `decision_source`: `RULES`, `CDM`, or `FALLBACK`.
 - `confidence`: optional value between 0.0 and 1.0.
@@ -223,30 +222,13 @@ provenance directly from the canonical blocks it processes. See
 [`blp1_chunking.md`](blp1_chunking.md) for the algorithm, report semantics, and
 current scope.
 
-## Ingestion workflow state
+Chunks retain raw canonical text for screening, hashing, and citations while
+also exposing `retrieval_text`, a derived indexing view with reversible
+`retrieval_text_edits`. Repeated exact page-boundary lines are removed only
+when shared by at least three pages; text-only hyphenated line breaks are
+joined. Use `raw_text_ranges_for_retrieval_range()` to map a retrieval match
+back to raw chunk text.
 
-`IngestionState` in `src/ingestion/state.py` is a `TypedDict`, intended to
-carry only the small values needed between workflow stages:
-
-| Key | Required? | Value |
-| --- | --- | --- |
-| `document_ref` | Yes | `DocumentRef` for the source document. |
-| `current_stage` | Yes | `PREFLIGHT`, `ROUTING`, `PROCESSING`, `COMPLETE`, or `FAILED`. |
-| `features` | No | `DocumentFeatures`, once preflight has produced them. |
-| `route_decision` | No | `RouteDecision`, once routing has run. |
-| `parsed_artifact_ref` | No | Locator for parsed output stored separately. |
-| `error` | No | `WorkflowError` when a stage fails. |
-
-`WorkflowError` requires a structured `code` and the failing `stage`
-(`PREFLIGHT`, `ROUTING`, or `PROCESSING`); a human-readable `message` is
-optional. The state intentionally has no fields for PDF bytes, open file
-handles, database sessions, or exception instances. Large parse results should
-be kept in artifact storage and referenced through `parsed_artifact_ref`.
-
-These types define a possible data flow—document reference, preflight,
-routing, parsing, and completion/failure. Preflight, route selection, and
-per-page parser dispatch are available as standalone functions, but a workflow
-runner and stage transition rules are not implemented yet.
 
 ## Risk graph domain
 

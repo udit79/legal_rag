@@ -9,6 +9,7 @@ from src.ingestion.parser_worker.result import (
     ImageCropSpec,
     PdfInspectionRequest,
 )
+from src.ingestion.parser_worker.limits import pdf_execution_timeout_seconds
 
 
 def _pdf(path):
@@ -17,6 +18,12 @@ def _pdf(path):
     page.draw_rect(pymupdf.Rect(10, 10, 100, 80), color=(1, 0, 0), fill=(1, 0, 0))
     document.save(path)
     document.close()
+
+
+def test_pdf_execution_timeout_scales_with_document_size_and_is_capped():
+    assert pdf_execution_timeout_seconds(1) == 60
+    assert pdf_execution_timeout_seconds(10) == 600
+    assert pdf_execution_timeout_seconds(500) == 1800
 
 
 def test_worker_pdf_inspection_returns_page_and_object_counts(tmp_path, monkeypatch):

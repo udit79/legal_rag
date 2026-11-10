@@ -1,5 +1,6 @@
 """End-to-end PDF ingestion orchestration and unrecognized-image crops."""
 
+import asyncio
 import base64
 import logging
 import math
@@ -33,15 +34,12 @@ from src.ingestion.continuity_gateway import (
 from src.ingestion.continuity_graph import ClassificationClient, build_cpcr_graph
 from src.ingestion.continuity_state import CPCRState
 from src.ingestion.continuity_cdm_contracts import CDMClassificationResult
-from src.ingestion.dispatcher import dispatch_document
-from src.ingestion.parser_contracts import CanonicalDocument, SourceCoordinates
-from src.ingestion.parsers import PageParser
-from src.ingestion.preflight import inspect_pdf
-from src.ingestion.router import route_document
+from src.ingestion.parser_worker.result import ImageCropOutput as UnrecognizedImageCrop
+from src.ingestion.parser_contracts import CanonicalDocument
+from src.ingestion.retrieval_text import normalize_retrieval_chunks
 from src.security.ingestion_screening.contracts import (
     AdmissionRecord,
     FileScreeningRecord,
-    ScreeningFlag,
     ScreeningReport,
     ScreenedChunkedDocument,
 )
@@ -49,23 +47,10 @@ from src.security.ingestion_screening.enums import AdmissionDecision
 
 INGESTION_ROUTING_POLICY_VERSION = "ingestion-router-1.0.0"
 MAX_CROP_PIXELS = 4_000_000
+_CPCR_MINIMUM_CONFIDENCE = 0.75
+_CPCR_MAX_CONCURRENT_CLASSIFICATIONS = 5
 _TRACER = trace.get_tracer("graph_rag.ingestion")
 _LOGGER = logging.getLogger(__name__)
-
-
-class UnrecognizedImageCrop(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    page_number: int
-    block_id: str
-    reading_order: int
-    source_coordinates: SourceCoordinates
-    filename: str
-    media_type: str = "image/png"
-    data_base64: str
-    ocr_status: Literal["TEXT_FOUND", "NO_TEXT", "FAILED"] | None = None
-    screening_decision: AdmissionDecision | None = None
-    screening_flags: tuple[ScreeningFlag, ...] = ()
 
 
 class PdfIngestionResult(BaseModel):
@@ -229,17 +214,38 @@ async def classify_page_continuity(
         not in {AdmissionDecision.ADMITTED, AdmissionDecision.ADMITTED_FLAGGED}
     )
     chunks_by_index = {chunk.index: chunk for chunk in document.chunks}
-    candidates = generate_continuity_candidates(
+    generated_candidates = generate_continuity_candidates(
         document,
         "cpcr-candidate-2",
         excluded_chunk_indices=excluded_chunk_indices,
     )
+    candidates = tuple(
+        candidate
+        for candidate in generated_candidates
+        if not (
+            all(
+                source.block_type == "TABLE"
+                for source in chunks_by_index[
+                    candidate.source.chunk_index
+                ].sources
+            )
+            and all(
+                source.block_type == "TABLE"
+                for source in chunks_by_index[
+                    candidate.target.chunk_index
+                ].sources
+            )
+        )
+    )
     graph = build_cpcr_graph(client, document)
-    outcomes: list[CPCRCandidateResult] = []
 
     with _TRACER.start_as_current_span("ingestion.cpcr") as cpcr_span:
         cpcr_span.set_attribute("ingestion.cpcr.candidates", len(candidates))
-        for candidate in candidates:
+
+        async def classify_candidate(
+            candidate: ContinuityCandidate,
+            semaphore: asyncio.Semaphore,
+        ) -> CPCRCandidateResult:
             gateway = evaluate_candidate(candidate, document)
             with _TRACER.start_as_current_span("ingestion.cpcr.candidate") as span:
                 span.set_attribute("ingestion.cpcr.candidate_id", candidate.candidate_id)
@@ -247,19 +253,16 @@ async def classify_page_continuity(
                 span.set_attribute("ingestion.cpcr.target_page", candidate.target.page_number)
                 span.set_attribute("ingestion.cpcr.gateway_decision", gateway.decision.value)
                 if gateway.decision != GatewayDecision.DEFER:
-                    outcomes.append(
-                        CPCRCandidateResult(
-                            candidate=candidate,
-                            gateway_result=GatewayResult(
-                                decision=gateway.decision,
-                                relation_type=gateway.relation_type,
-                                evidence_codes=gateway.evidence_codes,
-                                gateway_policy_version=CONTINUITY_GATEWAY_POLICY_VERSION,
-                            ),
-                            classification_status="NOT_REQUIRED",
-                        )
+                    return CPCRCandidateResult(
+                        candidate=candidate,
+                        gateway_result=GatewayResult(
+                            decision=gateway.decision,
+                            relation_type=gateway.relation_type,
+                            evidence_codes=gateway.evidence_codes,
+                            gateway_policy_version=CONTINUITY_GATEWAY_POLICY_VERSION,
+                        ),
+                        classification_status="NOT_REQUIRED",
                     )
-                    continue
 
                 source_chunk = chunks_by_index[candidate.source.chunk_index]
                 target_chunk = chunks_by_index[candidate.target.chunk_index]
@@ -275,7 +278,8 @@ async def classify_page_continuity(
                     ),
                 }
                 try:
-                    final_state = await graph.ainvoke(state)
+                    async with semaphore:
+                        final_state = await graph.ainvoke(state)
                     cdm_result = final_state["cdm_result"]
                     rejection = final_state.get("classification_rejection")
                 except Exception as exc:
@@ -286,13 +290,11 @@ async def classify_page_continuity(
                         candidate.candidate_id,
                         type(exc).__name__,
                     )
-                    outcomes.append(
-                        CPCRCandidateResult(
-                            candidate=candidate,
-                            gateway_result=state["gateway_result"],
-                            classification_status="FAILED",
-                            classification_error=type(exc).__name__,
-                        )
+                    return CPCRCandidateResult(
+                        candidate=candidate,
+                        gateway_result=state["gateway_result"],
+                        classification_status="FAILED",
+                        classification_error=type(exc).__name__,
                     )
                 else:
                     if rejection is not None:
@@ -304,16 +306,33 @@ async def classify_page_continuity(
                             candidate.candidate_id,
                             rejection,
                         )
-                        outcomes.append(
-                            CPCRCandidateResult(
-                                candidate=candidate,
-                                gateway_result=state["gateway_result"],
-                                classification_status="REJECTED",
-                                cdm_result=cdm_result,
-                                classification_error=rejection,
-                            )
+                        return CPCRCandidateResult(
+                            candidate=candidate,
+                            gateway_result=state["gateway_result"],
+                            classification_status="REJECTED",
+                            cdm_result=cdm_result,
+                            classification_error=rejection,
                         )
-                        continue
+                    probability = cdm_result.probabilities[cdm_result.relation_type]
+                    if probability < _CPCR_MINIMUM_CONFIDENCE:
+                        span.set_attribute(
+                            "ingestion.cpcr.classification_rejection",
+                            "LOW_CONFIDENCE",
+                        )
+                        _LOGGER.info(
+                            "CPCR classification rejected for candidate %s "
+                            "(probability=%.3f, minimum=%.2f)",
+                            candidate.candidate_id,
+                            probability,
+                            _CPCR_MINIMUM_CONFIDENCE,
+                        )
+                        return CPCRCandidateResult(
+                            candidate=candidate,
+                            gateway_result=state["gateway_result"],
+                            classification_status="REJECTED",
+                            cdm_result=cdm_result,
+                            classification_error="LOW_CONFIDENCE",
+                        )
                     span.set_attribute(
                         "ingestion.cpcr.relation", cdm_result.relation_type.value
                     )
@@ -321,21 +340,24 @@ async def classify_page_continuity(
                         span.set_attribute(
                             "ingestion.cpcr.request_id", cdm_result.request_id
                         )
-                    outcomes.append(
-                        CPCRCandidateResult(
-                            candidate=candidate,
-                            gateway_result=state["gateway_result"],
-                            classification_status="CLASSIFIED",
-                            cdm_result=cdm_result,
-                        )
+                    return CPCRCandidateResult(
+                        candidate=candidate,
+                        gateway_result=state["gateway_result"],
+                        classification_status="CLASSIFIED",
+                        cdm_result=cdm_result,
                     )
 
+        semaphore = asyncio.Semaphore(_CPCR_MAX_CONCURRENT_CLASSIFICATIONS)
+        outcomes = await asyncio.gather(
+            *(classify_candidate(candidate, semaphore) for candidate in candidates)
+        )
         has_failures = any(
             item.classification_status == "FAILED" for item in outcomes
         )
-        cpcr_span.set_attribute("ingestion.cpcr.failed", sum(
-            item.classification_status == "FAILED" for item in outcomes
-        ))
+        cpcr_span.set_attribute(
+            "ingestion.cpcr.failed",
+            sum(item.classification_status == "FAILED" for item in outcomes),
+        )
     return CPCRResult(
         outcome="PARTIAL" if has_failures else "COMPLETED",
         candidates=tuple(outcomes),
@@ -678,7 +700,9 @@ def revise_chunks_after_cpcr(
             "duplicated context retains its source range; all chunks remain "
             "within max_chunk_chars"
         ),
-        chunks=tuple(revised_chunks),
+        chunks=normalize_retrieval_chunks(
+            ingestion.canonical.pages, tuple(revised_chunks)
+        ),
         contextualized_candidate_ids=tuple(contextualized_candidate_ids),
         admission_records=screened.admission_records,
         admission_mappings=tuple(admission_mappings),
@@ -741,46 +765,25 @@ def crop_unrecognized_images(
 
 
 def ingest_pdf(
-    source: Path,
     *,
     file_screening: FileScreeningRecord,
+    preflight_features: DocumentFeatures,
+    prepared_route_plan: DocumentRoutePlan,
+    parsed_canonical_document: CanonicalDocument,
+    prepared_image_crops: tuple[UnrecognizedImageCrop, ...],
     config: ChunkingConfig | None = None,
-    fast_text_parser: PageParser | None = None,
-    structured_parser: PageParser | None = None,
-    layout_ocr_parser: PageParser | None = None,
-    ocr_parser: PageParser | None = None,
-    preflight_features: DocumentFeatures | None = None,
-    prepared_route_plan: DocumentRoutePlan | None = None,
-    parsed_canonical_document: CanonicalDocument | None = None,
-    prepared_image_crops: tuple[UnrecognizedImageCrop, ...] | None = None,
 ) -> PdfIngestionResult:
-    """Run preflight, routing, parsing, chunking and image preservation."""
+    """Chunk and preserve images from validated, precomputed parser results."""
     if (
         file_screening.decision != AdmissionDecision.ADMITTED
         or file_screening.source_sha256 is None
     ):
         raise ValueError("PDF parsing requires an admitted G0 file-screening record")
-    prepared_values = (
-        preflight_features,
-        prepared_route_plan,
-        parsed_canonical_document,
-    )
-    if any(value is not None for value in prepared_values) and any(
-        value is None for value in prepared_values
-    ):
-        raise ValueError(
-            "Precomputed features, route plan and parsed canonical document "
-            "must be supplied together"
-        )
     settings = config or ChunkingConfig()
     with _TRACER.start_as_current_span("ingestion.run") as root_span:
         try:
             with _TRACER.start_as_current_span("ingestion.preflight") as span:
-                features = (
-                    preflight_features
-                    if preflight_features is not None
-                    else inspect_pdf(source)
-                )
+                features = preflight_features
                 if file_screening.source_sha256 != features.content_sha256:
                     raise ValueError("G0 and PDF preflight source digests differ")
                 if file_screening.page_count != features.page_count:
@@ -790,11 +793,7 @@ def ingest_pdf(
                 span.set_attribute("ingestion.pdf.sha256", features.content_sha256)
 
             with _TRACER.start_as_current_span("ingestion.routing") as span:
-                route_plan = (
-                    prepared_route_plan
-                    if prepared_route_plan is not None
-                    else route_document(features, INGESTION_ROUTING_POLICY_VERSION)
-                )
+                route_plan = prepared_route_plan
                 if route_plan.page_count != features.page_count:
                     raise ValueError("Route plan page count differs from preflight")
                 span.set_attribute(
@@ -803,18 +802,7 @@ def ingest_pdf(
                 )
 
             with _TRACER.start_as_current_span("ingestion.parsing") as span:
-                canonical = (
-                    parsed_canonical_document
-                    if parsed_canonical_document is not None
-                    else dispatch_document(
-                        source,
-                        route_plan,
-                        fast_text_parser=fast_text_parser,
-                        structured_parser=structured_parser,
-                        layout_ocr_parser=layout_ocr_parser,
-                        ocr_parser=ocr_parser,
-                    )
-                )
+                canonical = parsed_canonical_document
                 if canonical.page_count != features.page_count:
                     raise ValueError("Canonical page count differs from preflight")
                 span.set_attribute(
@@ -838,8 +826,6 @@ def ingest_pdf(
             ) as span:
                 unrecognized_images = (
                     prepared_image_crops
-                    if prepared_image_crops is not None
-                    else crop_unrecognized_images(source, canonical)
                 )
                 span.set_attribute(
                     "ingestion.image_crops.count", len(unrecognized_images)

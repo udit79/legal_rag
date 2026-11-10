@@ -14,11 +14,21 @@ CanonicalDocument
   -> lossless M4 segmentation into source-relative atoms
   -> M5 packing for TEXT and OTHER
   -> M6 isolated packing for TABLE and IMAGE
-  -> chunks with source ranges and a per-page report
+  -> raw chunks with source ranges and a per-page report
+  -> retrieval-only text with reversible edit ranges
 ```
 
 The pipeline is deterministic for the same canonical input and configuration.
 It does not parse PDFs itself or write chunks to Neo4j.
+
+`Chunk.text` remains source-faithful and is the text screened, hashed, and
+used for citations. `Chunk.retrieval_text` is a derived view for indexing:
+identical first/last text lines are removed only when they recur on at least
+three pages, and text-only hyphenated line breaks are joined. The
+`retrieval_text_edits` field records every removed source range and its
+corresponding retrieval offset. `raw_text_ranges_for_retrieval_range()` maps a
+retrieval match back to one or more ranges in the unchanged raw chunk text.
+The current normalization policy is `retrieval-text-1.0.0`.
 
 ## Configuration and policy identity
 

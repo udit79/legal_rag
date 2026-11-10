@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import tempfile
 import threading
-import time
 import warnings
 from contextlib import contextmanager
 from collections.abc import Iterable
@@ -593,7 +592,6 @@ class StructuredParser:
         self._converter = converter
         self.do_ocr = do_ocr
         self._converter_lock = threading.RLock()
-        self._last_used_at = time.monotonic()
 
     def initialize(self) -> None:
         """Load the Docling PDF pipeline before the parser serves requests."""
@@ -604,21 +602,6 @@ class StructuredParser:
             initialize_pipeline = getattr(converter, "initialize_pipeline", None)
             if callable(initialize_pipeline):
                 initialize_pipeline(InputFormat.PDF)
-            self._last_used_at = time.monotonic()
-
-    def close_if_idle(self, idle_timeout_seconds: float) -> bool:
-        """Release cached pipeline references after the configured idle period."""
-        if idle_timeout_seconds <= 0:
-            return False
-        with self._converter_lock:
-            if (
-                self._converter is None
-                or time.monotonic() - self._last_used_at < idle_timeout_seconds
-            ):
-                return False
-            self._converter = None
-            gc.collect()
-            return True
 
     def close(self) -> None:
         """Release the cached converter and its initialized model pipeline."""
@@ -666,15 +649,12 @@ class StructuredParser:
     def parse_page(self, source: Path, page_number: int) -> CanonicalPage:
         with self._converter_lock:
             converter = self._get_converter()
-            try:
-                with _docling_deprecation_compat():
-                    result = converter.convert(
-                        source,
-                        page_range=(page_number, page_number),
-                        raises_on_error=False,
-                    )
-            finally:
-                self._last_used_at = time.monotonic()
+            with _docling_deprecation_compat():
+                result = converter.convert(
+                    source,
+                    page_range=(page_number, page_number),
+                    raises_on_error=False,
+                )
         status = result.status
         status_name = str(
             getattr(
@@ -805,6 +785,8 @@ class OcrParser:
         engine: Literal["tesseract", "rapidocr"] = "tesseract",
         *,
         tesseract_command: str | None = None,
+        tesseract_language: str | None = None,
+        page_segmentation_mode: int | None = None,
         timeout_seconds: int = 120,
         rapidocr_engine: RapidOcrEngine | None = None,
     ) -> None:
@@ -812,8 +794,22 @@ class OcrParser:
             raise ValueError(f"Unsupported OCR engine: {engine}")
         if type(timeout_seconds) is not int or timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be a positive integer")
+        language = tesseract_language or os.environ.get("TESSERACT_LANG", "eng")
+        if not re.fullmatch(r"[A-Za-z0-9_+.-]+", language):
+            raise ValueError("Tesseract language must be a language code or joined codes")
+        psm = page_segmentation_mode
+        if psm is None:
+            configured_psm = os.environ.get("TESSERACT_PSM", "3")
+            try:
+                psm = int(configured_psm)
+            except ValueError as exc:
+                raise ValueError("TESSERACT_PSM must be an integer from 0 to 13") from exc
+        if type(psm) is not int or not 0 <= psm <= 13:
+            raise ValueError("Tesseract page segmentation mode must be from 0 to 13")
         self.engine = engine
         self.tesseract_command = tesseract_command
+        self.tesseract_language = language
+        self.page_segmentation_mode = psm
         self.timeout_seconds = timeout_seconds
         self._rapidocr_engine = rapidocr_engine
 
@@ -844,11 +840,11 @@ class OcrParser:
                 str(image_path),
                 "stdout",
                 "-l",
-                "eng",
+                self.tesseract_language,
                 "--oem",
                 "1",
                 "--psm",
-                "6",
+                str(self.page_segmentation_mode),
                 "tsv",
             ],
             capture_output=True,

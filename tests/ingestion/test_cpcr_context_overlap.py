@@ -1,4 +1,5 @@
 import asyncio
+from typing import Literal
 
 from src.ingestion.chunking import ChunkingConfig, chunk_document
 from src.ingestion.continuity_contracts import (
@@ -48,7 +49,13 @@ def _coordinates() -> SourceCoordinates:
     )
 
 
-def _ingestion_and_screening(source_text: str, target_text: str, limit: int = 64):
+def _ingestion_and_screening(
+    source_text: str,
+    target_text: str,
+    limit: int = 64,
+    *,
+    block_type: Literal["TEXT", "TABLE"] = "TEXT",
+):
     pages = tuple(
         CanonicalPage(
             page_number=page_number,
@@ -58,7 +65,7 @@ def _ingestion_and_screening(source_text: str, target_text: str, limit: int = 64
                 CanonicalBlock(
                     page_number=page_number,
                     text=text,
-                    block_type="TEXT",
+                    block_type=block_type,
                     reading_order=0,
                     source_coordinates=_coordinates(),
                 ),
@@ -281,3 +288,60 @@ def test_cpcr_rejects_table_relation_for_text_chunks_without_failing_ingestion()
     revised = revise_chunks_after_cpcr(ingestion, cpcr, screened, config)
     assert revised.contextualized_candidate_ids == ()
     assert revised.chunks == ingestion.chunking.document.chunks
+
+
+def test_cpcr_does_not_apply_relation_below_minimum_confidence():
+    ingestion, screened, config = _ingestion_and_screening(
+        "The source page ends mid-thought",
+        "and the target page continues the paragraph.",
+    )
+
+    class LowConfidenceClassificationClient:
+        async def classify(self, request):
+            return CDMClassificationResult(
+                candidate_id=request.candidate_id,
+                relation_type=ContinuityRelation.SAME_PARAGRAPH,
+                probabilities={
+                    ContinuityRelation.SAME_PARAGRAPH: 0.74,
+                    ContinuityRelation.TABLE_CONTINUATION: 0.1,
+                    ContinuityRelation.NO_CONTINUATION: 0.1,
+                    ContinuityRelation.UNKNOWN: 0.06,
+                },
+                model_id=request.model_id,
+            )
+
+    cpcr = asyncio.run(
+        classify_page_continuity(
+            ingestion, LowConfidenceClassificationClient(), screened
+        )
+    )
+
+    assert cpcr.outcome == "COMPLETED"
+    assert cpcr.candidates[0].classification_status == "REJECTED"
+    assert cpcr.candidates[0].classification_error == "LOW_CONFIDENCE"
+    assert cpcr.candidates[0].cdm_result is not None
+    revised = revise_chunks_after_cpcr(ingestion, cpcr, screened, config)
+    assert revised.contextualized_candidate_ids == ()
+
+
+def test_cpcr_skips_table_only_boundaries_without_calling_classification():
+    ingestion, screened, _ = _ingestion_and_screening(
+        "| A | B |",
+        "| C | D |",
+        block_type="TABLE",
+    )
+
+    class UnexpectedClassificationClient:
+        async def classify(self, request):
+            raise AssertionError(f"Table flow was classified: {request.candidate_id}")
+
+    result = asyncio.run(
+        classify_page_continuity(
+            ingestion,
+            UnexpectedClassificationClient(),
+            screened,
+        )
+    )
+
+    assert result.outcome == "COMPLETED"
+    assert result.candidates == ()
