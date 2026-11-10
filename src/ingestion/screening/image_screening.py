@@ -110,3 +110,35 @@ async def screen_image_crops(
             )
         )
     return tuple(results)
+
+
+def attach_image_screening_results(
+    crops: tuple[UnrecognizedImageCrop, ...],
+    results: tuple[ImageScreeningResult, ...],
+) -> tuple[UnrecognizedImageCrop, ...]:
+    """Return image crops with the OCR/admission status needed by API consumers."""
+    crop_keys = [(crop.page_number, crop.block_id) for crop in crops]
+    result_keys = [(result.page_number, result.block_id) for result in results]
+    if len(set(crop_keys)) != len(crop_keys) or len(set(result_keys)) != len(result_keys):
+        raise ValueError("Image crop identities must be unique")
+    if set(crop_keys) != set(result_keys):
+        raise ValueError("Every image crop must have exactly one screening result")
+
+    result_by_key = {
+        (result.page_number, result.block_id): result for result in results
+    }
+    return tuple(
+        UnrecognizedImageCrop.model_validate(
+            {
+                **crop.model_dump(),
+                "ocr_status": result_by_key[(crop.page_number, crop.block_id)].ocr_status,
+                "screening_decision": result_by_key[
+                    (crop.page_number, crop.block_id)
+                ].decision,
+                "screening_flags": tuple(
+                    result_by_key[(crop.page_number, crop.block_id)].flags
+                ),
+            }
+        )
+        for crop in crops
+    )

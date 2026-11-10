@@ -2,7 +2,7 @@
 
 BLP-1 (Block-Anchored Ladder Packer) is the implemented chunking strategy for
 canonical ingestion output. The implementation currently uses algorithm
-version **1.3.0**. Its entry point is `chunk_document()` in
+version **1.4.0**. Its entry point is `chunk_document()` in
 `src/ingestion/chunking.py`; it returns a `ChunkingResult` containing a
 `ChunkedDocument` and a `ChunkingReport`.
 
@@ -39,7 +39,10 @@ The configuration digest is SHA-256 over canonical JSON with sorted keys and
 fixed separators. It includes all settings, including provision-marker
 patterns, abbreviations, separators, thresholds, overlap, and grapheme backoff. The
 policy identifier is `5c-<semantic-version>+<first-12-hex-of-config-digest>`;
-the current semantic version is `1.3.0`. An implementation change that
+the current semantic version is `1.4.0`. Version 1.4.0 narrows numeric
+provision markers to numbered clauses with punctuation or dotted clause
+numbers, so ordinary lines such as `12 months` no longer trigger strong
+provision boundaries. An implementation change that
 changes chunk output under the same settings requires a semantic-version
 change; an optimization that preserves output does not.
 

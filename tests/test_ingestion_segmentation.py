@@ -167,6 +167,29 @@ def test_sentence_boundaries_contextualize_terminal_abbreviations():
     assert_lossless(internal, internal_boundaries)
 
 
+def test_sentence_boundaries_keep_legal_citations_and_split_common_words():
+    text = (
+        "State of Punjab v. Mohinder Singh. "
+        "Civil Appeal No. 1234 was filed. "
+        "Art. 5 applies. The terms. The claims."
+    )
+
+    boundaries = sentence_boundaries(text)
+    pieces = [
+        text[start:end]
+        for start, end in zip((0, *boundaries), (*boundaries, len(text)))
+    ]
+
+    assert pieces == [
+        "State of Punjab v. Mohinder Singh. ",
+        "Civil Appeal No. 1234 was filed. ",
+        "Art. 5 applies. ",
+        "The terms. ",
+        "The claims.",
+    ]
+    assert_lossless(text, boundaries)
+
+
 def test_line_boundaries_recognize_only_crlf_lf_and_lone_cr():
     text = "one\r\ntwo\nthree\rfour\u2028five"
 

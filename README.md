@@ -16,13 +16,17 @@ curl.exe -X POST http://localhost:8000/ingestion `
   -o ingestion-result.json
 ```
 
-The JSON response contains only `revised_chunks` and `unrecognized_images`.
-Revised chunks merge positive `SAME_PARAGRAPH` and `TABLE_CONTINUATION`
-relationships; failed or non-positive classifications leave chunks separate.
-Each revised chunk retains source provenance, and image crops include
-page/block metadata and base64 PNG data. Uploads are limited to 50 MiB. Set
-`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` to export HTTP, per-page parser, and
-ingestion-stage traces.
+The JSON response contains `revised_chunks`, `unrecognized_images`, and compact
+`chunk_dispositions`. A positive `SAME_PARAGRAPH` continuity result keeps the
+original chunks in order and prefixes the continuation chunk with a bounded,
+source-backed tail from the preceding page. The output stays within the
+configured character limit; this is context overlap, not a calibrated semantic
+merge. Image crops include OCR status, admission decision, flags, page/block
+metadata, and base64 PNG data. Uploads are limited to 50 MiB.
+`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` is optional; when set, an OTLP HTTP
+collector must be reachable at that URL or trace export warnings will appear.
+For local Jaeger, publish port 4318 to the host; Jaeger UI is available on port
+16686.
 
 Docling runs in a persistent, restricted Docker parser worker. Build the image
 and configure the local ClamAV installation before starting the API; see

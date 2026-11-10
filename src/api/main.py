@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -24,9 +25,12 @@ from neo4j.exceptions import AuthError, DriverError, ServiceUnavailable, Session
 from pydantic import BaseModel
 
 from src.infrastructure.neo4j_client import DbConnect, create_db_connect, run_query
+from src.api.upload_limits import UploadBodyLimitMiddleware
 from src.ingestion.pipeline import (
+    ChunkDisposition,
     CPCRIngestionResponse,
     INGESTION_ROUTING_POLICY_VERSION,
+    UnrecognizedImageCrop,
     classify_page_continuity,
     ingest_pdf,
     revise_chunks_after_cpcr,
@@ -38,7 +42,10 @@ from src.ingestion.parser_worker.exceptions import (
 from src.ingestion.parser_worker.limits import MAX_PDF_PAGES, MAX_PDF_SIZE_BYTES
 from src.ingestion.parser_worker.runner import ParserWorkerRunner
 from src.ingestion.provenance.supabase_store import SupabaseProvenanceStore
-from src.ingestion.screening.image_screening import screen_image_crops
+from src.ingestion.screening.image_screening import (
+    attach_image_screening_results,
+    screen_image_crops,
+)
 from src.ingestion.preflight import InvalidPdfError
 from src.ingestion.router import route_document
 from src.ingestion.scaledown_client import ScaleDownClient
@@ -50,6 +57,7 @@ from src.security.ingestion_screening.enums import AdmissionDecision, TrustTier
 from src.security.ingestion_screening.file_gate import (
     ClamAVScanner,
     FileGateError,
+    apply_pdf_structure_inspection,
     screen_pdf_file,
 )
 from src.security.ingestion_screening.policy import ScreeningPolicy
@@ -129,6 +137,13 @@ async def lifespan(app: FastAPI):
     print("Application shutting down...")
 app=FastAPI(lifespan=lifespan)
 MAX_INGESTION_UPLOAD_BYTES = MAX_PDF_SIZE_BYTES
+MULTIPART_REQUEST_OVERHEAD_BYTES = 1024 * 1024
+app.add_middleware(
+    UploadBodyLimitMiddleware,
+    max_request_bytes=(
+        MAX_INGESTION_UPLOAD_BYTES + MULTIPART_REQUEST_OVERHEAD_BYTES
+    ),
+)
 def get_db(request:Request)->DbConnect:
     return request.app.state.db
 
@@ -141,11 +156,11 @@ def check_health():
     "/ingestion",
     summary="Ingest a PDF",
     description=(
-        "Runs PDF preflight, page routing, parsing, chunking and page "
-        "continuity review, then applies positive continuity decisions to "
-        "the returned chunks. Returns revised chunks and crops for image "
-        "blocks with no recognized text; CPCR details and canonical output "
-        "are not included."
+        "Runs PDF preflight, page routing, parsing, chunking, screening and "
+        "page continuity review, then adds bounded source-backed context to "
+        "positive paragraph continuations. Returns revised chunks, chunk "
+        "disposition codes, and image crops with OCR/admission status. CPCR "
+        "details and canonical output are not included."
     ),
     tags=["Ingestion"],
     response_model=CPCRIngestionResponse,
@@ -153,6 +168,7 @@ def check_health():
 async def ingest_pdf_endpoint(
     request: Request, file: UploadFile = File(...)
 ) -> CPCRIngestionResponse:
+    ingestion_run_id = uuid.uuid4().hex
     if file.content_type not in {"application/pdf", "application/octet-stream"}:
         await file.close()
         raise HTTPException(
@@ -181,12 +197,24 @@ async def ingest_pdf_endpoint(
             screening_policy = request.app.state.screening_policy
             try:
                 with _TRACER.start_as_current_span("ingestion.file_gate") as span:
-                    file_screening = await run_in_threadpool(
+                    raw_file_screening = await run_in_threadpool(
                         screen_pdf_file,
                         source,
                         policy=screening_policy,
                         scanner=request.app.state.malware_scanner,
                         filename=file.filename,
+                    )
+                    structure_inspection = (
+                        await request.app.state.parser_worker.inspect_pdf(
+                            source,
+                            max_pdf_objects=screening_policy.max_pdf_objects,
+                        )
+                    )
+                    file_screening = apply_pdf_structure_inspection(
+                        raw_file_screening,
+                        structure_inspection,
+                        policy=screening_policy,
+                        scanner=request.app.state.malware_scanner,
                     )
                     span.set_attribute(
                         "ingestion.screening.file_decision",
@@ -206,7 +234,7 @@ async def ingest_pdf_endpoint(
                     status_code=error_status,
                     detail={
                         "code": exc.record.justification_codes[0],
-                        "file_screening": exc.record.model_dump(mode="json"),
+                        "request_id": ingestion_run_id,
                     },
                 ) from exc
             with _TRACER.start_as_current_span("ingestion.parser_worker") as span:
@@ -253,6 +281,13 @@ async def ingest_pdf_endpoint(
                     "ingestion.scaledown_extract.recovered_pages",
                     recovered_pages,
                 )
+            worker_crops = await request.app.state.parser_worker.crop_unrecognized_images(
+                source, canonical
+            )
+            prepared_image_crops = tuple(
+                UnrecognizedImageCrop.model_validate(crop.model_dump())
+                for crop in worker_crops
+            )
             ingestion = await run_in_threadpool(
                 ingest_pdf,
                 source,
@@ -260,22 +295,40 @@ async def ingest_pdf_endpoint(
                 preflight_features=features,
                 prepared_route_plan=route_plan,
                 parsed_canonical_document=canonical,
+                prepared_image_crops=prepared_image_crops,
             )
+            if ingestion.chunking.report.outcome in {"PARTIAL", "FAILED"}:
+                failed_pages = [
+                    page.page_number
+                    for page in ingestion.canonical.pages
+                    if page.status == "FAILED"
+                ]
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail={
+                        "code": "INGESTION_INCOMPLETE",
+                        "failed_pages": failed_pages,
+                    },
+                )
+            if (
+                ingestion.chunking.report.outcome == "NO_CONTENT"
+                and not ingestion.unrecognized_images
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail={"code": "NO_ELIGIBLE_CONTENT"},
+                )
             canonical_json = json.dumps(
                 ingestion.canonical.model_dump(mode="json"),
                 ensure_ascii=False,
                 sort_keys=True,
                 separators=(",", ":"),
             )
-            span_context = trace.get_current_span().get_span_context()
-            run_id = (
-                f"{span_context.trace_id:032x}" if span_context.is_valid else None
-            )
             document_context = DocumentContext(
                 source_id=ingestion.document_id,
                 tenant_id=None,
                 uploader_id=None,
-                ingestion_run_id=run_id,
+                ingestion_run_id=ingestion_run_id,
                 source_sha256=ingestion.features.content_sha256,
                 canonical_document_digest=hashlib.sha256(
                     canonical_json.encode("utf-8")
@@ -335,6 +388,15 @@ async def ingest_pdf_endpoint(
                     "ingestion.image_ocr.flagged",
                     sum(bool(item.flags) for item in image_screening_results),
                 )
+            try:
+                response_images = attach_image_screening_results(
+                    ingestion.unrecognized_images, image_screening_results
+                )
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={"code": "IMAGE_SCREENING_ALIGNMENT_FAILED"},
+                ) from exc
             provenance_store = request.app.state.provenance_store
             if provenance_store is not None:
                 try:
@@ -348,6 +410,32 @@ async def ingest_pdf_endpoint(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail={"code": "PROVENANCE_PERSISTENCE_FAILED"},
                     ) from exc
+            document_blocked = screened.report.quarantined_document or any(
+                result.decision == AdmissionDecision.REJECTED
+                for result in screened.report.chunk_results
+            )
+            if document_blocked:
+                blocked_chunks = [
+                    {
+                        "chunk_index": result.chunk_index,
+                        "decision": result.decision.value,
+                        "reason_codes": result.justification_codes,
+                    }
+                    for result in screened.report.chunk_results
+                    if result.decision
+                    in {AdmissionDecision.QUARANTINED, AdmissionDecision.REJECTED}
+                ]
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail={
+                        "code": (
+                            "DOCUMENT_QUARANTINED"
+                            if screened.report.quarantined_document
+                            else "CONTENT_REJECTED"
+                        ),
+                        "blocked_chunks": blocked_chunks,
+                    },
+                )
             cpcr = await classify_page_continuity(
                 ingestion,
                 request.app.state.scaledown_client,
@@ -356,12 +444,43 @@ async def ingest_pdf_endpoint(
             if cpcr.outcome != "COMPLETED":
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail={"code": "CPCR_CLASSIFICATION_INCOMPLETE"},
+                    detail={
+                        "code": "CPCR_CLASSIFICATION_INCOMPLETE",
+                        "failed_candidates": [
+                            {
+                                "candidate_id": result.candidate.candidate_id,
+                                "error_type": result.classification_error,
+                            }
+                            for result in cpcr.candidates
+                            if result.classification_status == "FAILED"
+                        ],
+                    },
                 )
             revised = revise_chunks_after_cpcr(ingestion, cpcr, screened)
+            if provenance_store is not None:
+                try:
+                    await provenance_store.persist_cpcr_output(
+                        revised,
+                        cpcr,
+                        ingestion_run_id=ingestion_run_id,
+                        source_sha256=document_context.source_sha256,
+                    )
+                except Exception as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail={"code": "CPCR_PROVENANCE_PERSISTENCE_FAILED"},
+                    ) from exc
             return CPCRIngestionResponse(
                 revised_chunks=revised.chunks,
-                unrecognized_images=ingestion.unrecognized_images,
+                unrecognized_images=response_images,
+                chunk_dispositions=tuple(
+                    ChunkDisposition(
+                        original_chunk_index=result.chunk_index,
+                        decision=result.decision,
+                        reason_codes=result.justification_codes,
+                    )
+                    for result in screened.report.chunk_results
+                ),
             )
         except InvalidPdfError as exc:
             raise HTTPException(

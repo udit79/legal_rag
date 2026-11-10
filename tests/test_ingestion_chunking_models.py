@@ -108,8 +108,8 @@ def test_config_digest_is_repeatable_order_independent_and_policy_is_stable():
     assert config.digest() != changed.digest()
     overlap_changed = ChunkingConfig(overlap_chars=99)
     assert config.digest() != overlap_changed.digest()
-    assert CHUNKING_ALGORITHM_VERSION == "1.3.0"
-    assert config.policy_version() == f"5c-1.3.0+{config.digest()[:12]}"
+    assert CHUNKING_ALGORITHM_VERSION == "1.4.0"
+    assert config.policy_version() == f"5c-1.4.0+{config.digest()[:12]}"
     assert config.digest() == ChunkingConfig().digest()
     assert config.policy_version() == ChunkingConfig().policy_version()
 

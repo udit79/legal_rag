@@ -37,7 +37,7 @@ _BIDI_CONTROLS = frozenset(
 )
 _ZERO_WIDTH_SUSPICIOUS = frozenset("\u200b\ufeff\u2060")
 _ALLOWED_CONTROLS = frozenset("\n\r\t\f")
-_LEGITIMATE_FORMAT_CONTROLS = _BIDI_CONTROLS | frozenset("\u200c\u200d")
+_LEGITIMATE_FORMAT_CONTROLS = _BIDI_CONTROLS | frozenset("\u200c\u200d\u00ad")
 _TAG_FIRST = 0xE0000
 _TAG_LAST = 0xE007F
 _VALID_FLAG_TAG_EMOJI = frozenset(
@@ -161,6 +161,7 @@ def _integrity_flags(
 ) -> tuple[list[ScreeningFlag], bool]:
     flags: list[ScreeningFlag] = []
     rejected_tag_payload = False
+    unexpected_control_positions: list[int] = []
     for index, char in enumerate(text):
         if _suspicious_zero_width_at(text, index):
             flags.append(
@@ -180,17 +181,46 @@ def _integrity_flags(
             continue
         category = unicodedata.category(char)
         if category in {"Cc", "Cs"} and char not in _ALLOWED_CONTROLS:
+            unexpected_control_positions.append(index)
             flags.append(
                 _flag(
                     "UNEXPECTED_CONTROL_CHARACTER",
                     ScreeningStage.G1_INTEGRITY,
-                    FlagSeverity.HIGH,
+                    FlagSeverity.MEDIUM,
                     DetectionView.RAW,
                     index,
                     index + 1,
                     text=char,
                 )
             )
+        elif category == "Co":
+            # PDF font maps commonly expose bullets as private-use glyphs.
+            # Keep the artifact auditable without treating a printable glyph
+            # as an invisible payload.
+            flags.append(
+                _flag(
+                    "PRIVATE_USE_GLYPH",
+                    ScreeningStage.G1_INTEGRITY,
+                    FlagSeverity.INFO,
+                    DetectionView.RAW,
+                    index,
+                    index + 1,
+                    text=char,
+                )
+            )
+
+    if len(unexpected_control_positions) >= 2:
+        flags.append(
+            _flag(
+                "MULTIPLE_UNEXPECTED_CONTROL_CHARACTERS",
+                ScreeningStage.G1_INTEGRITY,
+                FlagSeverity.HIGH,
+                DetectionView.RAW,
+                unexpected_control_positions[0],
+                unexpected_control_positions[-1] + 1,
+                text="".join(text[index] for index in unexpected_control_positions),
+            )
+        )
 
     bidi_positions = [i for i, char in enumerate(text) if char in _BIDI_CONTROLS]
     if len(bidi_positions) > policy.max_bidi_controls:
@@ -291,13 +321,13 @@ def _integrity_flags(
 
     total = len(text)
     nonprinting = sum(
-        unicodedata.category(char).startswith("C")
+        unicodedata.category(char) in {"Cc", "Cf", "Cs", "Cn"}
         and char not in _ALLOWED_CONTROLS
         and char not in _LEGITIMATE_FORMAT_CONTROLS
         and index not in valid_tag_indexes
         for index, char in enumerate(text)
     )
-    if total and nonprinting / total > policy.max_nonprinting_ratio:
+    if total >= 100 and nonprinting / total > policy.max_nonprinting_ratio:
         flags.append(
             _flag(
                 "EXCESSIVE_NONPRINTING_RATIO",
@@ -587,7 +617,6 @@ class ScreeningService:
         flags_by_index: dict[int, list[ScreeningFlag]] = {
             chunk.index: [] for chunk in ordered_chunks
         }
-        model_directed_chunks: set[int] = set()
         rejected_tag_chunks: set[int] = set()
         for chunk in ordered_chunks:
             integrity_flags, has_rejected_tag_payload = _integrity_flags(
@@ -596,18 +625,12 @@ class ScreeningService:
             flags_by_index[chunk.index].extend(integrity_flags)
             if has_rejected_tag_payload:
                 rejected_tag_chunks.add(chunk.index)
-            pattern_flags, has_model_directed = _pattern_flags(
-                chunk.text, self.policy
-            )
+            pattern_flags, _ = _pattern_flags(chunk.text, self.policy)
             flags_by_index[chunk.index].extend(pattern_flags)
-            if has_model_directed:
-                model_directed_chunks.add(chunk.index)
 
         for source, target in zip(ordered_chunks, ordered_chunks[1:]):
             for chunk_index, flag in _boundary_flags(source, target, self.policy):
                 flags_by_index[chunk_index].append(flag)
-                if flag.code == "MODEL_DIRECTED_INSTRUCTION":
-                    model_directed_chunks.add(chunk_index)
 
         duplicate_owner: dict[str, int] = {}
         for chunk in ordered_chunks:
@@ -691,8 +714,6 @@ class ScreeningService:
         threshold = self.policy.max_flagged_chunk_ratio
         missing_provenance = not document_context.has_required_provenance
         escalation_codes = set()
-        if model_directed_chunks:
-            escalation_codes.add("MODEL_DIRECTED_INSTRUCTION_PRESENT")
         if rejected_tag_chunks:
             escalation_codes.add("DECODED_TAG_INSTRUCTION_PRESENT")
         if missing_provenance:

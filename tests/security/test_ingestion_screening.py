@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from src.security.ingestion_screening import file_gate
 from src.ingestion.chunk_contracts import Chunk, ChunkSource, ChunkedDocument
 from src.ingestion.pipeline import classify_page_continuity, ingest_pdf
+from src.ingestion.parser_worker.result import PdfInspectionResponse
 from src.security.ingestion_screening.contracts import (
     DocumentContext,
     FileScreeningRecord,
@@ -21,6 +22,7 @@ from src.security.ingestion_screening.enums import AdmissionDecision, TrustTier
 from src.security.ingestion_screening.file_gate import (
     ClamAVScanner,
     FileGateError,
+    apply_pdf_structure_inspection,
     screen_pdf_file,
 )
 from src.security.ingestion_screening.policy import ScreeningPolicy
@@ -343,7 +345,9 @@ def test_split_model_directed_instruction_is_detected_across_chunk_boundary():
         ScreeningService().screen_batch(chunks, _context(), document_id="doc-1")
     )
 
-    assert result.report.quarantined_document is True
+    # A suspicious chunk is quarantined locally; it does not automatically
+    # quarantine every unrelated chunk in the document.
+    assert result.report.quarantined_document is False
     assert all(
         record.decision == AdmissionDecision.QUARANTINED
         for record in result.admission_records
@@ -352,6 +356,43 @@ def test_split_model_directed_instruction_is_detected_across_chunk_boundary():
         for flag in chunk_result.flags:
             if flag.start_offset is not None:
                 assert flag.end_offset <= len(chunks[chunk_result.chunk_index].text)
+
+
+def test_descriptive_legal_prose_about_model_instructions_is_not_an_injection():
+    text = (
+        "The parties disputed whether a language model could ignore prior "
+        "instructions when summarizing the evidence."
+    )
+    decision, flags = ScreeningService().screen_extracted_text(text)
+
+    assert decision == AdmissionDecision.ADMITTED
+    assert not any(flag.code == "MODEL_DIRECTED_INSTRUCTION" for flag in flags)
+
+
+def test_common_pdf_glyph_artifacts_do_not_quarantine_short_text():
+    service = ScreeningService()
+
+    bullet_decision, bullet_flags = service.screen_extracted_text("\uf0b7 Evidence")
+    control_decision, control_flags = service.screen_extracted_text("Note\x01 text")
+    soft_hyphen_decision, soft_hyphen_flags = service.screen_extracted_text(
+        "exam\u00adination"
+    )
+
+    assert bullet_decision == AdmissionDecision.ADMITTED
+    assert any(flag.code == "PRIVATE_USE_GLYPH" for flag in bullet_flags)
+    assert control_decision == AdmissionDecision.ADMITTED_FLAGGED
+    assert any(flag.code == "UNEXPECTED_CONTROL_CHARACTER" for flag in control_flags)
+    assert soft_hyphen_decision == AdmissionDecision.ADMITTED
+    assert soft_hyphen_flags == ()
+
+
+def test_multiple_unexpected_controls_remain_quarantined():
+    decision, flags = ScreeningService().screen_extracted_text("a\x01b\x02c")
+
+    assert decision == AdmissionDecision.QUARANTINED
+    assert any(
+        flag.code == "MULTIPLE_UNEXPECTED_CONTROL_CHARACTERS" for flag in flags
+    )
 
 
 def test_legitimate_devanagari_and_emoji_joiners_are_not_flagged():
@@ -484,11 +525,25 @@ def test_g0_accepts_valid_pdf_only_after_clean_scanner_verdict(tmp_path):
     pdf.save(path)
     pdf.close()
 
-    record = screen_pdf_file(
+    policy = ScreeningPolicy()
+    scanner = CleanScanner()
+    raw_record = screen_pdf_file(
         path,
-        policy=ScreeningPolicy(),
-        scanner=CleanScanner(),
+        policy=policy,
+        scanner=scanner,
         filename="sample.pdf",
+    )
+    record = apply_pdf_structure_inspection(
+        raw_record,
+        PdfInspectionResponse(
+            type="inspect_result",
+            request_id="a" * 32,
+            inspection_status="OK",
+            page_count=1,
+            object_count=5,
+        ),
+        policy=policy,
+        scanner=scanner,
     )
 
     assert record.decision == AdmissionDecision.ADMITTED
@@ -528,33 +583,73 @@ def test_g0_checks_size_before_hashing_oversized_upload(tmp_path, monkeypatch):
     assert error.value.record.decision == AdmissionDecision.REJECTED
 
 
-def test_g0_malware_scan_precedes_pdf_parsing(tmp_path, monkeypatch):
+def test_g0_malware_scan_precedes_isolated_structure_inspection(tmp_path):
     path = tmp_path / "sample.pdf"
     pdf = pymupdf.open()
     pdf.new_page()
     pdf.save(path)
     pdf.close()
     events = []
-    real_open = pymupdf.open
-
     class OrderedScanner(CleanScanner):
         def scan(self, scanned_path):
             events.append("scan")
             return True
 
-    def tracked_open(*args, **kwargs):
-        events.append("parse")
-        return real_open(*args, **kwargs)
-
-    monkeypatch.setattr(file_gate.pymupdf, "open", tracked_open)
-    screen_pdf_file(
+    policy = ScreeningPolicy()
+    scanner = OrderedScanner()
+    record = screen_pdf_file(
         path,
-        policy=ScreeningPolicy(),
-        scanner=OrderedScanner(),
+        policy=policy,
+        scanner=scanner,
         filename="sample.pdf",
     )
+    events.append("worker_inspection")
+    apply_pdf_structure_inspection(
+        record,
+        PdfInspectionResponse(
+            type="inspect_result",
+            request_id="a" * 32,
+            inspection_status="OK",
+            page_count=1,
+            object_count=5,
+        ),
+        policy=policy,
+        scanner=scanner,
+    )
 
-    assert events.index("scan") < events.index("parse")
+    assert events == ["scan", "worker_inspection"]
+
+
+def test_g0_worker_inspection_completes_raw_file_record(tmp_path):
+    path = tmp_path / "sample.pdf"
+    pdf = pymupdf.open()
+    pdf.new_page()
+    pdf.save(path)
+    pdf.close()
+
+    raw_record = screen_pdf_file(
+        path,
+        policy=ScreeningPolicy(),
+        scanner=CleanScanner(),
+        filename="sample.pdf",
+    )
+    assert raw_record.page_count is None
+    completed = apply_pdf_structure_inspection(
+        raw_record,
+        PdfInspectionResponse(
+            type="inspect_result",
+            request_id="a" * 32,
+            inspection_status="OK",
+            page_count=1,
+            object_count=5,
+        ),
+        policy=ScreeningPolicy(),
+        scanner=CleanScanner(),
+    )
+
+    assert completed.decision == AdmissionDecision.ADMITTED
+    assert completed.page_count == 1
+    assert completed.justification_codes == ("G0_CHECKS_PASSED",)
 
 
 def test_g0_rejects_pdf_exceeding_object_count(tmp_path):
@@ -564,12 +659,26 @@ def test_g0_rejects_pdf_exceeding_object_count(tmp_path):
     pdf.save(path)
     pdf.close()
 
+    policy = ScreeningPolicy(max_pdf_objects=1)
+    scanner = CleanScanner()
+    raw_record = screen_pdf_file(
+        path,
+        policy=policy,
+        scanner=scanner,
+        filename="sample.pdf",
+    )
     with pytest.raises(FileGateError, match="object-count limit") as error:
-        screen_pdf_file(
-            path,
-            policy=ScreeningPolicy(max_pdf_objects=1),
-            scanner=CleanScanner(),
-            filename="sample.pdf",
+        apply_pdf_structure_inspection(
+            raw_record,
+            PdfInspectionResponse(
+                type="inspect_result",
+                request_id="a" * 32,
+                inspection_status="OK",
+                page_count=1,
+                object_count=5,
+            ),
+            policy=policy,
+            scanner=scanner,
         )
 
     assert error.value.record.justification_codes == ("PDF_OBJECT_LIMIT_EXCEEDED",)

@@ -154,7 +154,7 @@ def test_fixture_manifest_and_observed_outputs_are_pinned(golden_data):
     assert pdf.page_count == canonical.page_count
     assert result.document.policy_version == manifest["chunking"]["policy_version"]
     assert result.report.config_digest == manifest["chunking"]["config_digest"]
-    assert ChunkingConfig().policy_version().startswith("5c-1.3.0+")
+    assert ChunkingConfig().policy_version().startswith("5c-1.4.0+")
 
 
 def test_golden_chunks_preserve_source_ranges_and_metadata(golden_data):

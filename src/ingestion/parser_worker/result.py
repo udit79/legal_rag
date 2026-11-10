@@ -5,7 +5,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.ingestion.contracts import DocumentFeatures, DocumentRoutePlan, NonEmptyStr
-from src.ingestion.parser_contracts import CanonicalDocument
+from src.ingestion.parser_contracts import CanonicalDocument, SourceCoordinates
 
 
 class ParseWorkerRequest(BaseModel):
@@ -94,3 +94,70 @@ class PagePdfResponse(BaseModel):
     width_points: float = Field(gt=0, allow_inf_nan=False)
     height_points: float = Field(gt=0, allow_inf_nan=False)
     data_base64: NonEmptyStr
+
+
+class PdfInspectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["inspect_pdf"] = "inspect_pdf"
+    request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    filename: str = Field(pattern=r"^[0-9a-f]{32}\.pdf$")
+    max_pdf_objects: int = Field(ge=1, strict=True)
+
+
+class PdfInspectionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["inspect_result"]
+    request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    inspection_status: Literal["OK", "FAILED"]
+    page_count: int | None = Field(default=None, ge=0, strict=True)
+    object_count: int | None = Field(default=None, ge=0, strict=True)
+    active_content_xrefs: tuple[int, ...] = ()
+    encrypted: bool = False
+    error_code: str | None = None
+
+    @model_validator(mode="after")
+    def validate_result(self) -> Self:
+        if self.inspection_status == "OK":
+            if self.page_count is None or self.object_count is None or self.error_code:
+                raise ValueError("Successful inspection requires counts and no error")
+        elif (
+            self.page_count is not None
+            or self.object_count is not None
+            or not self.error_code
+        ):
+            raise ValueError("Failed inspection requires only an error code")
+        return self
+
+
+class ImageCropSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    page_number: int = Field(ge=1, strict=True)
+    block_id: NonEmptyStr
+    reading_order: int = Field(ge=0, strict=True)
+    source_coordinates: SourceCoordinates
+
+
+class ImageCropRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["crop_images"] = "crop_images"
+    request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    filename: str = Field(pattern=r"^[0-9a-f]{32}\.pdf$")
+    images: tuple[ImageCropSpec, ...]
+
+
+class ImageCropOutput(ImageCropSpec):
+    filename: NonEmptyStr
+    media_type: Literal["image/png"] = "image/png"
+    data_base64: NonEmptyStr
+
+
+class ImageCropResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["crop_result"]
+    request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    images: tuple[ImageCropOutput, ...]

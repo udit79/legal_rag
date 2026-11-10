@@ -17,7 +17,7 @@ class ScreeningPolicy(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True, validate_default=True)
 
-    version: NonEmptyStr = "isg-1.2.0"
+    version: NonEmptyStr = "isg-1.3.0"
     boundary_window_chars: Annotated[int, Field(ge=1, strict=True)] = 300
     max_file_bytes: Annotated[int, Field(ge=1, strict=True)] = 50 * 1024 * 1024
     max_pdf_pages: Annotated[int, Field(ge=1, strict=True)] = 500
@@ -37,12 +37,12 @@ class ScreeningPolicy(BaseModel):
         r"(?is)\b(?:reveal|print|show|expose)\s+(?:the\s+)?(?:system|developer)\s+prompt\b",
     )
     model_directed_patterns: tuple[_Pattern, ...] = (
-        r"(?is)(?:AI[- ]assistant|language\s+model|ChatGPT|LLM|system\s+prompt|developer\s+prompt).{0,80}(?:ignore|disregard|override|reveal|exfiltrate).{0,80}(?:instructions|prompt|data|tool)",
+        r"(?is)\b(?:AI[- ]assistant|language\s+model|ChatGPT|LLM)\s*[:,]\s*(?:please\s+)?(?:ignore|disregard|override|reveal|print|show|exfiltrate|execute|run)\b.{0,120}\b(?:instructions|prompt|data|tool|command)\b",
         r"(?is)(?:reveal|print|show)\s+(?:the\s+)?(?:system|developer)\s+prompt",
-        r"(?is)(?:AI[- ]assistant|language\s+model|ChatGPT|LLM).{0,80}(?:execute|run)\s+(?:this|the\s+following)\s+(?:tool|command)",
+        r"(?is)\b(?:AI[- ]assistant|language\s+model|ChatGPT|LLM)\s*[:,]\s*(?:please\s+)?(?:execute|run)\s+(?:this|the\s+following)\s+(?:tool|command)",
     )
     high_severity_patterns: tuple[_Pattern, ...] = (
-        r"(?is)\b(?:AI[- ]assistant|language\s+model|ChatGPT|LLM)\b.{0,80}\b(?:ignore|override|reveal|exfiltrate)\b",
+        r"(?is)\b(?:AI[- ]assistant|language\s+model|ChatGPT|LLM)\s*[:,]\s*(?:please\s+)?(?:ignore|disregard|override|reveal|print|show|exfiltrate|execute|run)\b.{0,120}\b(?:instructions|prompt|data|tool|command)\b",
         r"(?is)<\|im_start\|>\s*(?:system|developer)\b.{0,300}<\|im_end\|>",
         r"(?is)<\|assistant\b[^>]{0,120}\bto\s*=\s*(?:python|browser|[\w.-]+)\b",
         r"(?is)<\|(?:tool_call|function_call)\|>",

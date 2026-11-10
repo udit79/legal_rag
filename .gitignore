@@ -14,3 +14,4 @@ tools/clamav/*/windows-*/database/
 tools/clamav/*/windows-*/freshclam.local.conf
 tools/clamav/*/windows-*/freshclam.conf
 tools/clamav/*/windows-*/clamav.log
+tmp*/

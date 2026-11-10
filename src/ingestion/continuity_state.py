@@ -13,3 +13,4 @@ class CPCRState(TypedDict):
     target_text: str
     gateway_result: GatewayResult
     cdm_result: NotRequired[CDMClassificationResult]
+    classification_rejection: NotRequired[str]

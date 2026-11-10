@@ -242,6 +242,29 @@ def test_marker_detection_matches_only_each_current_line(monkeypatch):
     assert sum(inspected_lengths) <= line_count * len(line) * 3
 
 
+@pytest.mark.parametrize(
+    ("line", "is_marker"),
+    [
+        ("1. A numbered provision", True),
+        ("1) A numbered provision", True),
+        ("1.1 Subsection", True),
+        ("1.1.1 Subsection", True),
+        ("2023. The court considered the evidence.", False),
+        ("    2023. The court considered the evidence.", False),
+        ("12 months remain", False),
+        ("2026 reforms apply", False),
+        ("5000 persons were affected", False),
+        ("Article IV", True),
+    ],
+)
+def test_strong_marker_detection_ignores_ordinary_numeric_lines(line, is_marker):
+    source_block = block(1, 0, "TEXT", line)
+
+    assert chunking_module._atom_starts_strong_provision(
+        source_block, 0, ChunkingConfig()
+    ) is is_marker
+
+
 def test_separator_counts_toward_budget_but_has_no_source_range():
     exact = run(
         parsed_page(

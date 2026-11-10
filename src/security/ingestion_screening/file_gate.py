@@ -1,15 +1,13 @@
-"""G0 checks for PDF identity, resource limits, active content, and malware."""
+"""G0 raw-file checks; PDF structure inspection runs in the isolated worker."""
 
 import hashlib
 import os
-import re
 import shlex
 import subprocess
 from pathlib import Path
 from typing import Protocol
 
-import pymupdf
-
+from src.ingestion.parser_worker.result import PdfInspectionResponse
 from src.security.ingestion_screening.contracts import FileScreeningRecord, ScreeningFlag
 from src.security.ingestion_screening.enums import (
     AdmissionDecision,
@@ -172,7 +170,11 @@ def screen_pdf_file(
     scanner: MalwareScanner,
     filename: str | None = None,
 ) -> FileScreeningRecord:
-    """Screen a PDF before parser dispatch; any inspection failure blocks it."""
+    """Check raw PDF identity and malware before isolated PDF inspection.
+
+    This function deliberately does not parse or open the PDF. The parser
+    worker performs page, object, encryption, and active-content inspection.
+    """
     file_size = path.stat().st_size
     if file_size > policy.max_file_bytes:
         flag = ScreeningFlag(
@@ -271,114 +273,96 @@ def screen_pdf_file(
         )
         raise FileGateError("Malware scanner detected a threat", record)
 
-    try:
-        with pymupdf.open(path) as pdf:
-            if pdf.needs_pass:
-                raise ValueError("Encrypted PDFs are not accepted by G0")
-            page_count = pdf.page_count
-            object_count = (
-                pdf.xref_length() if page_count <= policy.max_pdf_pages else 0
-            )
-            active_content_xrefs = []
-            if page_count <= policy.max_pdf_pages and object_count <= policy.max_pdf_objects:
-                active_token = re.compile(
-                    r"/(?:JavaScript|JS|OpenAction|AA|Launch|EmbeddedFiles)\b"
-                )
-                for xref in range(1, object_count):
-                    object_text = pdf.xref_object(xref, compressed=False)
-                    if active_token.search(object_text):
-                        active_content_xrefs.append(xref)
-            if (
-                page_count <= policy.max_pdf_pages
-                and object_count <= policy.max_pdf_objects
-                and pdf.embfile_count() > 0
-            ):
-                active_content_xrefs.append(-1)
-    except Exception as exc:
-        flag = ScreeningFlag(
-            code="PDF_STRUCTURE_INVALID_OR_ENCRYPTED",
-            stage=ScreeningStage.G0_FILE,
-            severity=FlagSeverity.HIGH,
-            detection_view=DetectionView.RAW,
-        )
-        record = _record(
-            source_sha256=source_sha256,
-            file_size_bytes=file_size,
-            policy=policy,
-            decision=AdmissionDecision.QUARANTINED,
-            flags=(flag,),
-            justification="PDF_STRUCTURE_INVALID_OR_ENCRYPTED",
-            scanner=scanner,
-        )
-        raise FileGateError("PDF structure could not be safely inspected", record) from exc
-
-    if page_count > policy.max_pdf_pages:
-        flag = ScreeningFlag(
-            code="PDF_PAGE_LIMIT_EXCEEDED",
-            stage=ScreeningStage.G0_FILE,
-            severity=FlagSeverity.HIGH,
-            detection_view=DetectionView.RAW,
-            matched_value=str(page_count),
-        )
-        record = _record(
-            source_sha256=source_sha256,
-            file_size_bytes=file_size,
-            page_count=page_count,
-            policy=policy,
-            decision=AdmissionDecision.REJECTED,
-            flags=(flag,),
-            justification="PDF_PAGE_LIMIT_EXCEEDED",
-            scanner=scanner,
-        )
-        raise FileGateError("PDF exceeds the configured page-count limit", record)
-
-    if object_count > policy.max_pdf_objects:
-        flag = ScreeningFlag(
-            code="PDF_OBJECT_LIMIT_EXCEEDED",
-            stage=ScreeningStage.G0_FILE,
-            severity=FlagSeverity.HIGH,
-            detection_view=DetectionView.RAW,
-            matched_value=str(object_count),
-        )
-        record = _record(
-            source_sha256=source_sha256,
-            file_size_bytes=file_size,
-            page_count=page_count,
-            policy=policy,
-            decision=AdmissionDecision.REJECTED,
-            flags=(flag,),
-            justification="PDF_OBJECT_LIMIT_EXCEEDED",
-            scanner=scanner,
-        )
-        raise FileGateError("PDF exceeds the configured object-count limit", record)
-
-    if active_content_xrefs:
-        flag = ScreeningFlag(
-            code="PDF_ACTIVE_CONTENT_OR_EMBEDDED_FILES",
-            stage=ScreeningStage.G0_FILE,
-            severity=FlagSeverity.HIGH,
-            detection_view=DetectionView.RAW,
-            matched_value=",".join(str(xref) for xref in active_content_xrefs),
-        )
-        record = _record(
-            source_sha256=source_sha256,
-            file_size_bytes=file_size,
-            page_count=page_count,
-            policy=policy,
-            decision=AdmissionDecision.QUARANTINED,
-            flags=(flag,),
-            justification="PDF_ACTIVE_CONTENT_OR_EMBEDDED_FILES",
-            scanner=scanner,
-        )
-        raise FileGateError("PDF contains active content or embedded files", record)
-
     return _record(
         source_sha256=source_sha256,
         file_size_bytes=file_size,
-        page_count=page_count,
         policy=policy,
         decision=AdmissionDecision.ADMITTED,
         flags=(),
-        justification="G0_CHECKS_PASSED",
+        justification="G0_RAW_FILE_CHECKS_PASSED",
         scanner=scanner,
+    )
+
+def apply_pdf_structure_inspection(
+    record: FileScreeningRecord,
+    inspection: PdfInspectionResponse,
+    *,
+    policy: ScreeningPolicy,
+    scanner: MalwareScanner,
+) -> FileScreeningRecord:
+    """Complete G0 using PDF structure inspected inside the parser worker."""
+    if record.decision != AdmissionDecision.ADMITTED:
+        raise ValueError("Structure inspection requires clean raw-file checks")
+
+    def block(
+        code: str,
+        message: str,
+        decision: AdmissionDecision,
+        matched_value: str | None = None,
+    ) -> None:
+        failed = _record(
+            source_sha256=record.source_sha256,
+            file_size_bytes=record.file_size_bytes,
+            policy=policy,
+            decision=decision,
+            flags=(
+                ScreeningFlag(
+                    code=code,
+                    stage=ScreeningStage.G0_FILE,
+                    severity=(
+                        FlagSeverity.HIGH
+                        if decision == AdmissionDecision.REJECTED
+                        else FlagSeverity.CRITICAL
+                    ),
+                    detection_view=DetectionView.RAW,
+                    matched_value=matched_value,
+                ),
+            ),
+            justification=code,
+            page_count=inspection.page_count,
+            scanner=scanner,
+        )
+        raise FileGateError(message, failed)
+
+    if inspection.inspection_status != "OK":
+        block(
+            "PDF_STRUCTURE_INSPECTION_FAILED",
+            "Isolated PDF structure inspection failed",
+            AdmissionDecision.QUARANTINED,
+            inspection.error_code,
+        )
+    assert inspection.page_count is not None
+    assert inspection.object_count is not None
+    if inspection.encrypted or inspection.page_count < 1:
+        block(
+            "PDF_STRUCTURE_INVALID_OR_ENCRYPTED",
+            "PDF is encrypted or has no pages",
+            AdmissionDecision.QUARANTINED,
+        )
+    if inspection.page_count > policy.max_pdf_pages:
+        block(
+            "PDF_PAGE_LIMIT_EXCEEDED",
+            "PDF exceeds the configured page-count limit",
+            AdmissionDecision.REJECTED,
+            str(inspection.page_count),
+        )
+    if inspection.object_count > policy.max_pdf_objects:
+        block(
+            "PDF_OBJECT_LIMIT_EXCEEDED",
+            "PDF exceeds the configured object-count limit",
+            AdmissionDecision.REJECTED,
+            str(inspection.object_count),
+        )
+    if inspection.active_content_xrefs:
+        block(
+            "PDF_ACTIVE_CONTENT_OR_EMBEDDED_FILES",
+            "PDF contains active content or embedded files",
+            AdmissionDecision.QUARANTINED,
+            ",".join(str(xref) for xref in inspection.active_content_xrefs),
+        )
+    return record.model_copy(
+        update={
+            "page_count": inspection.page_count,
+            "justification_codes": ("G0_CHECKS_PASSED",),
+        }
     )

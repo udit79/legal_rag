@@ -13,6 +13,7 @@ import uuid
 from pathlib import Path
 from typing import Protocol
 
+from src.ingestion.parser_contracts import CanonicalDocument
 from src.ingestion.parser_worker.exceptions import (
     ParserWorkerError,
     ParserWorkerParseError,
@@ -31,6 +32,10 @@ from src.ingestion.parser_worker.limits import (
     WORKER_MOUNT_PATH,
 )
 from src.ingestion.parser_worker.result import (
+    ImageCropRequest,
+    ImageCropOutput,
+    ImageCropResponse,
+    ImageCropSpec,
     ImageOcrInput,
     ImageOcrRequest,
     ImageOcrResponse,
@@ -38,6 +43,8 @@ from src.ingestion.parser_worker.result import (
     ParseWorkerResponse,
     PagePdfRequest,
     PagePdfResponse,
+    PdfInspectionRequest,
+    PdfInspectionResponse,
 )
 
 
@@ -280,6 +287,147 @@ class ParserWorkerRunner:
                     "Image OCR results do not match the request order and IDs"
                 )
             return {item.image_id: item.text for item in response.results}
+
+    async def inspect_pdf(
+        self, source: Path, *, max_pdf_objects: int = 200_000
+    ) -> PdfInspectionResponse:
+        """Inspect PDF structure and active content only inside the worker."""
+        if not source.is_file():
+            raise ParserWorkerError("Parser input file does not exist")
+        size = source.stat().st_size
+        if size <= 0 or size > MAX_PDF_SIZE_BYTES:
+            raise ParserWorkerError("PDF size is outside configured worker limits")
+
+        async with self._request_lock:
+            await self.start()
+            request_id = uuid.uuid4().hex
+            filename = f"{request_id}.pdf"
+            worker_file = self.shared_directory / filename
+            try:
+                await asyncio.to_thread(shutil.copyfile, source, worker_file)
+                request = PdfInspectionRequest(
+                    request_id=request_id,
+                    filename=filename,
+                    max_pdf_objects=max_pdf_objects,
+                )
+                try:
+                    raw = await asyncio.wait_for(
+                        self._exchange_payload(
+                            request.model_dump_json().encode("utf-8")
+                        ),
+                        timeout=self.execution_timeout_seconds,
+                    )
+                except TimeoutError as exc:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerTimeout(
+                        "PDF structure inspection exceeded the worker time limit"
+                    ) from exc
+                except (
+                    BrokenPipeError,
+                    ConnectionError,
+                    asyncio.IncompleteReadError,
+                ) as exc:
+                    detail = self._stderr_message()
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerUnavailable(
+                        "Parser worker exited during PDF inspection"
+                        f"{': ' + detail if detail else ''}"
+                    ) from exc
+                try:
+                    response = PdfInspectionResponse.model_validate_json(raw)
+                except Exception as exc:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "Parser worker returned an invalid PDF inspection"
+                    ) from exc
+                if response.request_id != request_id:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "PDF inspection response ID did not match the request"
+                    )
+                return response
+            finally:
+                worker_file.unlink(missing_ok=True)
+
+    async def crop_unrecognized_images(
+        self, source: Path, canonical: CanonicalDocument
+    ) -> tuple[ImageCropOutput, ...]:
+        """Render blank-text IMAGE blocks inside the isolated PDF worker."""
+        if not source.is_file():
+            raise ParserWorkerError("Parser input file does not exist")
+        if source.stat().st_size > MAX_PDF_SIZE_BYTES:
+            raise ParserWorkerError("PDF size is outside configured worker limits")
+        images = tuple(
+            ImageCropSpec(
+                page_number=block.page_number,
+                block_id=block.block_id,
+                reading_order=block.reading_order,
+                source_coordinates=block.source_coordinates,
+            )
+            for page in canonical.pages
+            for block in page.blocks
+            if block.block_type == "IMAGE" and not block.text.strip()
+        )
+        if not images:
+            return ()
+        if len(images) > MAX_OCR_BATCH_IMAGES:
+            raise ParserWorkerError("Image crop count exceeds the worker limit")
+
+        async with self._request_lock:
+            await self.start()
+            request_id = uuid.uuid4().hex
+            filename = f"{request_id}.pdf"
+            worker_file = self.shared_directory / filename
+            try:
+                await asyncio.to_thread(shutil.copyfile, source, worker_file)
+                request = ImageCropRequest(
+                    request_id=request_id,
+                    filename=filename,
+                    images=images,
+                )
+                payload = request.model_dump_json().encode("utf-8")
+                if len(payload) > MAX_WORKER_RESPONSE_BYTES:
+                    raise ParserWorkerError("Image crop request exceeds worker limit")
+                try:
+                    raw = await asyncio.wait_for(
+                        self._exchange_payload(payload),
+                        timeout=self.execution_timeout_seconds,
+                    )
+                except TimeoutError as exc:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerTimeout(
+                        "Image cropping exceeded the worker time limit"
+                    ) from exc
+                envelope = json.loads(raw)
+                if envelope.get("type") == "error":
+                    failure = ParseWorkerResponse.model_validate(envelope)
+                    raise ParserWorkerParseError(
+                        "Parser worker image crop failed "
+                        f"({failure.error_code}: {failure.error_type})"
+                    )
+                try:
+                    response = ImageCropResponse.model_validate(envelope)
+                except Exception as exc:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "Parser worker returned invalid image crops"
+                    ) from exc
+                expected = tuple(
+                    (item.page_number, item.block_id, item.reading_order)
+                    for item in images
+                )
+                actual = tuple(
+                    (item.page_number, item.block_id, item.reading_order)
+                    for item in response.images
+                )
+                if response.request_id != request_id or actual != expected:
+                    await self._stop_worker(force=True)
+                    raise ParserWorkerProtocolError(
+                        "Image crops do not match the requested blocks and order"
+                    )
+                return response.images
+            finally:
+                worker_file.unlink(missing_ok=True)
 
     async def extract_page_pdf(
         self, source: Path, page_number: int

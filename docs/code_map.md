@@ -74,10 +74,10 @@ placeholder does not imply that a workflow uses it yet.
 | `src/ingestion/chunk_contracts.py` | `ChunkSource`, `Chunk`, `ChunkedDocument`, `TEXT_BEARING_BLOCK_TYPES`; immutable contracts for typed source provenance, Unicode text offsets, contiguous chunk indices, source page bounds, and policy version. No splitting algorithm is implemented. |
 | `src/ingestion/parsers.py` | `PageParser`; `FastTextParser.parse_page()` uses PyMuPDF; `StructuredParser.parse_page()` uses Docling, with optional RapidOCR for layout OCR; `OcrParser.parse_page()` uses Tesseract by default or RapidOCR. |
 | `src/ingestion/dispatcher.py` | `dispatch_document(source, route_plan)` routes parsing per page and emits `ingestion.parser.page` spans with page, route, parser, status, block and warning attributes. It retains page failures and continues in source order. |
-| `src/ingestion/pipeline.py` | `ingest_pdf(path, file_screening=...)` requires an admitted G0 record before PDF preflight and parser dispatch; `classify_page_continuity(ingestion, client, screened)` requires the matching G0/G1-G5 result and excludes non-admitted chunks before CDM; `revise_chunks_after_cpcr(...)` merges positive continuity pairs while retaining provenance. `CPCRIngestionResponse` contains revised chunks and image crops only. |
+| `src/ingestion/pipeline.py` | `ingest_pdf(path, file_screening=...)` requires an admitted G0 record before parsing; `classify_page_continuity(ingestion, client, screened)` requires matching G0/G1-G5 results and excludes non-admitted chunks before CDM; `revise_chunks_after_cpcr(...)` adds bounded, source-backed overlap to positive paragraph continuations without concatenating whole chunks. `CPCRIngestionResponse` includes revised chunks, compact admission dispositions, and image crops with OCR/admission status. |
 | `src/security/ingestion_screening/contracts.py` | Immutable G0-G5 sidecar contracts for file results, chunk flags, screening reports, admission records, and screened chunk sets. |
 | `src/security/ingestion_screening/policy.py` | `ScreeningPolicy`; versioned thresholds/patterns and canonical SHA-256 digest. |
-| `src/security/ingestion_screening/file_gate.py` | `screen_pdf_file()` checks PDF identity, file/page limits, active content, embedded files, and malware verdict before parsing. |
+| `src/security/ingestion_screening/file_gate.py` | `screen_pdf_file()` checks raw file identity, size and malware; `apply_pdf_structure_inspection()` applies page/object/active-content limits to inspection results produced inside the parser worker. |
 | `src/security/ingestion_screening/screening_service.py` | `ScreeningService.screen_batch()` runs local G1/G2/G4/G5 checks once over the complete chunk batch. |
 | `tools/clamav/1.5.4/windows-x64/` | Bundled ClamAV 1.5.4 Windows x64 runtime files needed by `clamscan` and `freshclam`; debug symbols, static libraries, headers, manuals, and unused utilities are excluded. Virus definitions are local-only and ignored by Git. |
 | `src/ingestion/state.py` | Type declarations `WorkflowStage`, `ErrorStage`, `WorkflowError`, `IngestionState`; no workflow runner or transition functions. |
@@ -150,7 +150,7 @@ routing, M5 TEXT/OTHER packing, M6 isolated TABLE/IMAGE handling, and final
 reports. `segmentation.py` implements the six M3 boundary primitives and the
 M4 recursive boundary ladder. `chunk_document()` builds each `ChunkSource`
 from the canonical block and atom offsets, preserving exact source slices and
-the configured separator and overlap policy. Algorithm version is `1.3.0`. See
+the configured separator and overlap policy. Algorithm version is `1.4.0`. See
 [`blp1_chunking.md`](blp1_chunking.md) for the BLP-1 algorithm and its current
 limits. `block_id` is deterministic from one-based page number and zero-based
 reading order within a canonical document representation, but may change if

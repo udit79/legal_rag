@@ -4,6 +4,11 @@ import json
 import httpx
 
 from src.ingestion.chunk_contracts import Chunk, ChunkSource
+from src.ingestion.pipeline import (
+    CPCRResult,
+    RevisedChunkAdmissionMapping,
+    RevisedChunkSet,
+)
 from src.ingestion.provenance.supabase_store import SupabaseProvenanceStore
 from src.security.ingestion_screening.contracts import DocumentContext
 from src.security.ingestion_screening.enums import TrustTier
@@ -80,3 +85,47 @@ def test_supabase_store_reports_database_failure():
 
     with pytest.raises(SupabaseProvenanceError):
         asyncio.run(run())
+
+
+def test_supabase_store_persists_final_cpcr_chunks_and_decisions():
+    calls = []
+
+    async def handle(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(204)
+
+    async def run():
+        screened, context = await _screened()
+        mapping = RevisedChunkAdmissionMapping(
+            revised_chunk_index=0,
+            original_chunk_indices=(0,),
+            admission_records=screened.admission_records,
+        )
+        revised = RevisedChunkSet(
+            document_id=screened.document.document_id,
+            source_page_count=1,
+            policy_version=screened.document.policy_version,
+            context_policy="test context overlap policy",
+            chunks=screened.document.chunks,
+            contextualized_candidate_ids=(),
+            admission_records=screened.admission_records,
+            admission_mappings=(mapping,),
+            screening_report=screened.report,
+        )
+        cpcr = CPCRResult(outcome="COMPLETED", candidates=())
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            store = SupabaseProvenanceStore("https://example.supabase.co", "key", client)
+            await store.persist_cpcr_output(
+                revised,
+                cpcr,
+                ingestion_run_id="run-id",
+                source_sha256=context.source_sha256,
+            )
+
+    asyncio.run(run())
+    assert len(calls) == 1
+    assert calls[0].url.path == "/rest/v1/rpc/persist_ingestion_cpcr_output"
+    payload = json.loads(calls[0].content)
+    assert payload["p_payload_digest"]
+    assert payload["p_payload"]["revised_chunks"][0]["chunk_sha256"]
+    assert payload["p_payload"]["admission_mappings"][0]["original_chunk_indices"] == [0]

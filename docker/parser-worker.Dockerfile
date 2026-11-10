@@ -21,12 +21,14 @@ WORKDIR /app
 COPY requirements-parser-worker.txt ./
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir -r requirements-parser-worker.txt
+RUN python -m pip install --no-cache-dir "opentelemetry-api>=1.45.1"
 
 COPY src ./src
 COPY main.py ./
 
 # Fetch and initialize model assets at image-build time
 RUN python -c "from src.ingestion.parsers import StructuredParser; a=StructuredParser(); a.initialize(); b=StructuredParser(do_ocr=True); b.initialize(); a.close(); b.close()"
+RUN chmod -R a+rX /opt/docling-cache /opt/hf-cache
 
 RUN useradd --system --uid 10001 --no-create-home parser
 USER 10001:10001

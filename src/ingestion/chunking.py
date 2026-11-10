@@ -27,9 +27,10 @@ from src.ingestion.parser_contracts import (
     ParserFailure,
 )
 
-CHUNKING_ALGORITHM_VERSION = "1.3.0"
+CHUNKING_ALGORITHM_VERSION = "1.4.0"
 PROVISION_MARKER_PATTERNS = (
-    r"(?m)^[ \t]*(?!20[0-9]{2}\.[ \t]+[A-Z])[0-9]+(?:\.[0-9]+)*(?:[.)])?(?=[ \t]|$)",
+    r"(?m)^[ \t]*(?!20[0-9]{2}\.[ \t])"
+    r"(?:[0-9]+(?:\.[0-9]+)+|[0-9]+[.)])(?=[ \t]|$)",
     (
         r"(?im)^[ \t]*(?:article|section|clause|chapter|part|schedule|"
         r"annex(?:ure)?|appendix|exhibit)s?[ \t]+"

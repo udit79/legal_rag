@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 import httpx
 
+from src.ingestion.pipeline import CPCRResult, RevisedChunkSet
 from src.ingestion.screening.image_screening import ImageScreeningResult
 from src.security.ingestion_screening.contracts import DocumentContext, ScreenedChunkedDocument
 
@@ -91,4 +95,78 @@ class SupabaseProvenanceStore:
         except httpx.HTTPError as exc:
             raise SupabaseProvenanceError(
                 "Supabase did not persist the ingestion screening batch"
+            ) from exc
+
+    async def persist_cpcr_output(
+        self,
+        revised: RevisedChunkSet,
+        cpcr: CPCRResult,
+        *,
+        ingestion_run_id: str,
+        source_sha256: str,
+    ) -> None:
+        """Persist the returned chunks, CPCR decisions and admission mappings."""
+        if not ingestion_run_id.strip():
+            raise ValueError("Ingestion run ID must not be blank")
+        payload = {
+            "ingestion_run_id": ingestion_run_id,
+            "source_sha256": source_sha256,
+            "document_id": revised.document_id,
+            "source_page_count": revised.source_page_count,
+            "chunking_policy_version": revised.policy_version,
+            "cpcr_outcome": cpcr.outcome,
+            "cpcr_candidates": [
+                result.model_dump(mode="json") for result in cpcr.candidates
+            ],
+            "context_policy": revised.context_policy,
+            "contextualized_candidate_ids": list(
+                revised.contextualized_candidate_ids
+            ),
+            "revised_chunks": [
+                {
+                    "index": chunk.index,
+                    "text": chunk.text,
+                    "chunk_sha256": hashlib.sha256(
+                        chunk.text.encode("utf-8")
+                    ).hexdigest(),
+                    "sources": [source.model_dump(mode="json") for source in chunk.sources],
+                }
+                for chunk in revised.chunks
+            ],
+            "admission_mappings": [
+                mapping.model_dump(mode="json")
+                for mapping in revised.admission_mappings
+            ],
+            "admission_records": [
+                record.model_dump(mode="json")
+                for record in revised.admission_records
+            ],
+        }
+        canonical_payload = json.dumps(
+            payload,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        payload_digest = hashlib.sha256(canonical_payload.encode("utf-8")).hexdigest()
+        try:
+            response = await self._client.post(
+                f"{self._url}/rest/v1/rpc/persist_ingestion_cpcr_output",
+                headers={
+                    "apikey": self._key,
+                    "Authorization": f"Bearer {self._key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "p_ingestion_run_id": ingestion_run_id,
+                    "p_source_sha256": source_sha256,
+                    "p_payload_digest": payload_digest,
+                    "p_payload": payload,
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise SupabaseProvenanceError(
+                "Supabase did not persist the final CPCR output"
             ) from exc

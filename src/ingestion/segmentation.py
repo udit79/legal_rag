@@ -41,7 +41,8 @@ def provision_marker_boundaries(
 def _abbreviation_periods(text: str, abbreviations: tuple[str, ...]) -> set[int]:
     periods: set[int] = set()
     for abbreviation in abbreviations:
-        for match in re.finditer(re.escape(abbreviation), text, re.IGNORECASE):
+        pattern = rf"(?<!\w){re.escape(abbreviation)}(?!\w)"
+        for match in re.finditer(pattern, text, re.IGNORECASE):
             periods.update(
                 match.start() + offset
                 for offset, character in enumerate(match.group())
@@ -56,10 +57,22 @@ def _terminal_abbreviation_periods(
     """Map each abbreviation's final period to its spelling."""
     terminals: dict[int, str] = {}
     for abbreviation in abbreviations:
-        for match in re.finditer(re.escape(abbreviation), text, re.IGNORECASE):
+        pattern = rf"(?<!\w){re.escape(abbreviation)}(?!\w)"
+        for match in re.finditer(pattern, text, re.IGNORECASE):
             if abbreviation.endswith("."):
                 terminals[match.end() - 1] = abbreviation.casefold()
     return terminals
+
+
+def _abbreviation_precedes_citation_value(
+    text: str, abbreviation: str, next_position: int
+) -> bool:
+    if abbreviation in {"v.", "vs."}:
+        return True
+    if abbreviation in {"no.", "art.", "arts.", "ch.", "pp."}:
+        following_text = text[next_position:]
+        return re.match(r"(?:[0-9]|[ivxlcdm]+\b)", following_text, re.IGNORECASE) is not None
+    return False
 
 
 def _numbering_period(text: str, period_position: int) -> bool:
@@ -139,6 +152,10 @@ def sentence_boundaries(
         while end < len(text) and text[end].isspace():
             end += 1
         if end >= len(text) or not _plausible_sentence_start(text, end):
+            continue
+        if character == "." and _abbreviation_precedes_citation_value(
+            text, terminal_abbreviations.get(index, ""), end
+        ):
             continue
         if (
             character == "."

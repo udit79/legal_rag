@@ -133,14 +133,14 @@ when available.
 
 `POST /ingestion` accepts a multipart `file` upload (`application/pdf`, up to
 50 MiB). It runs preflight, routing, parsing, BLP-1 chunking and CPCR, and
-returns revised chunks and base64 PNG crops for `IMAGE` blocks with blank
-canonical text. CPCR decisions are used internally and are not returned as a
-separate result. Positive `SAME_PARAGRAPH` and
-`TABLE_CONTINUATION` outcomes merge their referenced chunks; `NO_CONTINUATION`,
-`UNKNOWN`, and failed classifications leave them separate. Revised chunk
-sources retain the original page/block/offset provenance. Canonical output is
-not included in the response. Each crop retains page, block, reading-order,
-and coordinate provenance.
+returns revised chunks, compact original-chunk dispositions, and base64 PNG
+crops for `IMAGE` blocks with blank canonical text. Positive
+`SAME_PARAGRAPH` outcomes retain original chunks and prefix the continuation
+chunk with a bounded tail from the preceding page. The repeated tail has its
+own exact source range, and output chunks stay within the character budget.
+Table chunks remain isolated. Each crop includes OCR/admission status, flags,
+page, block, reading-order, and coordinate provenance. Canonical output and
+full CPCR results are not included in the response.
 
 The pipeline emits nested OpenTelemetry spans named `ingestion.run`,
 `ingestion.preflight`, `ingestion.routing`, `ingestion.parsing`,
