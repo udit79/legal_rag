@@ -68,18 +68,14 @@ LEGAL_ABBREVIATIONS = (
 
 _NonEmptyLiteralString = Annotated[str, StringConstraints(min_length=1)]
 
-
 class ChunkingError(Exception):
     """Base class for chunking-specific errors."""
-
 
 class InvalidChunkingConfigError(ChunkingError, ValueError):
     """Raised when chunking configuration or its version is invalid."""
 
-
 class InvalidChunkingStateError(ChunkingError, RuntimeError):
     """Raised when the chunking implementation reaches an invalid state."""
-
 
 class ChunkingConfig(BaseModel):
     """Validated settings that affect deterministic chunk generation."""
@@ -137,10 +133,6 @@ class ChunkingConfig(BaseModel):
             )
         return f"5c-{semantic_version}+{self.digest()[:12]}"
 
-
-# COMPLETED: supported content was chunked with no failures or unsupported blocks.
-# NO_CONTENT: no chunks or unsupported blocks. PARTIAL: unsupported content
-# remains, or chunks coexist with failures. FAILED: failures and no chunks.
 ChunkingOutcome = Literal["COMPLETED", "NO_CONTENT", "PARTIAL", "FAILED"]
 PageChunkingOutcome = Literal[
     "CHUNKED",
@@ -151,7 +143,6 @@ PageChunkingOutcome = Literal[
     "SKIPPED_FAILED",
     "SKIPPED_IMAGE_NO_TEXT",
 ]
-
 
 class PageChunkingReport(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -189,7 +180,6 @@ class PageChunkingReport(BaseModel):
             raise ValueError("CHUNKED pages must report at least one created chunk")
         return self
 
-
 class SkippedBlock(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -197,8 +187,6 @@ class SkippedBlock(BaseModel):
     block_id: NonEmptyStr
     block_type: BlockType
     reason: NonEmptyStr
-
-
 PageRoutingOutcome = Literal[
     "READY_FOR_SEGMENTATION",
     "SKIPPED_NO_ELIGIBLE_TEXT",
@@ -207,7 +195,6 @@ PageRoutingOutcome = Literal[
     "SKIPPED_FAILED",
     "SKIPPED_IMAGE_NO_TEXT",
 ]
-
 
 class PreparedPage(BaseModel):
     """M2 page classification; it deliberately has no chunk count/outcome."""
@@ -257,7 +244,6 @@ class PreparedPage(BaseModel):
             raise ValueError("Eligible blocks must belong to their prepared page")
         return self
 
-
 class ChunkingPreparation(BaseModel):
     """Intermediate page routing and eligibility result for M2."""
 
@@ -278,7 +264,6 @@ class ChunkingPreparation(BaseModel):
     @property
     def eligible_blocks(self) -> tuple[CanonicalBlock, ...]:
         return tuple(block for page in self.pages for block in page.eligible_blocks)
-
 
 def prepare_document_for_chunking(
     document: CanonicalDocument | Iterable[CanonicalPage],
@@ -357,7 +342,6 @@ def prepare_document_for_chunking(
         pages=tuple(prepared_pages), skipped_blocks=tuple(skipped_blocks)
     )
 
-
 class ChunkingDiagnostics(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -369,7 +353,6 @@ class ChunkingDiagnostics(BaseModel):
     whitespace_only_chunks: NonNegativeInt = 0
     oversized_table_rows: NonNegativeInt = 0
     unsafe_grapheme_cuts: NonNegativeInt = 0
-
 
 class ChunkingReport(BaseModel):
     """Outcome semantics for BLP-1 chunking.
@@ -437,7 +420,6 @@ class ChunkingReport(BaseModel):
             )
         return self
 
-
 class ChunkingResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -460,7 +442,6 @@ class ChunkingResult(BaseModel):
             raise ValueError("Per-page chunk counts must match the chunked document")
         return self
 
-
 def _atom_starts_strong_provision(
     block: CanonicalBlock, atom_start: int, config: ChunkingConfig
 ) -> bool:
@@ -476,7 +457,6 @@ def _atom_starts_strong_provision(
         re.match(pattern, line) is not None
         for pattern in STRONG_PROVISION_MARKER_PATTERNS
     )
-
 
 def _pack_page_text_blocks(
     blocks: tuple[CanonicalBlock, ...],
@@ -650,16 +630,13 @@ def _pack_page_text_blocks(
     finish_chunk()
     return tuple(output), unsafe_grapheme_cuts
 
-
 _TABLE_COLUMN_GAP = re.compile(r"[ \t]+\|[ \t]+|\t+| {2,}")
-
 
 def _table_row_ranges(text: str) -> tuple[tuple[int, int], ...]:
     from src.ingestion.segmentation import line_boundaries
 
     edges = (0, *line_boundaries(text), len(text))
     return tuple((start, end) for start, end in zip(edges, edges[1:]) if start < end)
-
 
 def _split_oversized_table_row(
     text: str, start: int, end: int, config: ChunkingConfig
@@ -747,7 +724,6 @@ def _split_oversized_table_row(
         raise InvalidChunkingStateError("Table row fallback produced an oversized range")
     return tuple(result), unsafe_cuts
 
-
 def _pack_table_block(
     block: CanonicalBlock, config: ChunkingConfig, first_chunk_index: int
 ) -> tuple[tuple[Chunk, ...], int, int]:
@@ -831,7 +807,6 @@ def _pack_table_block(
     if "".join(chunk.text for chunk in chunks) != block.text:
         raise InvalidChunkingStateError("Table chunks do not reconstruct source text")
     return chunks, oversized_rows, unsafe_cuts
-
 
 def chunk_document(
     document: CanonicalDocument | Iterable[CanonicalPage],

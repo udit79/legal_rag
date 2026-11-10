@@ -1,12 +1,8 @@
-"""Reversible, retrieval-only text normalization for canonical chunks."""
-
 from __future__ import annotations
-
 import re
 from collections import defaultdict
 from collections.abc import Iterable
 from typing import Literal, TypeAlias
-
 from src.ingestion.chunk_contracts import Chunk, RetrievalTextEdit
 from src.ingestion.parser_contracts import CanonicalPage
 
@@ -18,10 +14,8 @@ _NormalizationOperation: TypeAlias = Literal[
     "LINE_HYPHENATION_REPAIRED",
 ]
 
-
 def _normalized_line(line: str) -> str:
     return " ".join(line.casefold().split())
-
 
 def _eligible_boundary_line(line: str) -> bool:
     normalized = _normalized_line(line)
@@ -30,7 +24,6 @@ def _eligible_boundary_line(line: str) -> bool:
         and any(char.isalpha() for char in normalized)
         and not normalized.replace(" ", "").isdecimal()
     )
-
 
 def _page_boundary_lines(
     pages: tuple[CanonicalPage, ...],
@@ -70,7 +63,6 @@ def _page_boundary_lines(
         for page_number, (first, last) in boundary_by_page.items()
     }
 
-
 def _line_ranges(text: str) -> list[tuple[int, int, str]]:
     ranges: list[tuple[int, int, str]] = []
     offset = 0
@@ -81,7 +73,6 @@ def _line_ranges(text: str) -> list[tuple[int, int, str]]:
     if offset < len(text):
         ranges.append((offset, len(text), text[offset:]))
     return ranges
-
 
 def _normalization_edits(
     chunk: Chunk,
@@ -117,7 +108,6 @@ def _normalization_edits(
                 )
     return tuple(sorted(edits, key=lambda edit: (edit[0], edit[1])))
 
-
 def _derive_text(
     source_text: str,
     edits: Iterable[tuple[int, int, _NormalizationOperation]],
@@ -147,7 +137,6 @@ def _derive_text(
     if not derived.strip():
         return source_text, ()
     return derived, tuple(mapped_edits)
-
 
 def normalize_retrieval_chunks(
     pages: tuple[CanonicalPage, ...],

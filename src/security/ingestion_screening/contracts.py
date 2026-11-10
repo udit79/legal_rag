@@ -1,25 +1,13 @@
-"""Immutable sidecar models for ingestion screening and admission."""
-
 from __future__ import annotations
-
 import hashlib
 from typing import Annotated, Self
-
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
-
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
-from src.security.ingestion_screening.enums import (
-    AdmissionDecision,
-    DetectionView,
-    FlagSeverity,
-    ScreeningStage,
-    TrustTier,
-)
+from src.security.ingestion_screening.enums import AdmissionDecision,DetectionView,FlagSeverity,ScreeningStage,TrustTier
 
 _Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 _NonEmptyTuple = Annotated[tuple[NonEmptyStr, ...], Field(min_length=1)]
-
 
 class DocumentContext(BaseModel):
     """Provenance supplied by the caller or existing ingestion contracts."""
@@ -47,7 +35,6 @@ class DocumentContext(BaseModel):
         if self.trust_tier == TrustTier.T3_UNAUTHENTICATED_EXTERNAL:
             return has_server_identity and identity_pair_is_consistent
         return has_server_identity and has_upload_identity
-
 
 class ScreeningFlag(BaseModel):
     """A detector finding mapped to exact offsets in an original chunk."""
@@ -81,7 +68,6 @@ class ScreeningFlag(BaseModel):
             raise ValueError("Boundary flags must identify the related chunk")
         return self
 
-
 class ChunkScreeningResult(BaseModel):
     """Screening verdict and immutable identity for one original chunk."""
 
@@ -114,7 +100,6 @@ class ChunkScreeningResult(BaseModel):
                 raise ValueError("Flag range exceeds the original chunk text")
         return self
 
-
 class AdmissionRecord(BaseModel):
     """Downstream provenance and admission metadata for an unchanged chunk."""
 
@@ -134,7 +119,6 @@ class AdmissionRecord(BaseModel):
     screening_policy_digest: _Sha256
     trust_tier: TrustTier
     justification_codes: _NonEmptyTuple
-
 
 class FileScreeningRecord(BaseModel):
     """G0 file-level verdict, kept separate from chunk-level results."""
@@ -160,7 +144,6 @@ class FileScreeningRecord(BaseModel):
         ):
             raise ValueError("An admitted file requires a digest and scanner verdict")
         return self
-
 
 class ScreeningReport(BaseModel):
     """One deterministic batch report with exactly one result per chunk."""
@@ -211,12 +194,10 @@ class ScreeningReport(BaseModel):
             raise ValueError("A quarantined document cannot retain admitted chunks")
         return self
 
-
 class ScreenedChunkedDocument(BaseModel):
     """Sidecar admission metadata paired with, but never mutating, source chunks."""
 
     model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
-
     document: ChunkedDocument
     admission_records: tuple[AdmissionRecord, ...]
     report: ScreeningReport

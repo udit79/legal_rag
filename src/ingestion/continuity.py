@@ -1,14 +1,6 @@
-"""Content-role-aware structural candidate generation for page boundaries."""
-
 import re
-
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
-from src.ingestion.continuity_contracts import (
-    ChunkReference,
-    ContinuityCandidate,
-    deterministic_candidate_id,
-    validate_candidate_against_document,
-)
+from src.ingestion.continuity_contracts import ChunkReference,ContinuityCandidate,deterministic_candidate_id,validate_candidate_against_document
 
 _FOOTNOTE_PREFIX = re.compile(
     r"(?is)^\s*\d{1,3}\s+(?:"
@@ -22,14 +14,12 @@ _COVER_MARKER = re.compile(
     r"respondent\(s\)|versus|in the supreme court)\b"
 )
 
-
 def _is_cover_matter(text: str) -> bool:
     letters = [char for char in text if char.isalpha()]
     lowercase_ratio = (
         sum(char.islower() for char in letters) / len(letters) if letters else 0.0
     )
     return bool(_COVER_MARKER.search(text)) and lowercase_ratio < 0.4
-
 
 def _content_role(chunk: Chunk, page_number: int) -> str | None:
     """Identify chunk roles used for continuity, excluding obvious footnotes.
@@ -52,7 +42,6 @@ def _content_role(chunk: Chunk, page_number: int) -> str | None:
         return None
     return "TEXT"
 
-
 def _role_boundary_chunks(
     chunks_by_page: dict[int, list[Chunk]],
     page_number: int,
@@ -65,7 +54,6 @@ def _role_boundary_chunks(
         if chunk.index not in excluded_chunk_indices
         and _content_role(chunk, page_number) == role
     )
-
 
 def _has_excluded_role_barrier(
     chunks_by_page: dict[int, list[Chunk]],
@@ -82,7 +70,6 @@ def _has_excluded_role_barrier(
         if role == "TEXT" and block_types <= {"TEXT", "OTHER"}:
             return True
     return False
-
 
 def _candidate(
     document: ChunkedDocument,
@@ -114,7 +101,6 @@ def _candidate(
     )
     validate_candidate_against_document(candidate, document)
     return candidate
-
 
 def generate_continuity_candidates(
     document: ChunkedDocument,

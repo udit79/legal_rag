@@ -1,17 +1,6 @@
-"""Provider-facing classification contracts and response normalization."""
-
 import math
 from typing import Annotated, Any, Self
-
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    StringConstraints,
-    field_validator,
-    model_validator,
-)
-
+from pydantic import BaseModel,ConfigDict,Field,StringConstraints,field_validator,model_validator
 from src.ingestion.continuity_contracts import ChunkReference, ContinuityRelation
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt
 
@@ -22,7 +11,6 @@ _Probability = Annotated[
 ]
 _NonNegativeCost = Annotated[float, Field(ge=0.0, allow_inf_nan=False, strict=True)]
 _PROBABILITY_TOLERANCE = 5e-4
-
 
 class CDMClassificationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -51,14 +39,12 @@ class CDMClassificationRequest(BaseModel):
             raise ValueError("Target chunk index must be greater than source")
         return self
 
-
 class CDMUsage(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     input_tokens: NonNegativeInt | None = None
     output_tokens: NonNegativeInt | None = None
     cost: _NonNegativeCost | None = None
-
 
 class CDMClassificationResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -83,7 +69,6 @@ class CDMClassificationResult(BaseModel):
         if self.probabilities[self.relation_type] != maximum:
             raise ValueError("Selected relation must have a highest-scoring probability")
         return self
-
 
 def adapt_scaledown_response(
     response: Any,

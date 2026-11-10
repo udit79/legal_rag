@@ -1,7 +1,6 @@
 from typing import Annotated, Literal
 from pydantic import BaseModel,ConfigDict,Field,StringConstraints,model_validator
 from src.ingestion.contracts import DocumentDisposition, PositiveInt
-
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 NonNegativeInt = Annotated[int, Field(ge=0, strict=True)]
 BlockType = Literal["TEXT", "TABLE", "IMAGE", "VECTOR", "OTHER"]
@@ -95,7 +94,6 @@ class CanonicalPage(BaseModel):
         if self.status == "PARSED" and not self.blocks:
             raise ValueError("Parsed pages must contain at least one block")
         return self
-
 
 class CanonicalDocument(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)

@@ -1,29 +1,17 @@
-"""Conservative deterministic routing for structural continuity candidates."""
-
 import re
 from enum import Enum
 from typing import Self
-
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
 from src.ingestion.chunking import STRONG_PROVISION_MARKER_PATTERNS
-from src.ingestion.continuity_contracts import (
-    ChunkReference,
-    ContinuityCandidate,
-    ContinuityRelation,
-    validate_candidate_against_document,
-)
+from src.ingestion.continuity_contracts import ChunkReference,ContinuityCandidate,ContinuityRelation,validate_candidate_against_document
 from src.ingestion.contracts import NonEmptyStr
-
 CONTINUITY_GATEWAY_POLICY_VERSION = "cpcr-gateway-1.0.0"
-
 
 class GatewayDecision(str, Enum):
     ACCEPT = "ACCEPT"
     REJECT = "REJECT"
     DEFER = "DEFER"
-
 
 class GatewayResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -49,25 +37,21 @@ class GatewayResult(BaseModel):
             raise ValueError("DEFER must not have a final continuity relation")
         return self
 
-
 def _chunk_for_reference(
     document: ChunkedDocument,
     reference: ChunkReference,
 ) -> Chunk:
     return next(chunk for chunk in document.chunks if chunk.index == reference.chunk_index)
 
-
 def _only_block_type(chunk: Chunk, block_type: str) -> bool:
     return bool(chunk.sources) and all(
         source.block_type == block_type for source in chunk.sources
     )
 
-
 def _text_block_group(chunk: Chunk) -> bool:
     return bool(chunk.sources) and all(
         source.block_type in {"TEXT", "OTHER"} for source in chunk.sources
     )
-
 
 def _first_nonblank_line(text: str, page_number: int) -> str:
     lines = re.split(r"\r\n|\r|\n", text)
@@ -82,7 +66,6 @@ def _first_nonblank_line(text: str, page_number: int) -> str:
         return line
     return ""
 
-
 def _starts_strong_provision(text: str, page_number: int) -> bool:
     first_line = _first_nonblank_line(text, page_number)
     return any(
@@ -90,10 +73,8 @@ def _starts_strong_provision(text: str, page_number: int) -> bool:
         for pattern in STRONG_PROVISION_MARKER_PATTERNS
     )
 
-
 def _ends_at_sentence_boundary(text: str) -> bool:
     return re.search(r"[.!?।][\"'”’»)\]}]*\s*$", text) is not None
-
 
 def _explicit_table_continuation(source_text: str, target_text: str) -> bool:
     source_ids = {
@@ -114,7 +95,6 @@ def _explicit_table_continuation(source_text: str, target_text: str) -> bool:
     }
     return bool(source_ids & target_continuations)
 
-
 def _result(
     decision: GatewayDecision,
     relation: ContinuityRelation | None,
@@ -126,7 +106,6 @@ def _result(
         evidence_codes=(evidence_code,),
         gateway_policy_version=CONTINUITY_GATEWAY_POLICY_VERSION,
     )
-
 
 def evaluate_candidate(
     candidate: ContinuityCandidate,

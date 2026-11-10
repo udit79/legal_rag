@@ -1,48 +1,27 @@
-"""End-to-end PDF ingestion orchestration and unrecognized-image crops."""
-
 import asyncio
 import base64
 import logging
 import math
 from pathlib import Path
-
 import pymupdf
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from src.ingestion.segmentation import _grapheme_boundaries,line_boundaries,word_boundaries
 from typing import Literal, Self
-
 from src.ingestion.chunk_contracts import Chunk, ChunkSource
-from src.ingestion.chunking import (
-    ChunkingConfig,
-    ChunkingResult,
-    InvalidChunkingStateError,
-    chunk_document,
-)
+from src.ingestion.chunking import ChunkingConfig,ChunkingResult,InvalidChunkingStateError,chunk_document
 from src.ingestion.contracts import DocumentFeatures, DocumentRoutePlan, NonNegativeInt
 from src.ingestion.continuity import generate_continuity_candidates
-from src.ingestion.continuity_contracts import (
-    ContinuityCandidate,
-    ContinuityRelation,
-)
-from src.ingestion.continuity_gateway import (
-    CONTINUITY_GATEWAY_POLICY_VERSION,
-    GatewayDecision,
-    GatewayResult,
-    evaluate_candidate,
-)
+from src.ingestion.continuity_contracts import ContinuityCandidate,ContinuityRelation
+from src.ingestion.continuity_gateway import CONTINUITY_GATEWAY_POLICY_VERSION,GatewayDecision,GatewayResult,evaluate_candidate
 from src.ingestion.continuity_graph import ClassificationClient, build_cpcr_graph
 from src.ingestion.continuity_state import CPCRState
 from src.ingestion.continuity_cdm_contracts import CDMClassificationResult
 from src.ingestion.parser_worker.result import ImageCropOutput as UnrecognizedImageCrop
 from src.ingestion.parser_contracts import CanonicalDocument
 from src.ingestion.retrieval_text import normalize_retrieval_chunks
-from src.security.ingestion_screening.contracts import (
-    AdmissionRecord,
-    FileScreeningRecord,
-    ScreeningReport,
-    ScreenedChunkedDocument,
-)
+from src.security.ingestion_screening.contracts import AdmissionRecord,FileScreeningRecord,ScreeningReport,ScreenedChunkedDocument
 from src.security.ingestion_screening.enums import AdmissionDecision
 
 INGESTION_ROUTING_POLICY_VERSION = "ingestion-router-1.0.0"
@@ -51,7 +30,6 @@ _CPCR_MINIMUM_CONFIDENCE = 0.75
 _CPCR_MAX_CONCURRENT_CLASSIFICATIONS = 5
 _TRACER = trace.get_tracer("graph_rag.ingestion")
 _LOGGER = logging.getLogger(__name__)
-
 
 class PdfIngestionResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -62,7 +40,6 @@ class PdfIngestionResult(BaseModel):
     canonical: CanonicalDocument
     chunking: ChunkingResult
     unrecognized_images: tuple[UnrecognizedImageCrop, ...]
-
 
 class CPCRCandidateResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -98,7 +75,6 @@ class CPCRCandidateResult(BaseModel):
             raise ValueError("Local gateway outcomes cannot contain CDM results")
         return self
 
-
 class CPCRResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -115,7 +91,6 @@ class CPCRResult(BaseModel):
             raise ValueError("CPCR outcome must reflect classification failures")
         return self
 
-
 class ChunkDisposition(BaseModel):
     """Compact admission status for each original BLP-1 chunk."""
 
@@ -124,7 +99,6 @@ class ChunkDisposition(BaseModel):
     original_chunk_index: NonNegativeInt
     decision: AdmissionDecision
     reason_codes: tuple[str, ...]
-
 
 class RevisedChunkAdmissionMapping(BaseModel):
     """Maps one revised chunk to the original chunks and their screening records."""
@@ -144,7 +118,6 @@ class RevisedChunkAdmissionMapping(BaseModel):
         if tuple(sorted(set(self.original_chunk_indices))) != self.original_chunk_indices:
             raise ValueError("Original chunk indexes must be ordered and unique")
         return self
-
 
 class RevisedChunkSet(BaseModel):
     """Original chunks with bounded source-backed context on continuations."""
@@ -182,7 +155,6 @@ class RevisedChunkSet(BaseModel):
                 raise ValueError("Admission mapping records must come from original screening")
         return self
 
-
 class CPCRIngestionResponse(BaseModel):
     """Public API response: final chunks and preserved image crops only."""
 
@@ -191,7 +163,6 @@ class CPCRIngestionResponse(BaseModel):
     revised_chunks: tuple[Chunk, ...]
     unrecognized_images: tuple[UnrecognizedImageCrop, ...]
     chunk_dispositions: tuple[ChunkDisposition, ...]
-
 
 async def classify_page_continuity(
     ingestion: PdfIngestionResult,
@@ -363,7 +334,6 @@ async def classify_page_continuity(
         candidates=tuple(outcomes),
     )
 
-
 def revise_chunks_after_cpcr(
     ingestion: PdfIngestionResult,
     cpcr: CPCRResult,
@@ -423,12 +393,6 @@ def revise_chunks_after_cpcr(
             )
         context_by_target[target_index] = source_index
         candidate_by_target[target_index] = result.candidate.candidate_id
-
-    from src.ingestion.segmentation import (
-        _grapheme_boundaries,
-        line_boundaries,
-        word_boundaries,
-    )
 
     chunk_limit = settings.max_chunk_chars
     overlap_limit = min(settings.overlap_chars, chunk_limit // 4)
@@ -709,11 +673,9 @@ def revise_chunks_after_cpcr(
         screening_report=screened.report,
     )
 
-
 def _set_error(span, error: Exception) -> None:
     span.record_exception(error)
     span.set_status(Status(StatusCode.ERROR, str(error)))
-
 
 def crop_unrecognized_images(
     source: Path, canonical: CanonicalDocument
@@ -762,7 +724,6 @@ def crop_unrecognized_images(
                     )
                 )
     return tuple(crops)
-
 
 def ingest_pdf(
     *,

@@ -1,27 +1,22 @@
 from __future__ import annotations
-
 import re
 import unicodedata
 from dataclasses import dataclass
 from enum import Enum
-
 from src.ingestion.chunking import ChunkingConfig, InvalidChunkingStateError
 
 _PARAGRAPH_BREAK = re.compile(r"(?:\r\n|\r|\n)[ \t]*(?:(?:\r\n|\r|\n)[ \t]*)+")
 _CLOSING_PUNCTUATION = frozenset('"\'”’»)]}')
 _OPENING_PUNCTUATION = frozenset('"\'“‘«([{')
 
-
 def _ordered_positions(text: str, positions: set[int] | list[int]) -> tuple[int, ...]:
     return tuple(sorted({position for position in positions if 0 < position < len(text)}))
-
 
 def paragraph_boundaries(text: str) -> tuple[int, ...]:
     """Return positions after blank-line runs; lone newlines stay inside pieces."""
     return _ordered_positions(
         text, [match.end() for match in _PARAGRAPH_BREAK.finditer(text)]
     )
-
 
 def provision_marker_boundaries(
     text: str, config: ChunkingConfig | None = None
@@ -37,7 +32,6 @@ def provision_marker_boundaries(
     }
     return _ordered_positions(text, positions)
 
-
 def _abbreviation_periods(text: str, abbreviations: tuple[str, ...]) -> set[int]:
     periods: set[int] = set()
     for abbreviation in abbreviations:
@@ -49,7 +43,6 @@ def _abbreviation_periods(text: str, abbreviations: tuple[str, ...]) -> set[int]
                 if character == "."
             )
     return periods
-
 
 def _terminal_abbreviation_periods(
     text: str, abbreviations: tuple[str, ...]
@@ -63,7 +56,6 @@ def _terminal_abbreviation_periods(
                 terminals[match.end() - 1] = abbreviation.casefold()
     return terminals
 
-
 def _abbreviation_precedes_citation_value(
     text: str, abbreviation: str, next_position: int
 ) -> bool:
@@ -74,12 +66,10 @@ def _abbreviation_precedes_citation_value(
         return re.match(r"(?:[0-9]|[ivxlcdm]+\b)", following_text, re.IGNORECASE) is not None
     return False
 
-
 def _numbering_period(text: str, period_position: int) -> bool:
     line_start = max(text.rfind("\n", 0, period_position), text.rfind("\r", 0, period_position)) + 1
     line_prefix = text[line_start : period_position + 1]
     return re.fullmatch(r"[ \t]*[0-9]+(?:\.[0-9]+)*(?:[.)])?", line_prefix) is not None
-
 
 def _initial_before_name(text: str, period_position: int, next_position: int) -> bool:
     initial_position = period_position - 1
@@ -87,15 +77,11 @@ def _initial_before_name(text: str, period_position: int, next_position: int) ->
         return False
     if initial_position > 0:
         preceding = text[initial_position - 1]
-        # Match the previous ``[^\w]`` rule without copying or scanning a
-        # prefix. For Python regexes, Unicode alphanumerics and underscore
-        # are the relevant word characters here.
         if preceding.isalnum() or preceding == "_":
             return False
     if next_position >= len(text):
         return False
     return text[next_position].isupper()
-
 
 def _plausible_sentence_start(text: str, position: int) -> bool:
     while position < len(text) and text[position] in _OPENING_PUNCTUATION:
@@ -109,7 +95,6 @@ def _plausible_sentence_start(text: str, position: int) -> bool:
         or character.isdigit()
         or 0x0900 <= codepoint <= 0x097F
     )
-
 
 def sentence_boundaries(
     text: str, config: ChunkingConfig | None = None
@@ -166,7 +151,6 @@ def sentence_boundaries(
         positions.add(end)
     return _ordered_positions(text, positions)
 
-
 def line_boundaries(text: str) -> tuple[int, ...]:
     """Return positions after CRLF, LF, or lone CR terminators only."""
     positions: list[int] = []
@@ -182,7 +166,6 @@ def line_boundaries(text: str) -> tuple[int, ...]:
             index += 1
     return _ordered_positions(text, positions)
 
-
 def word_boundaries(text: str) -> tuple[int, ...]:
     """Return positions after each whitespace run, preserving the full run."""
     positions: list[int] = []
@@ -196,17 +179,14 @@ def word_boundaries(text: str) -> tuple[int, ...]:
         positions.append(index)
     return _ordered_positions(text, positions)
 
-
 @dataclass(frozen=True, slots=True)
 class HardCutResult:
     position: int
     is_grapheme_safe: bool
     backoff_chars: int
 
-
 def _is_regional_indicator(character: str) -> bool:
     return 0x1F1E6 <= ord(character) <= 0x1F1FF
-
 
 def _is_grapheme_extend(character: str) -> bool:
     codepoint = ord(character)
@@ -219,11 +199,9 @@ def _is_grapheme_extend(character: str) -> bool:
         or codepoint == 0x200C
     )
 
-
 def _is_virama(character: str) -> bool:
     name = unicodedata.name(character, "")
     return "VIRAMA" in name or "HALANT" in name
-
 
 def _is_indic_consonant(character: str) -> bool:
     codepoint = ord(character)
@@ -231,7 +209,6 @@ def _is_indic_consonant(character: str) -> bool:
         0x0900 <= codepoint <= 0x0DFF
         and unicodedata.category(character).startswith("L")
     )
-
 
 def _grapheme_boundaries(text: str) -> tuple[int, ...]:
     """Approximate common grapheme clusters, not the complete UAX #29 rules.
@@ -272,7 +249,6 @@ def _grapheme_boundaries(text: str) -> tuple[int, ...]:
         boundaries.append(index)
     return tuple(boundaries)
 
-
 def grapheme_safe_hard_cut(
     text: str,
     start: int,
@@ -294,7 +270,6 @@ def grapheme_safe_hard_cut(
     return _hard_cut_from_boundaries(
         text, start, max_chars, settings, _grapheme_boundaries(text)
     )
-
 
 def _hard_cut_from_boundaries(
     text: str,
@@ -326,7 +301,6 @@ def _hard_cut_from_boundaries(
             )
     return HardCutResult(position=limit, is_grapheme_safe=False, backoff_chars=0)
 
-
 class BoundaryTier(str, Enum):
     PARAGRAPH = "paragraph"
     PROVISION_MARKER = "provision_marker"
@@ -335,7 +309,6 @@ class BoundaryTier(str, Enum):
     WORD = "word"
     GRAPHEME_HARD_CUT = "grapheme_hard_cut"
 
-
 @dataclass(frozen=True, slots=True)
 class SegmentationAtom:
     """A contiguous half-open span in the original block text."""
@@ -343,7 +316,6 @@ class SegmentationAtom:
     start: int
     end: int
     created_by: BoundaryTier | None
-
 
 @dataclass(frozen=True, slots=True)
 class SegmentationSplit:
@@ -356,7 +328,6 @@ class SegmentationSplit:
     is_grapheme_safe: bool | None = None
     backoff_chars: int = 0
 
-
 @dataclass(frozen=True, slots=True)
 class SegmentationResult:
     source_text: str
@@ -366,7 +337,6 @@ class SegmentationResult:
     @property
     def atom_texts(self) -> tuple[str, ...]:
         return tuple(self.source_text[atom.start : atom.end] for atom in self.atoms)
-
 
 def segment_oversized_text(
     text: str, config: ChunkingConfig | None = None
@@ -400,7 +370,6 @@ def segment_oversized_text(
         BoundaryTier.LINE,
         BoundaryTier.WORD,
     )
-
     while pending:
         start, end, created_by, tier_start = pending.pop()
         if end - start <= settings.max_chunk_chars:
@@ -468,8 +437,6 @@ def segment_oversized_text(
             is_safe = False
             backoff = 0
 
-        # A fallback can leave the next span starting inside a grapheme. The
-        # reusable index also makes that condition explicit without rescanning.
         if start not in grapheme_boundary_set and selected_tier is None:
             cut = min(start + settings.max_chunk_chars, end)
             is_safe = False

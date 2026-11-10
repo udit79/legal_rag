@@ -1,6 +1,5 @@
 from typing import Annotated, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
-
 DocumentMediaType = Literal["application/pdf"]
 Route = Literal[
     "FAST_TEXT",
@@ -30,7 +29,6 @@ class PageFeatures(BaseModel):
     image_count: NonNegativeInt
     drawing_count: NonNegativeInt
 
-
 class DocumentFeatures(BaseModel):
     model_config = ConfigDict(extra="forbid")
     content_sha256: Annotated[
@@ -49,7 +47,6 @@ class DocumentFeatures(BaseModel):
         if actual_numbers != expected_numbers:
             raise ValueError("Page numbers must be contiguous and one-based")
         return self
-
 
 class RouteDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")

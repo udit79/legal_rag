@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import csv
 import gc
 import io
@@ -11,19 +10,12 @@ import tempfile
 import threading
 import warnings
 from contextlib import contextmanager
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Literal, Protocol, cast
-
+from typing import TYPE_CHECKING, Literal, Protocol, cast
 import pymupdf
-
-from src.ingestion.parser_contracts import (
-    CanonicalBlock,
-    CanonicalPage,
-    ParserFailure,
-    SourceCoordinates,
-)
+from src.ingestion.parser_contracts import CanonicalBlock,CanonicalPage,ParserFailure,SourceCoordinates
 
 if TYPE_CHECKING:
     from docling_core.transforms.serializer.markdown import MarkdownDocSerializer
@@ -37,7 +29,6 @@ _COVER_VERSUS = re.compile(r"\bversus\b", re.IGNORECASE)
 _COVER_APPELLANT = re.compile(r"\bappellant\s*\(s\)", re.IGNORECASE)
 _COVER_RESPONDENT = re.compile(r"\brespondent\s*\(s\)", re.IGNORECASE)
 
-
 @dataclass
 class _VisualRow:
     top: float
@@ -48,20 +39,16 @@ class _VisualRow:
     def center(self) -> float:
         return (self.top + self.bottom) / 2
 
-
 class PageParser(Protocol):
     def parse_page(self, source: Path, page_number: int) -> CanonicalPage: ...
 
-
 class DoclingDocument(Protocol):
     def iterate_items(self) -> Iterable[tuple[NodeItem, int]]: ...
-
 
 class DoclingResult(Protocol):
     status: object
     errors: object
     document: DoclingDocument
-
 
 class DoclingConverter(Protocol):
     def convert(
@@ -72,10 +59,8 @@ class DoclingConverter(Protocol):
         raises_on_error: bool,
     ) -> DoclingResult: ...
 
-
 class RapidOcrEngine(Protocol):
     def __call__(self, image_path: str) -> object: ...
-
 
 def _coordinates(
     bounds: tuple[float, float, float, float],
@@ -93,7 +78,6 @@ def _coordinates(
         origin=origin,
     )
 
-
 def _page_status(
     blocks: tuple[CanonicalBlock, ...],
 ) -> Literal["PARSED", "BLANK", "VECTOR_ONLY"]:
@@ -102,7 +86,6 @@ def _page_status(
     if all(block.block_type == "VECTOR" for block in blocks):
         return "VECTOR_ONLY"
     return "PARSED"
-
 
 def _repair_multi_appeal_cover_order(
     blocks: tuple[CanonicalBlock, ...],
@@ -174,10 +157,8 @@ def _repair_multi_appeal_cover_order(
         for index, block in enumerate(ordered)
     )
 
-
 def _normalize_text_line(text: str) -> str:
     return " ".join(text.casefold().split())
-
 
 def _overlap_relative_to_smaller(first: pymupdf.Rect, second: pymupdf.Rect) -> float:
     intersection = first & second
@@ -189,7 +170,6 @@ def _overlap_relative_to_smaller(first: pymupdf.Rect, second: pymupdf.Rect) -> f
     if smaller_area == 0:
         return 0.0
     return intersection_area / smaller_area
-
 
 def _span_gap_indicates_word_boundary(
     previous_span: dict[str, object],
@@ -227,7 +207,6 @@ def _span_gap_indicates_word_boundary(
     )
     return gap >= word_gap_threshold
 
-
 def _join_native_spans(
     spans: list[dict[str, object]],
     direction: tuple[float, float],
@@ -250,7 +229,6 @@ def _join_native_spans(
         text += span_text
         previous_span = span
     return text
-
 
 def _native_text_line_geometry(
     page: pymupdf.Page,
@@ -292,7 +270,6 @@ def _native_text_line_geometry(
             )
     return lines_with_geometry
 
-
 def _check_page_content_streams(document: pymupdf.Document, page: pymupdf.Page) -> None:
     for xref in page.get_contents():
         try:
@@ -310,7 +287,6 @@ def _check_page_content_streams(document: pymupdf.Document, page: pymupdf.Page) 
                 ) from exc
             if "/Filter" in stream_object:
                 raise ValueError(f"Page content stream {xref} could not be decoded")
-
 
 class FastTextParser:
     """Extract native text and visual primitives with PyMuPDF."""
@@ -422,7 +398,6 @@ class FastTextParser:
             blocks=canonical_blocks,
         )
 
-
 def _captionless_table_serializer(
     document: DoclingDocument,
 ) -> MarkdownDocSerializer:
@@ -437,9 +412,8 @@ def _captionless_table_serializer(
     params = MarkdownParams(labels=default_params.labels - {DocItemLabel.CAPTION})
     return MarkdownDocSerializer(doc=cast(CoreDoclingDocument, document), params=params)
 
-
 @contextmanager
-def _docling_deprecation_compat() -> Iterator[None]:
+def _docling_deprecation_compat() -> Generator[None, None, None]:
     # Docling 2.145 accesses these deprecated compatibility fields internally.
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -455,7 +429,6 @@ def _docling_deprecation_compat() -> Iterator[None]:
             module=r"pydantic\.main",
         )
         yield
-
 
 def _recover_native_text_under_empty_images(
     source: Path,
@@ -580,7 +553,6 @@ def _recover_native_text_under_empty_images(
 
     return tuple(recovered)
 
-
 class StructuredParser:
     """Extract layout-aware text and tables with Docling, one page at a time."""
 
@@ -638,7 +610,6 @@ class StructuredParser:
                     format_options={
                         InputFormat.PDF: PdfFormatOption(
                             pipeline_options=options,
-                            # Avoid the Windows docling-parse threaded renderer's heap corruption.
                             backend=PyPdfiumDocumentBackend,
                         )
                     }
@@ -775,7 +746,6 @@ class StructuredParser:
             blocks=canonical_blocks,
             warnings=warnings,
         )
-
 
 class OcrParser:
     """OCR a page using Tesseract or the optional RapidOCR engine."""

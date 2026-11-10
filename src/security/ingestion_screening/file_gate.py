@@ -1,22 +1,13 @@
-"""G0 raw-file checks; PDF structure inspection runs in the isolated worker."""
-
 import hashlib
 import os
 import shlex
 import subprocess
 from pathlib import Path
 from typing import Protocol
-
 from src.ingestion.parser_worker.result import PdfInspectionResponse
 from src.security.ingestion_screening.contracts import FileScreeningRecord, ScreeningFlag
-from src.security.ingestion_screening.enums import (
-    AdmissionDecision,
-    DetectionView,
-    FlagSeverity,
-    ScreeningStage,
-)
+from src.security.ingestion_screening.enums import AdmissionDecision,DetectionView,FlagSeverity,ScreeningStage
 from src.security.ingestion_screening.policy import ScreeningPolicy
-
 
 class MalwareScanner(Protocol):
     name: str
@@ -25,7 +16,7 @@ class MalwareScanner(Protocol):
 
     def scan(self, path: Path) -> bool:
         """Return true only when the scanner confirms the file is clean."""
-
+        ...
 
 class ClamAVScanner:
     """Adapter for the installed ClamAV `clamscan` command-line scanner."""
@@ -116,14 +107,12 @@ class ClamAVScanner:
             return False
         raise RuntimeError("ClamAV scan failed")
 
-
 class FileGateError(ValueError):
     """Raised when G0 blocks a file before any parser can receive it."""
 
     def __init__(self, message: str, record: FileScreeningRecord) -> None:
         super().__init__(message)
         self.record = record
-
 
 def _hash_file(path: Path) -> tuple[str, int]:
     digest = hashlib.sha256()
@@ -133,7 +122,6 @@ def _hash_file(path: Path) -> tuple[str, int]:
             size += len(data)
             digest.update(data)
     return digest.hexdigest(), size
-
 
 def _record(
     *,
@@ -161,7 +149,6 @@ def _record(
         screening_policy_digest=policy.digest(),
         justification_codes=(justification,),
     )
-
 
 def screen_pdf_file(
     path: Path,
@@ -195,7 +182,6 @@ def screen_pdf_file(
         raise FileGateError("PDF exceeds the configured file-size limit", record)
 
     source_sha256, file_size = _hash_file(path)
-
     claimed_name = filename if filename is not None else path.name
     if Path(claimed_name).suffix.casefold() != ".pdf":
         flag = ScreeningFlag(

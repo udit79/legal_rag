@@ -1,19 +1,11 @@
-"""Async ScaleDown client; SCALEDOWN_BASE_URL precedes legacy SCALEDOWN_API_BASE."""
-
 import base64
 import json
 import os
 from collections.abc import Mapping
 from typing import Any
-
 import httpx
 from pydantic import BaseModel, ConfigDict, ValidationError
-
-from src.ingestion.continuity_cdm_contracts import (
-    CDMClassificationRequest,
-    CDMClassificationResult,
-    adapt_scaledown_response,
-)
+from src.ingestion.continuity_cdm_contracts import CDMClassificationRequest,CDMClassificationResult,adapt_scaledown_response
 
 DEFAULT_SCALEDOWN_API_BASE = "https://api.scaledown.xyz"
 SCALEDOWN_DECISIONS_PATH = "/v1/scaledown"

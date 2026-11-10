@@ -1,14 +1,9 @@
-"""Validated JSON messages exchanged with the parser container."""
-
 from typing import Literal, Self
-
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 from src.ingestion.contracts import DocumentFeatures, DocumentRoutePlan, NonEmptyStr
 from src.ingestion.parser_contracts import CanonicalDocument, SourceCoordinates
 from src.security.ingestion_screening.contracts import ScreeningFlag
 from src.security.ingestion_screening.enums import AdmissionDecision
-
 
 class ParseWorkerRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -17,7 +12,6 @@ class ParseWorkerRequest(BaseModel):
     request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     filename: str = Field(pattern=r"^[0-9a-f]{32}\.pdf$")
     routing_policy_version: NonEmptyStr
-
 
 class ParseWorkerResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -47,13 +41,11 @@ class ParseWorkerResponse(BaseModel):
                 raise ValueError("Error messages cannot contain parsed document data")
         return self
 
-
 class ImageOcrInput(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     image_id: NonEmptyStr
     data_base64: NonEmptyStr
-
 
 class ImageOcrRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -62,13 +54,11 @@ class ImageOcrRequest(BaseModel):
     request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     images: tuple[ImageOcrInput, ...]
 
-
 class ImageOcrText(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     image_id: NonEmptyStr
     text: str
-
 
 class ImageOcrResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -77,7 +67,6 @@ class ImageOcrResponse(BaseModel):
     request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     results: tuple[ImageOcrText, ...]
 
-
 class PagePdfRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -85,7 +74,6 @@ class PagePdfRequest(BaseModel):
     request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     filename: str = Field(pattern=r"^[0-9a-f]{32}\.pdf$")
     page_number: int = Field(ge=1, strict=True)
-
 
 class PagePdfResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -97,7 +85,6 @@ class PagePdfResponse(BaseModel):
     height_points: float = Field(gt=0, allow_inf_nan=False)
     data_base64: NonEmptyStr
 
-
 class PdfInspectionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -105,7 +92,6 @@ class PdfInspectionRequest(BaseModel):
     request_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     filename: str = Field(pattern=r"^[0-9a-f]{32}\.pdf$")
     max_pdf_objects: int = Field(ge=1, strict=True)
-
 
 class PdfInspectionResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -132,7 +118,6 @@ class PdfInspectionResponse(BaseModel):
             raise ValueError("Failed inspection requires only an error code")
         return self
 
-
 class ImageCropSpec(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -140,7 +125,6 @@ class ImageCropSpec(BaseModel):
     block_id: NonEmptyStr
     reading_order: int = Field(ge=0, strict=True)
     source_coordinates: SourceCoordinates
-
 
 class ImageCropRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -150,7 +134,6 @@ class ImageCropRequest(BaseModel):
     filename: str = Field(pattern=r"^[0-9a-f]{32}\.pdf$")
     images: tuple[ImageCropSpec, ...]
 
-
 class ImageCropOutput(ImageCropSpec):
     filename: NonEmptyStr
     media_type: Literal["image/png"] = "image/png"
@@ -158,7 +141,6 @@ class ImageCropOutput(ImageCropSpec):
     ocr_status: Literal["TEXT_FOUND", "NO_TEXT", "FAILED"] | None = None
     screening_decision: AdmissionDecision | None = None
     screening_flags: tuple[ScreeningFlag, ...] = ()
-
 
 class ImageCropResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)

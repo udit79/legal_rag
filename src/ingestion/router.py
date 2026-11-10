@@ -1,10 +1,4 @@
-from src.ingestion.contracts import (
-    DocumentFeatures,
-    DocumentRoutePlan,
-    PageFeatures,
-    PageRouteDecision,
-    Route,
-)
+from src.ingestion.contracts import DocumentFeatures,DocumentRoutePlan,PageFeatures,PageRouteDecision,Route
 MIN_NATIVE_TEXT_CHARACTERS = 50
 def _route_page(page: PageFeatures) -> tuple[Route, str]:
     has_visual_content = page.image_count > 0 or page.drawing_count > 0

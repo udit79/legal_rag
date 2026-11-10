@@ -1,16 +1,11 @@
-"""Deterministic, behavior-versioned screening policy."""
-
 import hashlib
 import json
 import re
 from typing import Annotated
-
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
-
 from src.ingestion.contracts import NonEmptyStr
 
 _Pattern = Annotated[str, StringConstraints(min_length=1)]
-
 
 class ScreeningPolicy(BaseModel):
     """All configurable thresholds and patterns that affect screening output."""

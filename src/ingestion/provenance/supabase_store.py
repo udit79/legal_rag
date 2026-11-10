@@ -1,21 +1,14 @@
-"""Supabase/PostgREST persistence for immutable ingestion provenance records."""
-
 from __future__ import annotations
-
 import hashlib
 import json
-
 import httpx
-
 from src.ingestion.pipeline import CPCRResult, RevisedChunkSet
 from src.ingestion.retrieval_text import RETRIEVAL_TEXT_POLICY_VERSION
 from src.ingestion.screening.image_screening import ImageScreeningResult
 from src.security.ingestion_screening.contracts import DocumentContext, ScreenedChunkedDocument
 
-
 class SupabaseProvenanceError(RuntimeError):
     """The configured provenance database did not durably accept a batch."""
-
 
 class SupabaseProvenanceStore:
     def __init__(self, base_url: str, service_role_key: str, client: httpx.AsyncClient):

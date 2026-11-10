@@ -8,7 +8,6 @@ TEXT_BEARING_BLOCK_TYPES: Final[frozenset[BlockType]] = frozenset(
 )
 OPTIONAL_TEXT_BLOCK_TYPES: Final[frozenset[BlockType]] = frozenset({"IMAGE"})
 
-
 class ChunkSource(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     page_number: PositiveInt
@@ -62,7 +61,6 @@ class ChunkSource(BaseModel):
             raise ValueError("Source end offset exceeds the source text length")
         return self
 
-
 class RetrievalTextEdit(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -83,7 +81,6 @@ class RetrievalTextEdit(BaseModel):
         if self.retrieval_start != self.retrieval_end:
             raise ValueError("Retrieval normalization edits may only remove source text")
         return self
-
 
 class Chunk(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -199,7 +196,6 @@ class Chunk(BaseModel):
                 )
             )
         return tuple(mapped)
-
 
 class ChunkedDocument(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)

@@ -1,7 +1,4 @@
-"""Long-lived JSON-lines parser service; stdout is reserved for framed JSON."""
-
 from __future__ import annotations
-
 import base64
 import binascii
 import json
@@ -12,11 +9,8 @@ import traceback
 from contextlib import redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import BinaryIO
-
+from typing import BinaryIO, Protocol
 import pymupdf
-from pydantic import BaseModel
-
 from src.ingestion.dispatcher import dispatch_document
 from src.ingestion.parsers import FastTextParser, OcrParser, StructuredParser
 from src.ingestion.preflight import inspect_pdf
@@ -45,6 +39,11 @@ from src.ingestion.parser_worker.result import (
     PdfInspectionResponse,
 )
 
+class WorkerResponse(Protocol):
+    @property
+    def request_id(self) -> str | None: ...
+
+    def model_dump_json(self) -> str: ...
 
 def _read_exact(stream: BinaryIO, size: int) -> bytes | None:
     parts = bytearray()
@@ -56,7 +55,6 @@ def _read_exact(stream: BinaryIO, size: int) -> bytes | None:
             raise EOFError("Incomplete parser-worker frame")
         parts.extend(data)
     return bytes(parts)
-
 
 def _read_message(stream: BinaryIO) -> bytes | None:
     header = _read_exact(stream, 4)
@@ -70,8 +68,10 @@ def _read_message(stream: BinaryIO) -> bytes | None:
         raise EOFError("Parser-worker request frame is incomplete")
     return payload
 
-
-def _write_message(stream: BinaryIO, response: BaseModel) -> None:
+def _write_message(
+    stream: BinaryIO,
+    response: WorkerResponse,
+) -> None:
     payload = response.model_dump_json().encode("utf-8")
     if len(payload) > MAX_WORKER_RESPONSE_BYTES:
         response = ParseWorkerResponse(
@@ -84,7 +84,6 @@ def _write_message(stream: BinaryIO, response: BaseModel) -> None:
     stream.write(len(payload).to_bytes(4, "big"))
     stream.write(payload)
     stream.flush()
-
 
 def _pdf_path(filename: str) -> Path:
     root = Path(WORKER_MOUNT_PATH).resolve()
@@ -99,7 +98,6 @@ def _pdf_path(filename: str) -> Path:
             raise ValueError("Worker input does not have PDF magic bytes")
     return path
 
-
 def _initialize_parsers() -> tuple[FastTextParser, StructuredParser, StructuredParser, OcrParser]:
     fast_text = FastTextParser()
     structured = StructuredParser()
@@ -110,7 +108,6 @@ def _initialize_parsers() -> tuple[FastTextParser, StructuredParser, StructuredP
         structured.initialize()
         layout_ocr.initialize()
     return fast_text, structured, layout_ocr, ocr
-
 
 def _handle(
     raw_request: bytes,
@@ -159,7 +156,6 @@ def _handle(
             error_type=type(exc).__name__,
         )
 
-
 def _handle_pdf_inspection(raw_request: bytes) -> PdfInspectionResponse:
     request_id = "0" * 32
     try:
@@ -199,7 +195,6 @@ def _handle_pdf_inspection(raw_request: bytes) -> PdfInspectionResponse:
             inspection_status="FAILED",
             error_code=type(exc).__name__,
         )
-
 
 def _handle_crop_images(raw_request: bytes) -> ImageCropResponse | ParseWorkerResponse:
     request_id = "0" * 32
@@ -301,7 +296,6 @@ def _handle_page_pdf(raw_request: bytes) -> PagePdfResponse | ParseWorkerRespons
             error_type=type(exc).__name__,
         )
 
-
 def _handle_image_ocr(
     raw_request: bytes,
     parsers: tuple[FastTextParser, StructuredParser, StructuredParser, OcrParser],
@@ -379,7 +373,6 @@ def main() -> int:
         for parser in parsers[1:3]:
             parser.close()
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

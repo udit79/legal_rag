@@ -1,34 +1,14 @@
-"""Local, deterministic G1/G2/G4/G5 batch screening."""
-
 import asyncio
 import hashlib
 import re
 import unicodedata
 from functools import lru_cache
 from urllib.parse import urlsplit
-
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
-from src.security.ingestion_screening.contracts import (
-    AdmissionRecord,
-    ChunkScreeningResult,
-    DocumentContext,
-    FileScreeningRecord,
-    ScreeningFlag,
-    ScreeningReport,
-    ScreenedChunkedDocument,
-)
-from src.security.ingestion_screening.enums import (
-    AdmissionDecision,
-    DetectionView,
-    FlagSeverity,
-    ScreeningStage,
-)
+from src.security.ingestion_screening.contracts import AdmissionRecord,ChunkScreeningResult,DocumentContext,FileScreeningRecord,ScreeningFlag,ScreeningReport,ScreenedChunkedDocument
+from src.security.ingestion_screening.enums import AdmissionDecision,DetectionView,FlagSeverity,ScreeningStage
 from src.security.ingestion_screening.policy import ScreeningPolicy
-from src.ingestion.screening.unicode_screening import (
-    mixed_script_tokens,
-    security_detection_view,
-    script_of,
-)
+from src.ingestion.screening.unicode_screening import mixed_script_tokens,security_detection_view,script_of
 
 _URL = re.compile(r"(?i)\bhttps?://[^\s<>\]\[(){}\"']+")
 _BIDI_CONTROLS = frozenset(
@@ -45,15 +25,12 @@ _VALID_FLAG_TAG_EMOJI = frozenset(
     for code in ("eng", "sct", "wls", "gbeng")
 )
 
-
 @lru_cache(maxsize=256)
 def _compiled_pattern(pattern: str) -> re.Pattern[str]:
     return re.compile(pattern)
 
-
 def _digest(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
-
 
 def _tag_sequences(text: str) -> tuple[tuple[int, int, str, bool], ...]:
     sequences: list[tuple[int, int, str, bool]] = []
@@ -75,7 +52,6 @@ def _tag_sequences(text: str) -> tuple[tuple[int, int, str, bool], ...]:
         sequences.append((start, end, decoded, valid_emoji))
     return tuple(sequences)
 
-
 def _legitimate_joiner_context(text: str, index: int) -> bool:
     char = text[index]
     previous = text[index - 1] if index else ""
@@ -91,14 +67,12 @@ def _legitimate_joiner_context(text: str, index: int) -> bool:
         and unicodedata.category(following) == "So"
     )
 
-
 def _suspicious_zero_width_at(text: str, index: int) -> bool:
     char = text[index]
     return char in _ZERO_WIDTH_SUSPICIOUS or (
         char in {"\u200c", "\u200d"}
         and not _legitimate_joiner_context(text, index)
     )
-
 
 def _normalized_detection_view(
     text: str,
@@ -123,7 +97,6 @@ def _normalized_detection_view(
         normalized.extend(folded)
         offsets.extend([source_span] * len(folded))
     return "".join(normalized), tuple(offsets)
-
 
 def _flag(
     code: str,
@@ -151,10 +124,8 @@ def _flag(
         domains=domains,
     )
 
-
 def _script(char: str) -> str | None:
     return script_of(char)
-
 
 def _integrity_flags(
     text: str, policy: ScreeningPolicy
@@ -177,7 +148,6 @@ def _integrity_flags(
             )
         if char in _BIDI_CONTROLS:
             # A small number of directional marks is legitimate in multilingual
-            # text; excessive or unbalanced controls are flagged below.
             continue
         category = unicodedata.category(char)
         if category in {"Cc", "Cs"} and char not in _ALLOWED_CONTROLS:
@@ -378,7 +348,6 @@ def _integrity_flags(
             )
     return flags, rejected_tag_payload
 
-
 def _pattern_flags(
     text: str, policy: ScreeningPolicy
 ) -> tuple[list[ScreeningFlag], bool]:
@@ -440,7 +409,6 @@ def _pattern_flags(
             )
         )
     return flags, model_directed
-
 
 def _boundary_flags(
     source: Chunk,
@@ -544,7 +512,6 @@ def _boundary_flags(
                     )
                 )
     return results
-
 
 class ScreeningService:
     """Runs one local screening pass over the complete original chunk batch."""

@@ -1,25 +1,23 @@
-"""OCR and screen preserved image crops without altering the source image."""
-
 from __future__ import annotations
-
 import base64
 import hashlib
 from typing import Literal, Protocol
-
 from pydantic import BaseModel, ConfigDict
-
 from src.ingestion.pipeline import UnrecognizedImageCrop
 from src.ingestion.parser_contracts import SourceCoordinates
 from src.security.ingestion_screening.contracts import ScreeningFlag
-from src.security.ingestion_screening.enums import AdmissionDecision
+from src.security.ingestion_screening.enums import (
+    AdmissionDecision,
+    DetectionView,
+    FlagSeverity,
+    ScreeningStage,
+)
 from src.security.ingestion_screening.screening_service import ScreeningService
-
 
 class ImageOcr(Protocol):
     async def ocr_image_crops(
         self, crops: tuple[UnrecognizedImageCrop, ...]
     ) -> dict[str, str]: ...
-
 
 class ImageScreeningResult(BaseModel):
     """Security sidecar; flag offsets refer to OCR text, never image bytes."""
@@ -36,7 +34,6 @@ class ImageScreeningResult(BaseModel):
     ocr_text_length: int = 0
     decision: AdmissionDecision | None = None
     flags: tuple[ScreeningFlag, ...] = ()
-
 
 async def screen_image_crops(
     crops: tuple[UnrecognizedImageCrop, ...],
@@ -72,9 +69,9 @@ async def screen_image_crops(
                     flags=(
                         ScreeningFlag(
                             code="IMAGE_OCR_FAILED",
-                            stage="G1_INTEGRITY",
-                            severity="HIGH",
-                            detection_view="RAW",
+                            stage=ScreeningStage.G1_INTEGRITY,
+                            severity=FlagSeverity.HIGH,
+                            detection_view=DetectionView.RAW,
                             matched_value="OCR did not return a result",
                         ),
                     ),
@@ -110,7 +107,6 @@ async def screen_image_crops(
             )
         )
     return tuple(results)
-
 
 def attach_image_screening_results(
     crops: tuple[UnrecognizedImageCrop, ...],

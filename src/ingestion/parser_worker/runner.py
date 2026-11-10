@@ -1,5 +1,3 @@
-"""Monitors and communicates with the network-isolated Docker parser."""
-
 from __future__ import annotations
 
 import asyncio

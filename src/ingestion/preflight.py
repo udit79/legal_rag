@@ -1,22 +1,16 @@
 import hashlib
 from pathlib import Path
-
 import pymupdf
-
 from src.ingestion.contracts import DocumentFeatures, PageFeatures
-
 
 class PdfPreflightError(Exception):
     """Base error for failures while inspecting a PDF."""
 
-
 class PdfNotFoundError(PdfPreflightError, FileNotFoundError):
     """Raised when the requested PDF path does not exist."""
 
-
 class InvalidPdfError(PdfPreflightError):
     """Raised when the file is not a readable, non-empty PDF."""
-
 
 def inspect_pdf(path: Path) -> DocumentFeatures:
     try:

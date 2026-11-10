@@ -1,5 +1,3 @@
-"""Hard limits shared by the API runner and isolated PDF worker."""
-
 MAX_PDF_SIZE_BYTES = 50 * 1024 * 1024
 MAX_PDF_PAGES = 500
 MAX_EXECUTION_SECONDS = 60
@@ -11,3 +9,11 @@ MAX_SINGLE_PAGE_PDF_BYTES = 32 * 1024 * 1024
 MAX_OCR_BATCH_BYTES = 128 * 1024 * 1024
 MAX_OCR_BATCH_IMAGES = 500
 WORKER_MOUNT_PATH = "/work"
+def pdf_execution_timeout_seconds(
+    page_count: int,
+    max_execution_seconds: int = MAX_EXECUTION_SECONDS,
+) -> int:
+    return min(
+        page_count * max_execution_seconds,
+        MAX_DOCUMENT_EXECUTION_SECONDS,
+    )

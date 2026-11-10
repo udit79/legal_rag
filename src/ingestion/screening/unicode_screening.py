@@ -1,20 +1,11 @@
-"""Pinned UTS #39 skeleton and script detection (Unicode 16.0.0).
-
-Skeletons are for security comparison only; never replace or display source text
-with them. Offsets in DetectionText map every output character to its source span.
-"""
-
 from __future__ import annotations
-
 import bisect
 import unicodedata
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-
 UNICODE_SECURITY_VERSION = "16.0.0"
 _DATA = Path(__file__).with_name("data") / f"unicode-{UNICODE_SECURITY_VERSION}"
-
 
 @dataclass(frozen=True, slots=True)
 class DetectionText:
@@ -30,7 +21,6 @@ class DetectionText:
             max(span[1] for span in self.source_spans[start:end]),
         )
 
-
 @dataclass(frozen=True, slots=True)
 class _UnicodeData:
     mappings: dict[tuple[int, ...], tuple[int, ...]]
@@ -41,15 +31,12 @@ class _UnicodeData:
     script_extension_ranges: tuple[tuple[int, int, tuple[str, ...]], ...]
     script_extension_starts: tuple[int, ...]
 
-
 def _codepoints(value: str) -> tuple[int, ...]:
     return tuple(int(part, 16) for part in value.split())
-
 
 def _range(value: str) -> tuple[int, int]:
     left, _, right = value.partition("..")
     return int(left, 16), int(right or left, 16)
-
 
 @lru_cache(maxsize=1)
 def _unicode_data() -> _UnicodeData:
@@ -106,17 +93,14 @@ def _read_script_extensions() -> tuple[tuple[int, int, tuple[str, ...]], ...]:
     ranges.sort()
     return tuple(ranges)
 
-
 def _in_ranges(codepoint: int, ranges: tuple[tuple[int, int], ...]) -> bool:
     index = bisect.bisect_right(ranges, (codepoint, 0x110000)) - 1
     return index >= 0 and ranges[index][0] <= codepoint <= ranges[index][1]
-
 
 def is_default_ignorable(char: str) -> bool:
     if len(char) != 1:
         raise ValueError("Expected one Unicode character")
     return _in_ranges(ord(char), _unicode_data().ignored_ranges)
-
 
 def script_of(char: str) -> str | None:
     """Return the Unicode Script value, excluding Common/Inherited/Unknown."""
@@ -131,7 +115,6 @@ def script_of(char: str) -> str | None:
         return None
     return script
 
-
 def script_extensions_of(char: str) -> frozenset[str]:
     """Return substantive Script_Extensions, ignoring Common/Inherited."""
     script = script_of(char)
@@ -143,7 +126,6 @@ def script_extensions_of(char: str) -> frozenset[str]:
         if start <= codepoint <= end:
             return frozenset(scripts) - {"COMMON", "INHERITED", "UNKNOWN"}
     return frozenset({script}) if script else frozenset()
-
 
 def _canonical_order(chars: list[tuple[str, tuple[int, int]]]) -> list[tuple[str, tuple[int, int]]]:
     """Apply canonical combining-class ordering while carrying source spans."""
@@ -161,7 +143,6 @@ def _canonical_order(chars: list[tuple[str, tuple[int, int]]]) -> list[tuple[str
             output.insert(insert_at, item)
     return output
 
-
 def _longest_mapping(
     codepoints: tuple[int, ...], position: int, data: _UnicodeData
 ) -> tuple[tuple[int, ...], int] | None:
@@ -172,7 +153,6 @@ def _longest_mapping(
             if mapped is not None:
                 return mapped, end
     return None
-
 
 def skeleton_with_offsets(text: str) -> DetectionText:
     """Compute UTS #39 internal skeleton and preserve a map to original text."""
@@ -208,11 +188,9 @@ def skeleton_with_offsets(text: str) -> DetectionText:
         source_spans=tuple(span for _, span in mapped),
     )
 
-
 def skeleton(text: str) -> str:
     """Return a comparison-only UTS #39 skeleton."""
     return skeleton_with_offsets(text).text
-
 
 def security_detection_view(text: str) -> DetectionText:
     """Make a regex-friendly view without applying UTS skeleton mappings to ASCII.
@@ -235,7 +213,6 @@ def security_detection_view(text: str) -> DetectionText:
         output.extend(folded)
         spans.extend([(index, index + 1)] * len(folded))
     return DetectionText("".join(output), tuple(spans))
-
 
 def mixed_script_tokens(text: str) -> tuple[tuple[int, int, tuple[str, ...]], ...]:
     """Find alphanumeric tokens containing more than one substantive script."""

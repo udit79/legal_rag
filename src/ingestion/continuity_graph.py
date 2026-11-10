@@ -1,30 +1,16 @@
-"""LangGraph-facing CPCR node and orchestration helpers."""
-
 from typing import Protocol
-
 from langgraph.graph import END, START, StateGraph
-
 from src.ingestion.chunk_contracts import ChunkedDocument
-from src.ingestion.continuity_cdm_contracts import (
-    CDMClassificationRequest,
-    CDMClassificationResult,
-)
+from src.ingestion.continuity_cdm_contracts import CDMClassificationRequest,CDMClassificationResult
 from src.ingestion.continuity_gateway import GatewayDecision
-from src.ingestion.continuity_contracts import (
-    AssessmentMethod,
-    ContinuityAssessment,
-    ContinuityRelation,
-    validate_assessment_against_document,
-)
+from src.ingestion.continuity_contracts import AssessmentMethod,ContinuityAssessment,ContinuityRelation,validate_assessment_against_document
 from src.ingestion.continuity_state import CPCRState
-
 
 class ClassificationClient(Protocol):
     async def classify(
         self,
         request: CDMClassificationRequest,
     ) -> CDMClassificationResult: ...
-
 
 async def scaledown_classification_node(
     state: CPCRState,
@@ -70,13 +56,11 @@ async def scaledown_classification_node(
     validate_assessment_against_document(assessment, document)
     return {"cdm_result": result}
 
-
 def route_after_gateway(state: CPCRState) -> str:
     """Route only deferred gateway decisions to ScaleDown classification."""
     if state["gateway_result"].decision == GatewayDecision.DEFER:
         return "classify"
     return "finish"
-
 
 def build_cpcr_graph(client: ClassificationClient, document: ChunkedDocument):
     """Compile the CPCR workflow with its ScaleDown client injected."""

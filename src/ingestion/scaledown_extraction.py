@@ -1,34 +1,19 @@
-"""Page-level ScaleDown Extract fallback for failed local parsing/OCR."""
-
 from __future__ import annotations
-
 from pathlib import Path
 from typing import Protocol
-
 from src.ingestion.contracts import DocumentRoutePlan
-from src.ingestion.parser_contracts import (
-    CanonicalBlock,
-    CanonicalDocument,
-    CanonicalPage,
-    ParserFailure,
-    SourceCoordinates,
-)
-from src.ingestion.scaledown_client import (
-    ScaleDownExtractResult,
-)
-
+from src.ingestion.parser_contracts import CanonicalBlock,CanonicalDocument,CanonicalPage,ParserFailure,SourceCoordinates
+from src.ingestion.scaledown_client import ScaleDownExtractResult
 
 class _PagePdfExporter(Protocol):
     async def extract_page_pdf(
         self, source: Path, page_number: int
     ) -> tuple[bytes, float, float]: ...
 
-
 class _PageTextExtractor(Protocol):
     async def extract_document_text(
         self, document: bytes, *, document_mime_type: str = "application/pdf"
     ) -> ScaleDownExtractResult: ...
-
 
 async def recover_escalated_pages(
     source: Path,

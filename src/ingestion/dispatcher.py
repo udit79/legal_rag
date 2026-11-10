@@ -1,19 +1,12 @@
 from pathlib import Path
-
 import pymupdf
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
-
 from src.ingestion.contracts import DocumentRoutePlan, PageRouteDecision
-from src.ingestion.parser_contracts import (
-    CanonicalDocument,
-    CanonicalPage,
-    ParserFailure,
-)
+from src.ingestion.parser_contracts import CanonicalDocument,CanonicalPage,ParserFailure
 from src.ingestion.parsers import FastTextParser, OcrParser, PageParser, StructuredParser
 
 _TRACER = trace.get_tracer("graph_rag.ingestion.dispatcher")
-
 
 def _parse_page_with_span(
     parser: PageParser, source: Path, page_number: int, route: str
@@ -34,7 +27,6 @@ def _parse_page_with_span(
         span.set_attribute("ingestion.page.warning_count", len(page.warnings))
         return page
 
-
 def _failed_page(
     page_number: int,
     parser: str,
@@ -47,7 +39,6 @@ def _failed_page(
         status="FAILED",
         failure=ParserFailure(parser=parser, code=code, message=message),
     )
-
 
 def _document_failure(
     plan: DocumentRoutePlan, code: str, message: str
@@ -63,7 +54,6 @@ def _document_failure(
         pages=pages,
         document_failure=failure,
     )
-
 
 def _adapter_for_route(
     decision: PageRouteDecision,
@@ -92,7 +82,6 @@ def _adapter_for_route(
             else StructuredParser(do_ocr=True)
         )
     return None
-
 
 def dispatch_document(
     source: Path,

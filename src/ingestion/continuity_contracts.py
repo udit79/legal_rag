@@ -1,15 +1,10 @@
-"""Provider-neutral contracts for adjacent-page chunk continuity."""
-
 from enum import Enum
 from hashlib import sha256
 import json
 from typing import Self
-
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
-
 
 class ContinuityRelation(str, Enum):
     SAME_PARAGRAPH = "SAME_PARAGRAPH"
@@ -17,12 +12,10 @@ class ContinuityRelation(str, Enum):
     NO_CONTINUATION = "NO_CONTINUATION"
     UNKNOWN = "UNKNOWN"
 
-
 class AssessmentMethod(str, Enum):
     DETERMINISTIC = "DETERMINISTIC"
     CDM_CLASSIFY = "CDM_CLASSIFY"
     MANUAL = "MANUAL"
-
 
 class ChunkReference(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -30,7 +23,6 @@ class ChunkReference(BaseModel):
     document_id: NonEmptyStr
     chunk_index: NonNegativeInt
     page_number: PositiveInt
-
 
 def deterministic_candidate_id(
     document_id: str,
@@ -51,7 +43,6 @@ def deterministic_candidate_id(
         separators=(",", ":"),
     )
     return sha256(identity.encode("utf-8")).hexdigest()
-
 
 class ContinuityCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -80,7 +71,6 @@ class ContinuityCandidate(BaseModel):
             raise ValueError("Candidate ID does not match its deterministic identity")
         return self
 
-
 class ContinuityAssessment(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -89,7 +79,6 @@ class ContinuityAssessment(BaseModel):
     method: AssessmentMethod
     evidence_codes: tuple[NonEmptyStr, ...] = Field(min_length=1)
     assessment_policy_version: NonEmptyStr
-
 
 def _chunk_for_reference(
     document: ChunkedDocument,
@@ -112,7 +101,6 @@ def _chunk_for_reference(
         raise ValueError("Referenced page number does not match chunk provenance")
     return chunk
 
-
 def _chunks_on_page(document: ChunkedDocument, page_number: int) -> list[Chunk]:
     page_chunks: list[Chunk] = []
     for chunk in document.chunks:
@@ -126,7 +114,6 @@ def _chunks_on_page(document: ChunkedDocument, page_number: int) -> list[Chunk]:
     if not page_chunks:
         raise ValueError(f"No chunks found for page {page_number}")
     return page_chunks
-
 
 def validate_candidate_against_document(
     candidate: ContinuityCandidate,
@@ -142,12 +129,8 @@ def validate_candidate_against_document(
         raise ValueError("Candidate document ID does not match document")
     _chunk_for_reference(document, candidate.source)
     _chunk_for_reference(document, candidate.target)
-    # Candidate selection is flow-aware: a page boundary may have independent
-    # text and table candidates, so references need not be the page's global
-    # final and first chunks. Page locality and adjacency remain mandatory.
     _chunks_on_page(document, candidate.source.page_number)
     _chunks_on_page(document, candidate.target.page_number)
-
 
 def validate_assessment_against_document(
     assessment: ContinuityAssessment,
