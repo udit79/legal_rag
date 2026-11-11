@@ -1,11 +1,22 @@
 from __future__ import annotations
+import asyncio
+import base64
+import binascii
 import hashlib
 import json
 import httpx
-from src.ingestion.pipeline import CPCRResult, RevisedChunkSet
+from src.ingestion.pipeline import (
+    CPCRResult,
+    RevisedChunkSet,
+    UnrecognizedImageCrop,
+)
 from src.ingestion.retrieval_text import RETRIEVAL_TEXT_POLICY_VERSION
 from src.ingestion.screening.image_screening import ImageScreeningResult
 from src.security.ingestion_screening.contracts import DocumentContext, ScreenedChunkedDocument
+
+IMAGE_CROP_BUCKET = "ingestion-image-crops"
+_IMAGE_UPLOAD_ATTEMPTS = 3
+
 
 class SupabaseProvenanceError(RuntimeError):
     """The configured provenance database did not durably accept a batch."""
@@ -26,8 +37,9 @@ class SupabaseProvenanceStore:
         context: DocumentContext,
         *,
         image_results: tuple[ImageScreeningResult, ...] = (),
+        image_crops: tuple[UnrecognizedImageCrop, ...] = (),
     ) -> None:
-        """Persist chunks and decisions in one transaction via a Supabase RPC."""
+        """Store verified private crops, then persist screening metadata by RPC."""
         if any(
             result.source_sha256 != context.source_sha256
             for result in screened.report.chunk_results
@@ -36,6 +48,11 @@ class SupabaseProvenanceStore:
         if screened.report.document_id != screened.document.document_id:
             raise ValueError("Screening report and document IDs differ")
         document = screened.document
+        image_metadata = await self._store_image_crops(
+            image_crops,
+            image_results,
+            ingestion_run_id=context.ingestion_run_id,
+        )
         payload = {
             "document": {
                 "source_id": context.source_id,
@@ -71,9 +88,7 @@ class SupabaseProvenanceStore:
                 result.model_dump(mode="json")
                 for result in screened.report.chunk_results
             ],
-            "image_results": [
-                result.model_dump(mode="json") for result in image_results
-            ],
+            "image_results": image_metadata,
         }
         try:
             response = await self._client.post(
@@ -90,6 +105,105 @@ class SupabaseProvenanceStore:
             raise SupabaseProvenanceError(
                 "Supabase did not persist the ingestion screening batch"
             ) from exc
+
+    async def _store_image_crops(
+        self,
+        crops: tuple[UnrecognizedImageCrop, ...],
+        results: tuple[ImageScreeningResult, ...],
+        *,
+        ingestion_run_id: str | None,
+    ) -> list[dict[str, object]]:
+        crop_by_key = {(crop.page_number, crop.block_id): crop for crop in crops}
+        result_by_key = {
+            (result.page_number, result.block_id): result for result in results
+        }
+        if (
+            len(crop_by_key) != len(crops)
+            or len(result_by_key) != len(results)
+            or crop_by_key.keys() != result_by_key.keys()
+        ):
+            raise SupabaseProvenanceError(
+                "Image crops and screening results are not aligned"
+            )
+        if not crops:
+            return []
+        if not ingestion_run_id:
+            raise SupabaseProvenanceError(
+                "Image storage requires an ingestion run ID"
+            )
+
+        run_path = hashlib.sha256(ingestion_run_id.encode("utf-8")).hexdigest()
+        verified_images: list[
+            tuple[ImageScreeningResult, bytes, str]
+        ] = []
+        for key, crop in crop_by_key.items():
+            result = result_by_key[key]
+            try:
+                image_bytes = base64.b64decode(crop.data_base64, validate=True)
+            except (binascii.Error, ValueError) as exc:
+                raise SupabaseProvenanceError(
+                    "Screened image crop is not valid Base64"
+                ) from exc
+            image_digest = hashlib.sha256(image_bytes).hexdigest()
+            if (
+                not image_bytes.startswith(b"\x89PNG\r\n\x1a\n")
+                or image_digest != result.image_sha256
+            ):
+                raise SupabaseProvenanceError(
+                    "Screened image crop failed PNG or SHA-256 verification"
+                )
+            verified_images.append((result, image_bytes, image_digest))
+
+        metadata: list[dict[str, object]] = []
+        uploaded_paths: set[str] = set()
+        for result, image_bytes, image_digest in verified_images:
+            object_path = f"{run_path}/{image_digest}.png"
+            if object_path not in uploaded_paths:
+                await self._upload_image_crop(object_path, image_bytes)
+                uploaded_paths.add(object_path)
+            metadata.append(
+                {
+                    **result.model_dump(mode="json"),
+                    "image_bucket": IMAGE_CROP_BUCKET,
+                    "image_object_path": object_path,
+                    "image_file_size_bytes": len(image_bytes),
+                }
+            )
+        return metadata
+
+    async def _upload_image_crop(self, object_path: str, image_bytes: bytes) -> None:
+        url = (
+            f"{self._url}/storage/v1/object/"
+            f"{IMAGE_CROP_BUCKET}/{object_path}"
+        )
+        for attempt in range(_IMAGE_UPLOAD_ATTEMPTS):
+            try:
+                response = await self._client.post(
+                    url,
+                    headers={
+                        "apikey": self._key,
+                        "Authorization": f"Bearer {self._key}",
+                        "Content-Type": "image/png",
+                        "x-upsert": "true",
+                    },
+                    content=image_bytes,
+                )
+                response.raise_for_status()
+                return
+            except httpx.HTTPStatusError as exc:
+                if (
+                    exc.response.status_code not in {408, 429}
+                    and exc.response.status_code < 500
+                ) or attempt + 1 == _IMAGE_UPLOAD_ATTEMPTS:
+                    raise SupabaseProvenanceError(
+                        "Supabase did not store an ingestion image crop"
+                    ) from exc
+            except httpx.TransportError as exc:
+                if attempt + 1 == _IMAGE_UPLOAD_ATTEMPTS:
+                    raise SupabaseProvenanceError(
+                        "Supabase image storage request failed"
+                    ) from exc
+            await asyncio.sleep(0.05 * (2**attempt))
 
     async def persist_cpcr_output(
         self,

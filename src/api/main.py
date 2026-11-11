@@ -1,11 +1,14 @@
+import asyncio
 import hashlib
 import json
+import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import LiteralString
+from typing import Literal, LiteralString
 
 import httpx
 from dotenv import load_dotenv
@@ -63,6 +66,7 @@ from src.security.ingestion_screening.policy import ScreeningPolicy
 from src.security.ingestion_screening.screening_service import ScreeningService
 
 _TRACER = trace.get_tracer("graph_rag.api")
+_LOGGER = logging.getLogger(__name__)
 
 
 class HealthResponse(BaseModel):
@@ -137,6 +141,8 @@ async def lifespan(app: FastAPI):
 app=FastAPI(lifespan=lifespan)
 MAX_INGESTION_UPLOAD_BYTES = MAX_PDF_SIZE_BYTES
 MULTIPART_REQUEST_OVERHEAD_BYTES = 1024 * 1024
+MAX_BATCH_PDF_FILES = 10
+MAX_BATCH_CONCURRENCY = 2
 app.add_middleware(
     UploadBodyLimitMiddleware,
     max_request_bytes=(
@@ -167,7 +173,118 @@ def check_health():
 async def ingest_pdf_endpoint(
     request: Request, file: UploadFile = File(...)
 ) -> CPCRIngestionResponse:
-    ingestion_run_id = uuid.uuid4().hex
+    result = await _process_pdf_upload(request, file)
+    return result.response
+
+
+class BatchIngestionFileResult(BaseModel):
+    document_id: str | None
+    filename: str
+    status: Literal["SUCCEEDED", "FAILED"]
+    page_count: int | None
+    chunk_count: int | None
+    failure_code: str | None = None
+
+
+class BatchIngestionResponse(BaseModel):
+    batch_id: str
+    files: tuple[BatchIngestionFileResult, ...]
+
+
+@dataclass
+class _PdfProcessingState:
+    ingestion_run_id: str
+    document_id: str | None = None
+    page_count: int | None = None
+    chunk_count: int | None = None
+
+
+@dataclass(frozen=True)
+class _ProcessedPdf:
+    response: CPCRIngestionResponse
+    document_id: str
+
+
+@app.post(
+    "/ingestion/batch",
+    summary="Ingest a batch of PDFs",
+    description=(
+        "Processes each PDF independently with bounded concurrency. The "
+        "response contains per-file status and counts, never chunks or images."
+    ),
+    tags=["Ingestion"],
+    response_model=BatchIngestionResponse,
+)
+async def ingest_pdf_batch_endpoint(
+    request: Request, files: list[UploadFile] = File(...)
+) -> BatchIngestionResponse:
+    if not files:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "BATCH_EMPTY"},
+        )
+    if len(files) > MAX_BATCH_PDF_FILES:
+        for file in files:
+            await file.close()
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail={"code": "BATCH_FILE_COUNT_EXCEEDED"},
+        )
+
+    batch_id = uuid.uuid4().hex
+    semaphore = asyncio.Semaphore(MAX_BATCH_CONCURRENCY)
+
+    async def process_one(file: UploadFile) -> BatchIngestionFileResult:
+        state = _PdfProcessingState(ingestion_run_id=uuid.uuid4().hex)
+        filename = file.filename or "upload.pdf"
+        try:
+            async with semaphore:
+                result = await _process_pdf_upload(request, file, state=state)
+            return BatchIngestionFileResult(
+                document_id=result.document_id,
+                filename=filename,
+                status="SUCCEEDED",
+                page_count=state.page_count,
+                chunk_count=state.chunk_count,
+            )
+        except HTTPException as exc:
+            detail = exc.detail
+            failure_code = (
+                detail.get("code")
+                if isinstance(detail, dict) and isinstance(detail.get("code"), str)
+                else f"HTTP_{exc.status_code}"
+            )
+            return BatchIngestionFileResult(
+                document_id=state.document_id,
+                filename=filename,
+                status="FAILED",
+                page_count=state.page_count,
+                chunk_count=state.chunk_count,
+                failure_code=failure_code,
+            )
+        except Exception:
+            _LOGGER.exception("Unexpected batch ingestion failure for %s", filename)
+            return BatchIngestionFileResult(
+                document_id=state.document_id,
+                filename=filename,
+                status="FAILED",
+                page_count=state.page_count,
+                chunk_count=state.chunk_count,
+                failure_code="INGESTION_INTERNAL_ERROR",
+            )
+
+    results = await asyncio.gather(*(process_one(file) for file in files))
+    return BatchIngestionResponse(batch_id=batch_id, files=tuple(results))
+
+
+async def _process_pdf_upload(
+    request: Request,
+    file: UploadFile,
+    *,
+    state: _PdfProcessingState | None = None,
+) -> _ProcessedPdf:
+    state = state or _PdfProcessingState(ingestion_run_id=uuid.uuid4().hex)
+    ingestion_run_id = state.ingestion_run_id
     if file.content_type not in {"application/pdf", "application/octet-stream"}:
         await file.close()
         raise HTTPException(
@@ -219,6 +336,8 @@ async def ingest_pdf_endpoint(
                         "ingestion.screening.file_decision",
                         file_screening.decision.value,
                     )
+                    state.page_count = file_screening.page_count
+                    state.document_id = file_screening.source_sha256
                     span.set_attribute(
                         "ingestion.screening.file_bytes",
                         file_screening.file_size_bytes,
@@ -294,6 +413,7 @@ async def ingest_pdf_endpoint(
                 parsed_canonical_document=canonical,
                 prepared_image_crops=prepared_image_crops,
             )
+            state.chunk_count = len(ingestion.chunking.document.chunks)
             if ingestion.chunking.report.outcome in {"PARTIAL", "FAILED"}:
                 failed_pages = [
                     page.page_number
@@ -401,6 +521,7 @@ async def ingest_pdf_endpoint(
                         screened,
                         document_context,
                         image_results=image_screening_results,
+                        image_crops=ingestion.unrecognized_images,
                     )
                 except Exception as exc:
                     raise HTTPException(
@@ -467,7 +588,7 @@ async def ingest_pdf_endpoint(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                         detail={"code": "CPCR_PROVENANCE_PERSISTENCE_FAILED"},
                     ) from exc
-            return CPCRIngestionResponse(
+            response = CPCRIngestionResponse(
                 revised_chunks=revised.chunks,
                 unrecognized_images=response_images,
                 chunk_dispositions=tuple(
@@ -478,6 +599,11 @@ async def ingest_pdf_endpoint(
                     )
                     for result in screened.report.chunk_results
                 ),
+            )
+            state.chunk_count = len(revised.chunks)
+            return _ProcessedPdf(
+                response=response,
+                document_id=ingestion.document_id,
             )
         except InvalidPdfError as exc:
             raise HTTPException(

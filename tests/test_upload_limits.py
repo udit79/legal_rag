@@ -1,9 +1,12 @@
 import asyncio
 
+import pytest
+
 from src.api.upload_limits import UploadBodyLimitMiddleware
 
 
-def test_upload_body_limit_stops_stream_and_returns_413():
+@pytest.mark.parametrize("path", ["/ingestion", "/ingestion/batch"])
+def test_upload_body_limit_stops_stream_and_returns_413(path):
     messages = iter(
         (
             {"type": "http.request", "body": b"123", "more_body": True},
@@ -27,7 +30,7 @@ def test_upload_body_limit_stops_stream_and_returns_413():
     middleware = UploadBodyLimitMiddleware(app, max_request_bytes=5)
     asyncio.run(
         middleware(
-            {"type": "http", "method": "POST", "path": "/ingestion"},
+            {"type": "http", "method": "POST", "path": path},
             receive,
             send,
         )

@@ -141,6 +141,15 @@ Table chunks remain isolated. Each crop includes OCR/admission status, flags,
 page, block, reading-order, and coordinate provenance. Canonical output and
 full CPCR results are not included in the response.
 
+`POST /ingestion/batch` accepts up to 10 multipart `files` and returns only a
+per-file summary; aggregate PDF bytes are limited to 50 MiB, plus multipart
+framing overhead. It uses bounded concurrency while preserving the parser
+worker's request lock and isolates each file's run ID and temporary directory.
+When Supabase provenance is configured, verified PNG crops are upserted into
+the pre-created private `ingestion-image-crops` bucket before their hash,
+object path, and size are written through the screening RPC. Base64 image data
+and public image URLs are not persisted or returned by the batch endpoint.
+
 The pipeline emits nested OpenTelemetry spans named `ingestion.run`,
 `ingestion.preflight`, `ingestion.routing`, `ingestion.parsing`,
 `ingestion.parser.page`, `ingestion.chunking`, `ingestion.image_crops`, and

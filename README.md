@@ -16,6 +16,12 @@ curl.exe -X POST http://localhost:8000/ingestion `
   -o ingestion-result.json
 ```
 
+`POST /ingestion/batch` accepts repeated multipart `files` fields for up to 10
+PDFs. Each file runs independently; the endpoint returns a compact per-file
+status, document ID, page/chunk counts, and failure code, without chunks or
+image bytes. The aggregate PDF payload is limited to 50 MiB, plus multipart
+framing overhead.
+
 The JSON response contains `revised_chunks`, `unrecognized_images`, and compact
 `chunk_dispositions`. A positive `SAME_PARAGRAPH` continuity result keeps the
 original chunks in order and prefixes the continuation chunk with a bounded,

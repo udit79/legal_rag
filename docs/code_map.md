@@ -54,7 +54,7 @@ placeholder does not imply that a workflow uses it yet.
 | --- | --- |
 | `main.py` | `main()` — prints a greeting; not the service entry point. |
 | `src/__init__.py`, `src/api/__init__.py` | Empty package markers. |
-| `src/api/main.py` | `app`; `POST /ingestion` accepts a multipart PDF and returns revised chunks and crops for unrecognized images, without separate CPCR or canonical output; `lifespan(app)` loads reusable Docling pipelines, telemetry, ScaleDown HTTP, and Neo4j clients and closes/releases them on shutdown; health endpoints. |
+| `src/api/main.py` | `app`; `POST /ingestion` accepts one multipart PDF and returns revised chunks and crops for unrecognized images; `POST /ingestion/batch` processes up to 10 PDFs independently with bounded concurrency and returns per-file summaries without chunks/images; `lifespan(app)` initializes shared dependencies; health endpoints. |
 
 ### Domain and graph
 

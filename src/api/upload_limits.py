@@ -33,7 +33,7 @@ class UploadBodyLimitMiddleware:
         if not (
             scope.get("type") == "http"
             and scope.get("method") == "POST"
-            and scope.get("path") == "/ingestion"
+            and scope.get("path") in {"/ingestion", "/ingestion/batch"}
         ):
             await self.app(scope, receive, send)
             return
