@@ -20,6 +20,7 @@ def test_batch_keeps_failures_independent_and_returns_only_compact_results(
     monkeypatch,
 ):
     observed_run_ids = []
+    run_ids_by_filename = {}
     active = 0
     max_active = 0
 
@@ -27,6 +28,7 @@ def test_batch_keeps_failures_independent_and_returns_only_compact_results(
         nonlocal active, max_active
         assert request.url.path == "/ingestion/batch"
         observed_run_ids.append(state.ingestion_run_id)
+        run_ids_by_filename[file.filename] = state.ingestion_run_id
         active += 1
         max_active = max(max_active, active)
         state.document_id = f"document-{file.filename}"
@@ -66,6 +68,13 @@ def test_batch_keeps_failures_independent_and_returns_only_compact_results(
     assert response.files[1].failure_code == "NO_ELIGIBLE_CONTENT"
     assert all(item.page_count == 2 and item.chunk_count == 3 for item in response.files)
     assert len(set(observed_run_ids)) == 3
+    assert [
+        item.ingestion_run_id for item in response.files
+    ] == [
+        run_ids_by_filename["one.pdf"],
+        run_ids_by_filename["bad.pdf"],
+        run_ids_by_filename["three.pdf"],
+    ]
     assert max_active == main.MAX_BATCH_CONCURRENCY
     assert "revised_chunks" not in response.model_dump_json()
     assert "data_base64" not in response.model_dump_json()

@@ -179,6 +179,7 @@ async def ingest_pdf_endpoint(
 
 class BatchIngestionFileResult(BaseModel):
     document_id: str | None
+    ingestion_run_id: str
     filename: str
     status: Literal["SUCCEEDED", "FAILED"]
     page_count: int | None
@@ -242,6 +243,7 @@ async def ingest_pdf_batch_endpoint(
                 result = await _process_pdf_upload(request, file, state=state)
             return BatchIngestionFileResult(
                 document_id=result.document_id,
+                ingestion_run_id=state.ingestion_run_id,
                 filename=filename,
                 status="SUCCEEDED",
                 page_count=state.page_count,
@@ -256,6 +258,7 @@ async def ingest_pdf_batch_endpoint(
             )
             return BatchIngestionFileResult(
                 document_id=state.document_id,
+                ingestion_run_id=state.ingestion_run_id,
                 filename=filename,
                 status="FAILED",
                 page_count=state.page_count,
@@ -266,6 +269,7 @@ async def ingest_pdf_batch_endpoint(
             _LOGGER.exception("Unexpected batch ingestion failure for %s", filename)
             return BatchIngestionFileResult(
                 document_id=state.document_id,
+                ingestion_run_id=state.ingestion_run_id,
                 filename=filename,
                 status="FAILED",
                 page_count=state.page_count,

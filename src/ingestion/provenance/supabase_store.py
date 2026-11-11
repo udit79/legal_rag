@@ -4,6 +4,7 @@ import base64
 import binascii
 import hashlib
 import json
+import logging
 import httpx
 from src.ingestion.pipeline import (
     CPCRResult,
@@ -16,6 +17,8 @@ from src.security.ingestion_screening.contracts import DocumentContext, Screened
 
 IMAGE_CROP_BUCKET = "ingestion-image-crops"
 _IMAGE_UPLOAD_ATTEMPTS = 3
+_IMAGE_RECONCILIATION_BATCH_SIZE = 50
+_LOGGER = logging.getLogger(__name__)
 
 
 class SupabaseProvenanceError(RuntimeError):
@@ -102,6 +105,12 @@ class SupabaseProvenanceStore:
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:
+            if isinstance(exc, httpx.HTTPStatusError):
+                await self._reconcile_image_objects(image_metadata)
+            elif image_metadata:
+                _LOGGER.warning(
+                    "Ingestion metadata RPC outcome is unknown; retaining uploaded images"
+                )
             raise SupabaseProvenanceError(
                 "Supabase did not persist the ingestion screening batch"
             ) from exc
@@ -204,6 +213,75 @@ class SupabaseProvenanceStore:
                         "Supabase image storage request failed"
                     ) from exc
             await asyncio.sleep(0.05 * (2**attempt))
+
+    async def _reconcile_image_objects(
+        self, image_metadata: list[dict[str, object]]
+    ) -> None:
+        object_paths = sorted(
+            {
+                path
+                for item in image_metadata
+                if item.get("image_bucket") == IMAGE_CROP_BUCKET
+                and isinstance((path := item.get("image_object_path")), str)
+            }
+        )
+        if not object_paths:
+            return
+
+        headers = {
+            "apikey": self._key,
+            "Authorization": f"Bearer {self._key}",
+        }
+        try:
+            referenced_paths: set[str] = set()
+            for start in range(0, len(object_paths), _IMAGE_RECONCILIATION_BATCH_SIZE):
+                paths = object_paths[
+                    start : start + _IMAGE_RECONCILIATION_BATCH_SIZE
+                ]
+                response = await self._client.get(
+                    f"{self._url}/rest/v1/image_screening_results",
+                    headers=headers,
+                    params={
+                        "select": "image_object_path",
+                        "image_bucket": f"eq.{IMAGE_CROP_BUCKET}",
+                        "image_object_path": f"in.({','.join(paths)})",
+                    },
+                )
+                response.raise_for_status()
+                rows = response.json()
+                if not isinstance(rows, list) or any(
+                    not isinstance(row, dict)
+                    or not isinstance(row.get("image_object_path"), str)
+                    for row in rows
+                ):
+                    raise SupabaseProvenanceError(
+                        "Supabase returned invalid image reference data"
+                    )
+                referenced_paths.update(
+                    row["image_object_path"] for row in rows
+                )
+
+            orphan_paths = [
+                path for path in object_paths if path not in referenced_paths
+            ]
+            for start in range(
+                0, len(orphan_paths), _IMAGE_RECONCILIATION_BATCH_SIZE
+            ):
+                paths = orphan_paths[
+                    start : start + _IMAGE_RECONCILIATION_BATCH_SIZE
+                ]
+                response = await self._client.request(
+                    "DELETE",
+                    f"{self._url}/storage/v1/object/{IMAGE_CROP_BUCKET}",
+                    headers=headers,
+                    json={"prefixes": paths},
+                )
+                response.raise_for_status()
+        except (httpx.HTTPError, SupabaseProvenanceError, ValueError):
+            _LOGGER.warning(
+                "Could not safely reconcile unreferenced ingestion images",
+                exc_info=True,
+            )
 
     async def persist_cpcr_output(
         self,

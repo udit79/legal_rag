@@ -298,3 +298,75 @@ def test_partial_image_upload_failure_does_not_persist_metadata():
         request.url.path.endswith("/persist_ingestion_screening")
         for request in requests
     ) == 0
+
+
+def test_rpc_failure_only_deletes_images_confirmed_unreferenced():
+    import pytest
+
+    png = b"\x89PNG\r\n\x1a\norphan-candidate"
+    crop = _image_crop("page-1-block-0", png)
+    result = _image_result(crop, png)
+    object_path = (
+        f"{hashlib.sha256(b'run-id').hexdigest()}/"
+        f"{hashlib.sha256(png).hexdigest()}.png"
+    )
+
+    async def persist_with_reference_state(referenced: bool | None):
+        requests = []
+
+        async def handle(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            if request.method == "POST" and request.url.path.startswith(
+                "/storage/v1/object/"
+            ):
+                return httpx.Response(200)
+            if request.url.path.endswith("/persist_ingestion_screening"):
+                return httpx.Response(500)
+            if request.method == "GET" and request.url.path.endswith(
+                "/image_screening_results"
+            ):
+                if referenced is None:
+                    return httpx.Response(503)
+                rows = (
+                    [{"image_object_path": object_path}] if referenced else []
+                )
+                return httpx.Response(200, json=rows)
+            if request.method == "DELETE":
+                return httpx.Response(200, json={"message": "deleted"})
+            raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+        screened, context = await _screened()
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(handle)
+        ) as client:
+            store = SupabaseProvenanceStore(
+                "https://example.supabase.co", "key", client
+            )
+            with pytest.raises(SupabaseProvenanceError):
+                await store.persist_screened_document(
+                    screened,
+                    context,
+                    image_results=(result,),
+                    image_crops=(crop,),
+                )
+        return requests
+
+    unreferenced_requests = asyncio.run(persist_with_reference_state(False))
+    referenced_requests = asyncio.run(persist_with_reference_state(True))
+    unverifiable_requests = asyncio.run(persist_with_reference_state(None))
+    unreferenced_deletes = [
+        request for request in unreferenced_requests
+        if request.method == "DELETE"
+    ]
+    referenced_deletes = [
+        request for request in referenced_requests
+        if request.method == "DELETE"
+    ]
+    unverifiable_deletes = [
+        request for request in unverifiable_requests
+        if request.method == "DELETE"
+    ]
+    assert len(unreferenced_deletes) == 1
+    assert json.loads(unreferenced_deletes[0].content)["prefixes"] == [object_path]
+    assert referenced_deletes == []
+    assert unverifiable_deletes == []

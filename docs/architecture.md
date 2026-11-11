@@ -144,11 +144,16 @@ full CPCR results are not included in the response.
 `POST /ingestion/batch` accepts up to 10 multipart `files` and returns only a
 per-file summary; aggregate PDF bytes are limited to 50 MiB, plus multipart
 framing overhead. It uses bounded concurrency while preserving the parser
-worker's request lock and isolates each file's run ID and temporary directory.
+worker's request lock and reports each file's run ID, using an isolated
+temporary directory per file.
 When Supabase provenance is configured, verified PNG crops are upserted into
 the pre-created private `ingestion-image-crops` bucket before their hash,
 object path, and size are written through the screening RPC. Base64 image data
 and public image URLs are not persisted or returned by the batch endpoint.
+If screening metadata persistence fails, cleanup first checks the provenance
+table and only removes object paths with no recorded reference; if that check
+fails, or the RPC outcome is ambiguous due to a transport error, the private
+object is retained.
 
 The pipeline emits nested OpenTelemetry spans named `ingestion.run`,
 `ingestion.preflight`, `ingestion.routing`, `ingestion.parsing`,
