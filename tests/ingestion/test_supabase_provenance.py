@@ -273,10 +273,24 @@ def test_partial_image_upload_failure_does_not_persist_metadata():
 
     async def handle(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        if request.url.path.endswith(f"{hashlib.sha256(second_png).hexdigest()}.png"):
+        if (
+            request.method == "POST"
+            and request.url.path.endswith(
+                f"{hashlib.sha256(second_png).hexdigest()}.png"
+            )
+        ):
             return httpx.Response(503)
-        if request.url.path.startswith("/storage/v1/object/"):
+        if (
+            request.method == "POST"
+            and request.url.path.startswith("/storage/v1/object/")
+        ):
             return httpx.Response(200)
+        if request.method == "GET" and request.url.path.endswith(
+            "/image_screening_results"
+        ):
+            return httpx.Response(200, json=[])
+        if request.method == "DELETE":
+            return httpx.Response(200, json={"message": "deleted"})
         return httpx.Response(204)
 
     async def run():
@@ -294,10 +308,21 @@ def test_partial_image_upload_failure_does_not_persist_metadata():
 
     with pytest.raises(SupabaseProvenanceError, match="did not store"):
         asyncio.run(run())
+    delete_requests = [
+        request for request in requests if request.method == "DELETE"
+    ]
     assert sum(
         request.url.path.endswith("/persist_ingestion_screening")
         for request in requests
     ) == 0
+    assert len(delete_requests) == 1
+    deleted_paths = json.loads(delete_requests[0].content)["prefixes"]
+    assert deleted_paths == sorted(
+        [
+            f"{hashlib.sha256(b'run-id').hexdigest()}/{hashlib.sha256(first_png).hexdigest()}.png",
+            f"{hashlib.sha256(b'run-id').hexdigest()}/{hashlib.sha256(second_png).hexdigest()}.png",
+        ]
+    )
 
 
 def test_rpc_failure_only_deletes_images_confirmed_unreferenced():

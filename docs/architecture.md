@@ -150,10 +150,10 @@ When Supabase provenance is configured, verified PNG crops are upserted into
 the pre-created private `ingestion-image-crops` bucket before their hash,
 object path, and size are written through the screening RPC. Base64 image data
 and public image URLs are not persisted or returned by the batch endpoint.
-If screening metadata persistence fails, cleanup first checks the provenance
-table and only removes object paths with no recorded reference; if that check
-fails, or the RPC outcome is ambiguous due to a transport error, the private
-object is retained.
+If an image upload or screening metadata persistence fails, cleanup first
+checks the provenance table and only removes object paths with no recorded
+reference; if that check fails, or the RPC outcome is ambiguous due to a
+transport error, the private object is retained.
 
 The pipeline emits nested OpenTelemetry spans named `ingestion.run`,
 `ingestion.preflight`, `ingestion.routing`, `ingestion.parsing`,

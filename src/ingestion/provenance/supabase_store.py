@@ -106,7 +106,15 @@ class SupabaseProvenanceStore:
             response.raise_for_status()
         except httpx.HTTPError as exc:
             if isinstance(exc, httpx.HTTPStatusError):
-                await self._reconcile_image_objects(image_metadata)
+                await self._reconcile_image_objects(
+                    [
+                        path
+                        for item in image_metadata
+                        if isinstance(
+                            (path := item.get("image_object_path")), str
+                        )
+                    ]
+                )
             elif image_metadata:
                 _LOGGER.warning(
                     "Ingestion metadata RPC outcome is unknown; retaining uploaded images"
@@ -165,10 +173,16 @@ class SupabaseProvenanceStore:
 
         metadata: list[dict[str, object]] = []
         uploaded_paths: set[str] = set()
+        attempted_paths: list[str] = []
         for result, image_bytes, image_digest in verified_images:
             object_path = f"{run_path}/{image_digest}.png"
             if object_path not in uploaded_paths:
-                await self._upload_image_crop(object_path, image_bytes)
+                attempted_paths.append(object_path)
+                try:
+                    await self._upload_image_crop(object_path, image_bytes)
+                except SupabaseProvenanceError:
+                    await self._reconcile_image_objects(attempted_paths)
+                    raise
                 uploaded_paths.add(object_path)
             metadata.append(
                 {
@@ -215,16 +229,9 @@ class SupabaseProvenanceStore:
             await asyncio.sleep(0.05 * (2**attempt))
 
     async def _reconcile_image_objects(
-        self, image_metadata: list[dict[str, object]]
+        self, image_object_paths: list[str]
     ) -> None:
-        object_paths = sorted(
-            {
-                path
-                for item in image_metadata
-                if item.get("image_bucket") == IMAGE_CROP_BUCKET
-                and isinstance((path := item.get("image_object_path")), str)
-            }
-        )
+        object_paths = sorted(set(image_object_paths))
         if not object_paths:
             return
 
