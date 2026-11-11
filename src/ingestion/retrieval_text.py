@@ -7,7 +7,44 @@ from src.ingestion.chunk_contracts import Chunk, RetrievalTextEdit
 from src.ingestion.parser_contracts import CanonicalPage
 
 RETRIEVAL_TEXT_POLICY_VERSION = "retrieval-text-1.0.0"
-_LINE_HYPHENATION = re.compile(r"(?<=[A-Za-z])-\r?\n(?=[a-z])")
+_LINE_HYPHENATION = re.compile(
+    r"(?P<left>[A-Za-z]+)-(?P<newline>\r?\n)(?P<right>[a-z]+)"
+)
+# Prefixes that form real hyphenated legal terms ("non-obstante", "inter-state").
+_COMPOUND_PREFIXES = frozenset(
+    {
+        "non",
+        "inter",
+        "intra",
+        "anti",
+        "quasi",
+        "semi",
+        "self",
+        "ex",
+        "pro",
+        "co",
+        "counter",
+        "cross",
+        "multi",
+        "post",
+        "sub",
+        "re",
+        "pre",
+    }
+)
+
+
+def _document_vocabulary(pages: tuple[CanonicalPage, ...]) -> frozenset[str]:
+    """Words that appear unbroken in the document (not split across a line)."""
+    words: set[str] = set()
+    for page in pages:
+        for block in page.blocks:
+            if block.block_type in {"TEXT", "OTHER"}:
+                cleaned = _LINE_HYPHENATION.sub(" ", block.text)
+                words.update(re.findall(r"[a-z]+", cleaned.casefold()))
+    return frozenset(words)
+
+
 _NormalizationOperation: TypeAlias = Literal[
     "REPEATED_HEADER_REMOVED",
     "REPEATED_FOOTER_REMOVED",
@@ -15,14 +52,16 @@ _NormalizationOperation: TypeAlias = Literal[
 ]
 
 def _normalized_line(line: str) -> str:
-    return " ".join(line.casefold().split())
+    """Casefold, collapse whitespace and mask digits so "Page 5" == "Page 6"."""
+    return re.sub(r"\d+", "#", " ".join(line.casefold().split()))
 
 def _eligible_boundary_line(line: str) -> bool:
     normalized = _normalized_line(line)
     return (
         8 <= len(normalized) <= 120
         and any(char.isalpha() for char in normalized)
-        and not normalized.replace(" ", "").isdecimal()
+        and not normalized.replace(" ", "").replace("#", "").isdecimal()
+        and sum(char.isalpha() for char in normalized) >= 4
     )
 
 def _page_boundary_lines(
@@ -77,6 +116,7 @@ def _line_ranges(text: str) -> list[tuple[int, int, str]]:
 def _normalization_edits(
     chunk: Chunk,
     page_boundaries: dict[int, tuple[str | None, str | None]],
+    vocabulary: frozenset[str] = frozenset(),
 ) -> tuple[tuple[int, int, _NormalizationOperation], ...]:
     edits: list[tuple[int, int, _NormalizationOperation]] = []
     pages = {source.page_number for source in chunk.sources}
@@ -99,13 +139,42 @@ def _normalization_edits(
             ):
                 edits.append((last_start, last_end, "REPEATED_FOOTER_REMOVED"))
 
+    elif len(pages) > 1:
+        # Context-prefixed chunks span pages: remove each page's own repeated
+        # header/footer wherever it stands alone on its line segment.
+        for page_number in sorted(pages):
+            header, footer = page_boundaries.get(page_number, (None, None))
+            boundary_lines: tuple[
+                tuple[str | None, _NormalizationOperation], ...
+            ] = (
+                (header, "REPEATED_HEADER_REMOVED"),
+                (footer, "REPEATED_FOOTER_REMOVED"),
+            )
+            for raw_line, operation in boundary_lines:
+                if not raw_line:
+                    continue
+                search_from = 0
+                while (start := chunk.text.find(raw_line, search_from)) >= 0:
+                    end = start + len(raw_line)
+                    search_from = max(end, start + 1)
+                    before_ok = start == 0 or chunk.text[start - 1] in "\r\n"
+                    after_ok = end == len(chunk.text) or chunk.text[end] in "\r\n"
+                    if before_ok and after_ok and all(
+                        end <= s0 or start >= e0 for s0, e0, _ in edits
+                    ):
+                        edits.append((start, end, operation))
+
     block_types = {source.block_type for source in chunk.sources}
     if block_types and block_types <= {"TEXT", "OTHER"}:
         for match in _LINE_HYPHENATION.finditer(chunk.text):
-            if all(match.end() <= start or match.start() >= end for start, end, _ in edits):
-                edits.append(
-                    (match.start(), match.end(), "LINE_HYPHENATION_REPAIRED")
-                )
+            left, right = match.group("left").casefold(), match.group("right")
+            if (left + right) not in vocabulary and left in _COMPOUND_PREFIXES:
+                # Real compound ("non-obstante"): keep the hyphen, drop the break.
+                start, end = match.start("newline"), match.end("newline")
+            else:
+                start, end = match.end("left"), match.end("newline")
+            if all(end <= s0 or start >= e0 for s0, e0, _ in edits):
+                edits.append((start, end, "LINE_HYPHENATION_REPAIRED"))
     return tuple(sorted(edits, key=lambda edit: (edit[0], edit[1])))
 
 def _derive_text(
@@ -148,10 +217,11 @@ def normalize_retrieval_chunks(
     three pages. Hyphenated line breaks are joined in text-only chunks.
     """
     page_boundaries = _page_boundary_lines(pages)
+    vocabulary = _document_vocabulary(pages)
     normalized = []
     for chunk in chunks:
         retrieval_text, edits = _derive_text(
-            chunk.text, _normalization_edits(chunk, page_boundaries)
+            chunk.text, _normalization_edits(chunk, page_boundaries, vocabulary)
         )
         normalized.append(
             Chunk(
@@ -163,3 +233,20 @@ def normalize_retrieval_chunks(
             )
         )
     return tuple(normalized)
+
+
+def furniture_block_ids(pages: tuple[CanonicalPage, ...]) -> frozenset[str]:
+    """Blocks whose whole text is a detected repeating page header or footer."""
+    boundaries = _page_boundary_lines(pages)
+    ids: set[str] = set()
+    for page in pages:
+        header, footer = boundaries.get(page.page_number, (None, None))
+        targets = {_normalized_line(line) for line in (header, footer) if line}
+        if not targets:
+            continue
+        for block in page.blocks:
+            if block.block_type in {"TEXT", "OTHER"} and (
+                _normalized_line(block.text) in targets
+            ):
+                ids.add(block.block_id)
+    return frozenset(ids)

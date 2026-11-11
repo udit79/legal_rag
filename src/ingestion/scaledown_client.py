@@ -207,8 +207,8 @@ class ScaleDownClient:
             ocr_text = extracted["ocr_text"]
             if model_id != SCALEDOWN_EXTRACT_MODEL:
                 raise ValueError("ScaleDown returned an unexpected Extract model")
-            if not isinstance(ocr_text, str) or not ocr_text.strip():
-                raise ValueError("ScaleDown Extract returned no page text")
+            if not isinstance(ocr_text, str):
+                raise ValueError("ScaleDown Extract returned a non-string ocr_text")
             request_id = response_body.get("id") or response.headers.get(
                 "x-amzn-requestid"
             ) or response.headers.get("x-request-id")

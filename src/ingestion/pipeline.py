@@ -20,7 +20,7 @@ from src.ingestion.continuity_state import CPCRState
 from src.ingestion.continuity_cdm_contracts import CDMClassificationResult
 from src.ingestion.parser_worker.result import ImageCropOutput as UnrecognizedImageCrop
 from src.ingestion.parser_contracts import CanonicalDocument
-from src.ingestion.retrieval_text import normalize_retrieval_chunks
+from src.ingestion.retrieval_text import furniture_block_ids, normalize_retrieval_chunks
 from src.security.ingestion_screening.contracts import AdmissionRecord,FileScreeningRecord,ScreeningReport,ScreenedChunkedDocument
 from src.security.ingestion_screening.enums import AdmissionDecision
 
@@ -369,6 +369,7 @@ def revise_chunks_after_cpcr(
         for page in ingestion.canonical.pages
         for block in page.blocks
     }
+    furniture_ids = furniture_block_ids(ingestion.canonical.pages)
     context_by_target: dict[int, int] = {}
     candidate_by_target: dict[int, str] = {}
     for result in cpcr.candidates:
@@ -403,7 +404,16 @@ def revise_chunks_after_cpcr(
         source_chunk = chunks_by_index[source_index]
         if not source_chunk.sources or not target.sources:
             return None
-        source_ref = source_chunk.sources[-1]
+        source_ref = next(
+            (
+                ref
+                for ref in reversed(source_chunk.sources)
+                if ref.block_id not in furniture_ids
+            ),
+            None,
+        )
+        if source_ref is None:
+            return None
         if (
             source_ref.start_offset is None
             or source_ref.end_offset is None
@@ -416,7 +426,7 @@ def revise_chunks_after_cpcr(
         source_slice = source_block.text[
             source_ref.start_offset : source_ref.end_offset
         ]
-        if not source_slice or not source_chunk.text.endswith(source_slice):
+        if not source_slice or source_slice not in source_chunk.text:
             return None
 
         separator = "" if source_slice[-1:].isspace() or target.text[:1].isspace() else " "

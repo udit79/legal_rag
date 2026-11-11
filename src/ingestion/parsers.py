@@ -913,6 +913,7 @@ class OcrParser:
             if block.block_type in {"TEXT", "IMAGE", "VECTOR"}
         ]
         seen_text_lines = native_text_geometry
+        visual_block_count = len(blocks)
         for text, bbox, confidence in recognized:
             ocr_rect = pymupdf.Rect(
                 bbox[0] * scale_x,
@@ -957,13 +958,20 @@ class OcrParser:
                 )
             )
 
-        blocks.sort(
-            key=lambda block: (
-                block.source_coordinates.y0,
-                block.source_coordinates.x0,
-                block.reading_order,
-            )
+        position_key = lambda block: (  # noqa: E731
+            block.source_coordinates.y0,
+            block.source_coordinates.x0,
+            block.reading_order,
         )
+        if self.engine == "tesseract":
+            # Tesseract already emits lines in block/paragraph reading order;
+            # re-sorting by y interleaves columns. Only position-sort the
+            # native/visual blocks and keep OCR lines in engine order.
+            blocks = sorted(blocks[:visual_block_count], key=position_key) + blocks[
+                visual_block_count:
+            ]
+        else:
+            blocks.sort(key=position_key)
         ordered_blocks = tuple(
             block.model_copy(update={"reading_order": index})
             for index, block in enumerate(blocks)
