@@ -1,5 +1,8 @@
 import asyncio
+import logging
 from pathlib import Path
+
+import pytest
 
 from src.ingestion.contracts import DocumentRoutePlan, PageRouteDecision
 from src.ingestion.chunking import prepare_document_for_chunking
@@ -10,7 +13,10 @@ from src.ingestion.parser_contracts import (
     ParserFailure,
     SourceCoordinates,
 )
-from src.ingestion.scaledown_client import ScaleDownExtractResult
+from src.ingestion.scaledown_client import (
+    ScaleDownExtractResult,
+    ScaleDownResponseError,
+)
 from src.ingestion.scaledown_extraction import recover_escalated_pages
 
 
@@ -110,8 +116,11 @@ def test_escalated_page_with_no_extracted_text_is_marked_blank():
     )
 
     page = recovered.pages[0]
-    assert page.status == "BLANK"
-    assert page.blocks == ()
+    assert page.status == "PARSED"
+    assert len(page.blocks) == 1
+    assert page.blocks[0].block_type == "IMAGE"
+    assert page.blocks[0].source_coordinates.x1 == 612
+    assert page.blocks[0].source_coordinates.y1 == 792
     assert page.warnings[-1].code == "FALLBACK_NO_TEXT"
 
 
@@ -339,3 +348,48 @@ def test_page_recovery_runs_concurrently_with_a_bound_and_keeps_page_order():
         "text-3",
         "text-4",
     ]
+
+
+def test_scaledown_page_failure_logs_only_safe_diagnostic_fields(caplog):
+    canonical, plan = _inputs()
+
+    class SensitivePageExporter:
+        async def extract_page_pdf(self, source, page_number):
+            return b"secret-pdf-content", 612.0, 792.0
+
+    class FailedTextExtractor:
+        async def extract_document_text(
+            self, document, *, document_mime_type="application/pdf"
+        ):
+            raise ScaleDownResponseError(
+                "ScaleDown Extract did not return raw OCR text as a string; "
+                "received NoneType",
+                http_status=200,
+                request_id="extract-request-456",
+            )
+
+    with caplog.at_level(
+        logging.ERROR, logger="src.ingestion.scaledown_extraction"
+    ):
+        with pytest.raises(ScaleDownResponseError):
+            asyncio.run(
+                recover_escalated_pages(
+                    source=Path("security_report.pdf"),
+                    canonical=canonical,
+                    route_plan=plan,
+                    page_exporter=SensitivePageExporter(),
+                    text_extractor=FailedTextExtractor(),
+                )
+            )
+
+    record = next(
+        record
+        for record in caplog.records
+        if record.message == "ScaleDown page recovery failed"
+    )
+    assert record.scaledown_exception_type == "ScaleDownResponseError"
+    assert record.scaledown_http_status == 200
+    assert record.scaledown_request_id == "extract-request-456"
+    assert record.scaledown_page_number == 1
+    assert "did not return raw OCR text" in record.scaledown_error_message
+    assert "secret-pdf-content" not in caplog.text

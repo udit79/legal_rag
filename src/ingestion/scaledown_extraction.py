@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import Protocol
 
@@ -12,9 +13,10 @@ from src.ingestion.parser_contracts import (
     ParserFailure,
     SourceCoordinates,
 )
-from src.ingestion.scaledown_client import ScaleDownExtractResult
+from src.ingestion.scaledown_client import ScaleDownError, ScaleDownExtractResult
 
 MAX_PAGE_RECOVERY_CONCURRENCY = 2
+_LOGGER = logging.getLogger(__name__)
 
 
 class _PagePdfExporter(Protocol):
@@ -70,10 +72,23 @@ async def recover_escalated_pages(
             page_pdf, width, height = await page_exporter.extract_page_pdf(
                 source, page.page_number
             )
-            extracted = await text_extractor.extract_document_text(
-                page_pdf,
-                document_mime_type="application/pdf",
-            )
+            try:
+                extracted = await text_extractor.extract_document_text(
+                    page_pdf,
+                    document_mime_type="application/pdf",
+                )
+            except ScaleDownError as exc:
+                _LOGGER.error(
+                    "ScaleDown page recovery failed",
+                    extra={
+                        "scaledown_page_number": page.page_number,
+                        "scaledown_exception_type": type(exc).__name__,
+                        "scaledown_http_status": exc.http_status,
+                        "scaledown_request_id": exc.request_id,
+                        "scaledown_error_message": str(exc),
+                    },
+                )
+                raise
 
         prior_failure = page.failure or ParserFailure(
             parser=decision.route,
@@ -101,7 +116,23 @@ async def recover_escalated_pages(
             return CanonicalPage(
                 page_number=page.page_number,
                 parser="SCALEDOWN_EXTRACT",
-                status="BLANK",
+                status="PARSED",
+                blocks=(
+                    CanonicalBlock(
+                        page_number=page.page_number,
+                        text="",
+                        block_type="IMAGE",
+                        reading_order=0,
+                        source_coordinates=SourceCoordinates(
+                            x0=0.0,
+                            y0=0.0,
+                            x1=width,
+                            y1=height,
+                            unit="PDF_POINT",
+                            origin="TOP_LEFT",
+                        ),
+                    ),
+                ),
                 warnings=page.warnings + (prior_failure, no_text_warning),
             )
 

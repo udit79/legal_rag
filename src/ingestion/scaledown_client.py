@@ -40,6 +40,17 @@ _CONTINUITY_QUESTION: Mapping[str, Any] = {
 class ScaleDownError(Exception):
     """Base class for ScaleDown client failures."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        http_status: int | None = None,
+        request_id: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.http_status = http_status
+        self.request_id = request_id
+
 
 class ScaleDownAuthenticationError(ScaleDownError):
     """Missing or rejected API credentials."""
@@ -165,26 +176,27 @@ class ScaleDownClient:
             "messages": [
                 {
                     "role": "user",
-                    "content": "Read the visible text from this single PDF page.",
+                    "content": (
+                        "Extract a representative verbatim text span from the "
+                        "attached single-page PDF, if any."
+                    ),
                 }
             ],
             "response_format": {
                 "type": "json_schema",
                 "json_schema": {
-                    "name": "page_text",
+                    "name": "page_text_marker",
                     "schema": {
                         "type": "object",
                         "properties": {
-                            "ocr_text": {
+                            "text_span": {
                                 "type": "string",
                                 "description": (
-                                    "All visible text on this page as one "
-                                    "newline-preserving string"
+                                    "A representative verbatim text span from "
+                                    "the page"
                                 ),
                             }
                         },
-                        "required": ["ocr_text"],
-                        "additionalProperties": False,
                     },
                 },
             },
@@ -206,20 +218,37 @@ class ScaleDownClient:
         self._raise_for_status(response)
         try:
             response_body = response.json()
+        except ValueError as exc:
+            raise ScaleDownResponseError(
+                "ScaleDown response was not valid JSON",
+                http_status=response.status_code,
+                request_id=self._response_request_id(response),
+            ) from exc
+
+        request_id = self._response_request_id(response, response_body)
+        try:
             model_id = response_body["model"]
             message_content = response_body["choices"][0]["message"]["content"]
             extracted = json.loads(message_content)
             ocr_text = extracted.get("ocr_text")
-            if (
-                ocr_text is None
-                and extracted.get("structured_result") is None
-                and extracted.get("entities") == []
-            ):
-                ocr_text = ""
-            if not isinstance(ocr_text, str):
-                legacy_text = extracted.get("visible_text")
-                if isinstance(legacy_text, str):
-                    ocr_text = legacy_text
+            # Extract returns matches under ``entities`` even when a raw OCR
+            # field is unavailable. This request asks for a single verbatim
+            # text span, so preserve the returned spans as the usable text.
+            if ocr_text is None and isinstance(extracted, dict):
+                entities = extracted.get("entities")
+                if isinstance(entities, list):
+                    spans = [
+                        entity["text"]
+                        for entity in entities
+                        if isinstance(entity, dict)
+                        and entity.get("type") == "text_span"
+                        and isinstance(entity.get("text"), str)
+                        and entity["text"].strip()
+                    ]
+                    if spans:
+                        ocr_text = "\n".join(spans)
+                    elif not entities:
+                        ocr_text = ""
             if model_id != SCALEDOWN_EXTRACT_MODEL:
                 raise ValueError("ScaleDown returned an unexpected Extract model")
             if not isinstance(ocr_text, str):
@@ -248,13 +277,12 @@ class ScaleDownClient:
                     if entity_shapes:
                         response_shape += "; " + "; ".join(entity_shapes)
                 raise ScaleDownResponseError(
-                    "ScaleDown Extract OCR text must be a string; "
+                    "ScaleDown Extract did not return raw OCR text as a string; "
                     f"received {type(ocr_text).__name__}; "
-                    f"response fields: {response_shape or 'none'}"
+                    f"response fields: {response_shape or 'none'}",
+                    http_status=response.status_code,
+                    request_id=request_id,
                 )
-            request_id = response_body.get("id") or response.headers.get(
-                "x-amzn-requestid"
-            ) or response.headers.get("x-request-id")
             return ScaleDownExtractResult(
                 ocr_text=ocr_text,
                 model_id=model_id,
@@ -262,7 +290,9 @@ class ScaleDownClient:
             )
         except (AttributeError, IndexError, KeyError, TypeError, ValueError) as exc:
             raise ScaleDownResponseError(
-                "ScaleDown Extract response did not contain valid OCR text"
+                "ScaleDown Extract response did not contain valid OCR text",
+                http_status=response.status_code,
+                request_id=request_id,
             ) from exc
 
     def _resolve_api_key(self) -> str:
@@ -276,23 +306,46 @@ class ScaleDownClient:
     @staticmethod
     def _raise_for_status(response: httpx.Response) -> None:
         status_code = response.status_code
+        request_id = ScaleDownClient._response_request_id(response)
+        diagnostics = {"http_status": status_code, "request_id": request_id}
         if status_code in {401, 403}:
             raise ScaleDownAuthenticationError(
-                f"ScaleDown rejected authentication (HTTP {status_code})"
+                f"ScaleDown rejected authentication (HTTP {status_code})",
+                **diagnostics,
             )
         if status_code == 402:
-            raise ScaleDownQuotaError("ScaleDown quota or credit is unavailable")
+            raise ScaleDownQuotaError(
+                "ScaleDown quota or credit is unavailable", **diagnostics
+            )
         if status_code == 429:
-            raise ScaleDownRateLimitError("ScaleDown rate limit exceeded")
+            raise ScaleDownRateLimitError(
+                "ScaleDown rate limit exceeded", **diagnostics
+            )
         if status_code >= 500:
             raise ScaleDownServerError(
-                f"ScaleDown server error (HTTP {status_code})"
+                f"ScaleDown server error (HTTP {status_code})", **diagnostics
             )
         if status_code >= 400:
             raise ScaleDownResponseError(
-                f"ScaleDown rejected the request (HTTP {status_code})"
+                f"ScaleDown rejected the request (HTTP {status_code})",
+                **diagnostics,
             )
         if not 200 <= status_code < 300:
             raise ScaleDownResponseError(
-                f"Unexpected ScaleDown HTTP status: {status_code}"
+                f"Unexpected ScaleDown HTTP status: {status_code}",
+                **diagnostics,
             )
+
+    @staticmethod
+    def _response_request_id(
+        response: httpx.Response, response_body: Any = None
+    ) -> str | None:
+        if isinstance(response_body, Mapping):
+            request_id = response_body.get("id") or response_body.get("request_id")
+            if isinstance(request_id, str) and request_id.strip():
+                return request_id.strip()
+        for header_name in ("x-amzn-requestid", "x-request-id", "request-id"):
+            request_id = response.headers.get(header_name)
+            if request_id and request_id.strip():
+                return request_id.strip()
+        return None
