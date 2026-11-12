@@ -7,7 +7,10 @@ import pymupdf
 import pytest
 
 from src.ingestion.parser_worker.limits import pdf_execution_timeout_seconds
-from src.ingestion.scaledown_client import ScaleDownClient
+from src.ingestion.scaledown_client import (
+    ScaleDownClient,
+    ScaleDownResponseError,
+)
 
 
 def test_timeout_scales_and_caps():
@@ -15,9 +18,12 @@ def test_timeout_scales_and_caps():
 
 
 def test_blank_extract_text_is_returned_not_raised():
+    request_payloads = []
+
     async def run():
-        transport = httpx.MockTransport(
-            lambda _: httpx.Response(
+        async def handle(request):
+            request_payloads.append(request)
+            return httpx.Response(
                 200,
                 json={
                     "id": "r1",
@@ -25,12 +31,146 @@ def test_blank_extract_text_is_returned_not_raised():
                     "choices": [{"message": {"content": json.dumps({"ocr_text": " "})}}],
                 },
             )
+
+        transport = httpx.MockTransport(
+            handle
         )
         async with httpx.AsyncClient(transport=transport) as http:
             client = ScaleDownClient(http_client=http, api_key="k")
             return await client.extract_document_text(b"%PDF-1.4")
 
-    assert asyncio.run(run()).ocr_text.strip() == ""
+    result = asyncio.run(run())
+    assert result.ocr_text.strip() == ""
+    schema = json.loads(request_payloads[0].content)["response_format"][
+        "json_schema"
+    ]["schema"]
+    assert schema["properties"]["ocr_text"]["type"] == "string"
+    assert schema["required"] == ["ocr_text"]
+    assert schema["additionalProperties"] is False
+
+
+@pytest.mark.parametrize(
+    ("content", "expected_text"),
+    [
+        ({"ocr_text": "Recognized text"}, "Recognized text"),
+        ({"visible_text": "Legacy response text"}, "Legacy response text"),
+    ],
+)
+def test_extract_accepts_string_ocr_text_contract(content, expected_text):
+    async def run():
+        transport = httpx.MockTransport(
+            lambda _: httpx.Response(
+                200,
+                json={
+                    "model": "extract-1",
+                    "choices": [
+                        {"message": {"content": json.dumps(content)}}
+                    ],
+                },
+            )
+        )
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ScaleDownClient(http_client=http, api_key="k")
+            return await client.extract_document_text(b"%PDF-1.4")
+
+    assert asyncio.run(run()).ocr_text == expected_text
+
+
+def test_extract_maps_empty_provider_result_to_no_text():
+    async def run():
+        transport = httpx.MockTransport(
+            lambda _: httpx.Response(
+                200,
+                json={
+                    "model": "extract-1",
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "entities": [],
+                                        "input_tokens": 10,
+                                        "ocr_text": None,
+                                        "structured_result": None,
+                                    }
+                                )
+                            }
+                        }
+                    ],
+                },
+            )
+        )
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ScaleDownClient(http_client=http, api_key="k")
+            return await client.extract_document_text(b"%PDF-1.4")
+
+    assert asyncio.run(run()).ocr_text == ""
+
+
+def test_extract_rejects_non_string_ocr_text_without_coercion():
+    async def run():
+        transport = httpx.MockTransport(
+            lambda _: httpx.Response(
+                200,
+                json={
+                    "model": "extract-1",
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps({"ocr_text": ["Text"]})
+                            }
+                        }
+                    ],
+                },
+            )
+        )
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ScaleDownClient(http_client=http, api_key="k")
+            return await client.extract_document_text(b"%PDF-1.4")
+
+    with pytest.raises(
+        ScaleDownResponseError, match="received list"
+    ):
+        asyncio.run(run())
+
+
+def test_extract_error_reports_response_shape_without_ocr_values():
+    async def run():
+        response_content = {
+            "entities": [
+                {
+                    "text": "Potentially sensitive OCR text",
+                    "bounding_box": {"x": 1},
+                }
+            ],
+            "ocr_text": None,
+            "structured_result": None,
+            "status": "complete",
+        }
+        transport = httpx.MockTransport(
+            lambda _: httpx.Response(
+                200,
+                json={
+                    "model": "extract-1",
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(response_content)
+                            }
+                        }
+                    ],
+                },
+            )
+        )
+        async with httpx.AsyncClient(transport=transport) as http:
+            client = ScaleDownClient(http_client=http, api_key="k")
+            return await client.extract_document_text(b"%PDF-1.4")
+
+    with pytest.raises(ScaleDownResponseError) as error:
+        asyncio.run(run())
+    assert "response fields: entities: list, ocr_text: NoneType" in str(error.value)
+    assert "entities[0]: bounding_box: dict, text: str" in str(error.value)
+    assert "Potentially sensitive OCR text" not in str(error.value)
 
 
 @pytest.mark.skipif(shutil.which("tesseract") is None, reason="tesseract not installed")

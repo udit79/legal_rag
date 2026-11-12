@@ -63,9 +63,22 @@ async def recover_escalated_pages(
                 code="FALLBACK_NO_TEXT",
                 message=(
                     f"ScaleDown Extract ({extracted.model_id}) found no text; "
-                    "the page was marked blank and skipped."
+                    "the page was excluded from text chunking."
                 ),
             )
+            if any(
+                block.block_type == "IMAGE" and not block.text.strip()
+                for block in page.blocks
+            ):
+                recovered_pages.append(
+                    page.model_copy(
+                        update={
+                            "warnings": page.warnings
+                            + (prior_failure, no_text_warning)
+                        }
+                    )
+                )
+                continue
             recovered_pages.append(
                 CanonicalPage(
                     page_number=page.page_number,

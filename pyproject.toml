@@ -27,6 +27,8 @@ dependencies = [
     "pytest>=9.1.1",
     "rapidocr>=3.10.0",
     "uvicorn[standard]>=0.54.0",
+    "openai>=3.49.0",
+    "voyageai>=0.6.0",
 ]
 
 [dependency-groups]

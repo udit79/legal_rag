@@ -175,11 +175,16 @@ class ScaleDownClient:
                     "schema": {
                         "type": "object",
                         "properties": {
-                            "visible_text": {
+                            "ocr_text": {
                                 "type": "string",
-                                "description": "Visible text on this page",
+                                "description": (
+                                    "All visible text on this page as one "
+                                    "newline-preserving string"
+                                ),
                             }
                         },
+                        "required": ["ocr_text"],
+                        "additionalProperties": False,
                     },
                 },
             },
@@ -204,11 +209,49 @@ class ScaleDownClient:
             model_id = response_body["model"]
             message_content = response_body["choices"][0]["message"]["content"]
             extracted = json.loads(message_content)
-            ocr_text = extracted["ocr_text"]
+            ocr_text = extracted.get("ocr_text")
+            if (
+                ocr_text is None
+                and extracted.get("structured_result") is None
+                and extracted.get("entities") == []
+            ):
+                ocr_text = ""
+            if not isinstance(ocr_text, str):
+                legacy_text = extracted.get("visible_text")
+                if isinstance(legacy_text, str):
+                    ocr_text = legacy_text
             if model_id != SCALEDOWN_EXTRACT_MODEL:
                 raise ValueError("ScaleDown returned an unexpected Extract model")
             if not isinstance(ocr_text, str):
-                raise ValueError("ScaleDown Extract returned a non-string ocr_text")
+                response_shape = (
+                    ", ".join(
+                        f"{key}: {type(value).__name__}"
+                        for key, value in sorted(extracted.items())
+                    )
+                    if isinstance(extracted, dict)
+                    else type(extracted).__name__
+                )
+                if isinstance(extracted, dict) and isinstance(
+                    extracted.get("entities"), list
+                ):
+                    entity_shapes = []
+                    for index, entity in enumerate(extracted["entities"][:3]):
+                        fields = (
+                            ", ".join(
+                                f"{key}: {type(value).__name__}"
+                                for key, value in sorted(entity.items())
+                            )
+                            if isinstance(entity, dict)
+                            else type(entity).__name__
+                        )
+                        entity_shapes.append(f"entities[{index}]: {fields or 'empty'}")
+                    if entity_shapes:
+                        response_shape += "; " + "; ".join(entity_shapes)
+                raise ScaleDownResponseError(
+                    "ScaleDown Extract OCR text must be a string; "
+                    f"received {type(ocr_text).__name__}; "
+                    f"response fields: {response_shape or 'none'}"
+                )
             request_id = response_body.get("id") or response.headers.get(
                 "x-amzn-requestid"
             ) or response.headers.get("x-request-id")
