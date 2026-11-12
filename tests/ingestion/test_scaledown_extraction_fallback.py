@@ -266,3 +266,76 @@ def test_ocr_page_with_empty_image_block_is_recovered():
         )
     )
     assert recovered.pages[0].blocks[0].text == "OCR recovered"
+
+
+def test_page_recovery_runs_concurrently_with_a_bound_and_keeps_page_order():
+    page_count = 4
+    canonical = CanonicalDocument(
+        page_count=page_count,
+        document_disposition="PROCESS",
+        pages=tuple(
+            CanonicalPage(
+                page_number=page_number,
+                parser="DISPATCHER",
+                status="BLANK",
+            )
+            for page_number in range(1, page_count + 1)
+        ),
+    )
+    plan = DocumentRoutePlan(
+        page_count=page_count,
+        decisions=tuple(
+            PageRouteDecision(
+                page_number=page_number,
+                route="ESCALATE",
+                reason="Test async page recovery",
+                decision_source="RULES",
+                policy_version="router-test-1",
+            )
+            for page_number in range(1, page_count + 1)
+        ),
+        document_disposition="PROCESS",
+    )
+
+    class NumberedPageExporter:
+        async def extract_page_pdf(self, source, page_number):
+            return f"page-{page_number}".encode(), 612.0, 792.0
+
+    class ConcurrentTextExtractor:
+        def __init__(self):
+            self.active = 0
+            self.max_active = 0
+
+        async def extract_document_text(
+            self, document, *, document_mime_type="application/pdf"
+        ):
+            page_number = int(document.decode().split("-")[1])
+            self.active += 1
+            self.max_active = max(self.max_active, self.active)
+            await asyncio.sleep((page_count - page_number + 1) * 0.005)
+            self.active -= 1
+            return ScaleDownExtractResult(
+                ocr_text=f"text-{page_number}",
+                model_id="extract-1",
+                request_id=f"request-{page_number}",
+            )
+
+    extractor = ConcurrentTextExtractor()
+    recovered = asyncio.run(
+        recover_escalated_pages(
+            source=Path("unused.pdf"),
+            canonical=canonical,
+            route_plan=plan,
+            page_exporter=NumberedPageExporter(),
+            text_extractor=extractor,
+        )
+    )
+
+    assert extractor.max_active == 2
+    assert [page.page_number for page in recovered.pages] == [1, 2, 3, 4]
+    assert [page.blocks[0].text for page in recovered.pages] == [
+        "text-1",
+        "text-2",
+        "text-3",
+        "text-4",
+    ]

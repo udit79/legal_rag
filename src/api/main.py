@@ -52,7 +52,10 @@ from src.ingestion.preflight import InvalidPdfError
 from src.ingestion.router import route_document
 from src.ingestion.scaledown_client import ScaleDownClient
 from src.ingestion.scaledown_client import ScaleDownError, ScaleDownTimeoutError
-from src.ingestion.scaledown_extraction import recover_escalated_pages
+from src.ingestion.scaledown_extraction import (
+    MAX_PAGE_RECOVERY_CONCURRENCY,
+    recover_escalated_pages,
+)
 from src.observability.telemetry import configure_telemetry
 from src.security.ingestion_screening.contracts import DocumentContext
 from src.security.ingestion_screening.enums import AdmissionDecision, TrustTier
@@ -83,6 +86,9 @@ async def lifespan(app: FastAPI):
     provider, _ = configure_telemetry()
     scaledown_http_client = httpx.AsyncClient(timeout=30.0)
     app.state.scaledown_http_client = scaledown_http_client
+    app.state.scaledown_recovery_semaphore = asyncio.Semaphore(
+        MAX_PAGE_RECOVERY_CONCURRENCY
+    )
     app.state.scaledown_client = ScaleDownClient(
         http_client=scaledown_http_client
     )
@@ -396,6 +402,9 @@ async def _process_pdf_upload(
                     route_plan,
                     page_exporter=request.app.state.parser_worker,
                     text_extractor=request.app.state.scaledown_client,
+                    concurrency_semaphore=(
+                        request.app.state.scaledown_recovery_semaphore
+                    ),
                 )
                 recovered_pages = sum(
                     page.parser == "SCALEDOWN_EXTRACT"
