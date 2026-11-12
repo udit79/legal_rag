@@ -24,6 +24,19 @@ _LOGGER = logging.getLogger(__name__)
 class SupabaseProvenanceError(RuntimeError):
     """The configured provenance database did not durably accept a batch."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        http_status: int | None = None,
+        provider_error_code: str | None = None,
+        request_id: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.http_status = http_status
+        self.provider_error_code = provider_error_code
+        self.request_id = request_id
+
 class SupabaseProvenanceStore:
     def __init__(self, base_url: str, service_role_key: str, client: httpx.AsyncClient):
         if not base_url.startswith(("https://", "http://")):
@@ -105,7 +118,38 @@ class SupabaseProvenanceStore:
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:
+            failure_detail = ""
+            failure_http_status = None
+            failure_error_code = None
+            failure_request_id = None
             if isinstance(exc, httpx.HTTPStatusError):
+                try:
+                    error_body = exc.response.json()
+                except ValueError:
+                    error_body = {}
+                error_code = (
+                    error_body.get("code")
+                    if isinstance(error_body, dict)
+                    and isinstance(error_body.get("code"), str)
+                    else None
+                )
+                request_id = (
+                    exc.response.headers.get("x-request-id")
+                    or exc.response.headers.get("sb-request-id")
+                )
+                failure_http_status = exc.response.status_code
+                failure_error_code = error_code
+                failure_request_id = request_id
+                failure_detail = (
+                    f" (HTTP {exc.response.status_code}, Supabase code "
+                    f"{error_code or 'unavailable'}, request ID "
+                    f"{request_id or 'unavailable'})"
+                )
+                _LOGGER.error(
+                    "Supabase rejected ingestion screening provenance%s for run %s",
+                    failure_detail,
+                    context.ingestion_run_id,
+                )
                 await self._reconcile_image_objects(
                     [
                         path
@@ -116,11 +160,24 @@ class SupabaseProvenanceStore:
                     ]
                 )
             elif image_metadata:
+                _LOGGER.exception(
+                    "Supabase screening provenance transport outcome is unknown",
+                    extra={"ingestion_run_id": context.ingestion_run_id},
+                )
                 _LOGGER.warning(
                     "Ingestion metadata RPC outcome is unknown; retaining uploaded images"
                 )
+            else:
+                _LOGGER.exception(
+                    "Supabase screening provenance transport failed",
+                    extra={"ingestion_run_id": context.ingestion_run_id},
+                )
             raise SupabaseProvenanceError(
                 "Supabase did not persist the ingestion screening batch"
+                f"{failure_detail}",
+                http_status=failure_http_status,
+                provider_error_code=failure_error_code,
+                request_id=failure_request_id,
             ) from exc
 
     async def _store_image_crops(

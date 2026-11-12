@@ -24,6 +24,7 @@ from fastapi import (
 from fastapi.concurrency import run_in_threadpool
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from neo4j.exceptions import AuthError, DriverError, ServiceUnavailable, SessionExpired
 from pydantic import BaseModel
 
@@ -529,18 +530,55 @@ async def _process_pdf_upload(
                 ) from exc
             provenance_store = request.app.state.provenance_store
             if provenance_store is not None:
-                try:
-                    await provenance_store.persist_screened_document(
-                        screened,
-                        document_context,
-                        image_results=image_screening_results,
-                        image_crops=ingestion.unrecognized_images,
+                with _TRACER.start_as_current_span(
+                    "ingestion.provenance.screening_persistence"
+                ) as span:
+                    span.set_attribute("ingestion.provenance.run_id", ingestion_run_id)
+                    span.set_attribute(
+                        "ingestion.provenance.chunk_count",
+                        len(ingestion.chunking.document.chunks),
                     )
-                except Exception as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        detail={"code": "PROVENANCE_PERSISTENCE_FAILED"},
-                    ) from exc
+                    try:
+                        await provenance_store.persist_screened_document(
+                            screened,
+                            document_context,
+                            image_results=image_screening_results,
+                            image_crops=ingestion.unrecognized_images,
+                        )
+                    except Exception as exc:
+                        span.record_exception(exc)
+                        span.set_status(Status(StatusCode.ERROR, type(exc).__name__))
+                        for attribute, value in (
+                            ("ingestion.provenance.http_status", getattr(exc, "http_status", None)),
+                            (
+                                "ingestion.provenance.supabase_error_code",
+                                getattr(exc, "provider_error_code", None),
+                            ),
+                            (
+                                "ingestion.provenance.supabase_request_id",
+                                getattr(exc, "request_id", None),
+                            ),
+                        ):
+                            if value is not None:
+                                span.set_attribute(attribute, value)
+                        _LOGGER.exception(
+                            "Ingestion screening provenance persistence failed",
+                            extra={
+                                "ingestion_run_id": ingestion_run_id,
+                                "document_id": ingestion.document_id,
+                                "ingestion_chunk_count": len(
+                                    ingestion.chunking.document.chunks
+                                ),
+                                "ingestion_image_count": len(
+                                    ingestion.unrecognized_images
+                                ),
+                                "provenance_exception_type": type(exc).__name__,
+                            },
+                        )
+                        raise HTTPException(
+                            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail={"code": "PROVENANCE_PERSISTENCE_FAILED"},
+                        ) from exc
             document_blocked = screened.report.quarantined_document or any(
                 result.decision == AdmissionDecision.REJECTED
                 for result in screened.report.chunk_results
