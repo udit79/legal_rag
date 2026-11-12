@@ -3,7 +3,6 @@ import base64
 import binascii
 import json
 import math
-import re
 import sys
 import traceback
 from contextlib import redirect_stdout
@@ -37,6 +36,9 @@ from src.ingestion.parser_worker.result import (
     PagePdfResponse,
     PdfInspectionRequest,
     PdfInspectionResponse,
+)
+from src.ingestion.parser_worker.pdf_active_content import (
+    inspect_pdf_active_content,
 )
 
 class WorkerResponse(Protocol):
@@ -170,14 +172,7 @@ def _handle_pdf_inspection(raw_request: bytes) -> PdfInspectionResponse:
                 page_count <= MAX_PDF_PAGES
                 and object_count <= request.max_pdf_objects
             ):
-                active_token = re.compile(
-                    r"/(?:JavaScript|JS|OpenAction|AA|Launch|EmbeddedFiles)\b"
-                )
-                for xref in range(1, object_count):
-                    if active_token.search(document.xref_object(xref, compressed=False)):
-                        active_content_xrefs.append(xref)
-                if document.embfile_count() > 0:
-                    active_content_xrefs.append(-1)
+                active_content_xrefs = inspect_pdf_active_content(document)
             return PdfInspectionResponse(
                 type="inspect_result",
                 request_id=request_id,
