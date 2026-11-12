@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 from pydantic import BaseModel,ConfigDict,Field,StringConstraints,model_validator
 from src.ingestion.contracts import DocumentDisposition, PositiveInt
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -20,6 +20,22 @@ class SourceCoordinates(BaseModel):
             raise ValueError("Source coordinate bounds must be ordered")
         return self
 
+class CanonicalTextTransformation(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    original_character: Annotated[str, Field(min_length=1, max_length=1)]
+    replacement: Annotated[str, Field(min_length=1, max_length=1)]
+    source_page: PositiveInt
+    start_offset: NonNegativeInt
+    end_offset: PositiveInt
+    reason: NonEmptyStr
+
+    @model_validator(mode="after")
+    def validate_single_character_range(self) -> Self:
+        if self.end_offset != self.start_offset + 1:
+            raise ValueError("Character transformations must cover one source character")
+        return self
+
 class CanonicalBlock(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -30,6 +46,8 @@ class CanonicalBlock(BaseModel):
     block_id: NonEmptyStr = Field(default="", validate_default=True)
     source_coordinates: SourceCoordinates
     confidence: Annotated[float, Field(ge=0.0, le=100.0)] | None = None
+    raw_text: str | None = None
+    text_transformations: tuple[CanonicalTextTransformation, ...] = ()
 
     @model_validator(mode="before")
     @classmethod
@@ -47,6 +65,19 @@ class CanonicalBlock(BaseModel):
         suffix = self.block_id.removeprefix(prefix)
         if not self.block_id.startswith(prefix) or not suffix.isascii() or not suffix.isdecimal():
             raise ValueError("Block ID must retain its page-scoped canonical format")
+        if self.text_transformations:
+            if self.raw_text is None or len(self.raw_text) != len(self.text):
+                raise ValueError("Transformed blocks require same-length raw source text")
+            for edit in self.text_transformations:
+                if (
+                    edit.source_page != self.page_number
+                    or edit.end_offset > len(self.raw_text)
+                    or self.raw_text[edit.start_offset : edit.end_offset]
+                    != edit.original_character
+                    or self.text[edit.start_offset : edit.end_offset]
+                    != edit.replacement
+                ):
+                    raise ValueError("Text transformation does not match source offsets")
         return self
 
 def canonical_block_id(page_number: int, reading_order: int) -> str:return f"page-{page_number}-block-{reading_order}"

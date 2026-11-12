@@ -5,6 +5,7 @@ from opentelemetry.trace import Status, StatusCode
 from src.ingestion.contracts import DocumentRoutePlan, PageRouteDecision
 from src.ingestion.parser_contracts import CanonicalDocument,CanonicalPage,ParserFailure
 from src.ingestion.parsers import FastTextParser, OcrParser, PageParser, StructuredParser
+from src.ingestion.pdf_bullet_artifacts import normalize_pdf_bullet_artifacts
 
 _TRACER = trace.get_tracer("graph_rag.ingestion.dispatcher")
 
@@ -17,7 +18,9 @@ def _parse_page_with_span(
         span.set_attribute("ingestion.page.route", route)
         span.set_attribute("ingestion.parser.name", parser_name)
         try:
-            page = parser.parse_page(source, page_number)
+            page = normalize_pdf_bullet_artifacts(
+                parser.parse_page(source, page_number)
+            )
         except Exception as exc:
             span.record_exception(exc)
             span.set_status(Status(StatusCode.ERROR, type(exc).__name__))
