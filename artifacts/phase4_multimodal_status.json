@@ -1,0 +1,274 @@
+{
+  "audit_id": "phase4-multimodal-implementation-audit",
+  "audit_date": "2026-11-13",
+  "classification_values": [
+    "IMPLEMENTED",
+    "PARTIALLY_IMPLEMENTED",
+    "NOT_IMPLEMENTED",
+    "NOT_VERIFIED"
+  ],
+  "scope": "Repository, Supabase migrations and live read-only Supabase bucket/metadata checks, ingestion/parser/chunking, provenance, graph retrieval/evidence and tests.",
+  "protection": {
+    "supabase_read_only": true,
+    "neo4j_modified": false,
+    "ingestion_or_retrieval_modified": false,
+    "corpus_records_modified": false,
+    "phase3_benchmark_artifacts_modified": false,
+    "storage_object_bytes_downloaded": false
+  },
+  "live_observations": {
+    "storage_bucket": "ingestion-image-crops",
+    "storage_bucket_exists": true,
+    "storage_bucket_public": false,
+    "image_screening_result_rows": 32,
+    "rows_with_complete_storage_reference": 32,
+    "distinct_ingestion_runs_for_current_corpus": 6,
+    "current_image_page_block_keys_found_in_chunk_source_metadata": 0,
+    "sampled_storage_objects_head_checked": 5,
+    "sampled_storage_objects_http_200": 5,
+    "verification_limitations": [
+      "Only five of 32 referenced object paths were checked with HEAD; object bytes were not downloaded.",
+      "Image/chunk matching was checked by latest ingestion run, source page, and block ID using existing source metadata."
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "source_image_extraction",
+      "name": "Image extraction from source documents",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "finding": "Docling identifies IMAGE blocks; blank-text blocks are rendered from their PDF page coordinates as PNG crops. This does not extract every embedded image object or crop nonblank IMAGE blocks.",
+      "source_files": [
+        "src/ingestion/parsers.py",
+        "src/ingestion/parser_contracts.py",
+        "src/ingestion/pipeline.py",
+        "src/ingestion/parser_worker/worker.py",
+        "src/ingestion/parser_worker/result.py"
+      ],
+      "database_tables": [],
+      "storage_buckets": [],
+      "tests": [
+        "tests/test_ingestion_adapters.py::test_structured_parser_preserves_text_on_image_blocks",
+        "tests/ingestion/test_parser_worker_image_ocr.py"
+      ]
+    },
+    {
+      "id": "supabase_image_persistence",
+      "name": "Image persistence in Supabase",
+      "status": "IMPLEMENTED",
+      "finding": "Verified PNG crops are stored in the existing private bucket before screening metadata is written. Live project contains 32 image metadata rows with complete storage references; five sampled paths returned HTTP 200.",
+      "source_files": [
+        "src/ingestion/provenance/supabase_store.py",
+        "src/api/main.py",
+        "supabase/migrations/202611050001_ingestion_provenance.sql",
+        "supabase/migrations/202611110001_ingestion_image_storage.sql"
+      ],
+      "database_tables": [
+        "public.image_screening_results",
+        "public.ingestion_runs"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops (live verified private)"
+      ],
+      "tests": [
+        "tests/ingestion/test_supabase_provenance.py::test_image_upload_retries_and_persists_private_object_metadata"
+      ]
+    },
+    {
+      "id": "asset_metadata_and_storage_reference",
+      "name": "Asset metadata and storage references",
+      "status": "IMPLEMENTED",
+      "finding": "Metadata stores image SHA-256, private bucket/path, byte size, run/page/block, reading order, coordinates, OCR status/hash/length, screening decision and flags. There is no separate asset_id; image_sha256 is the content identity.",
+      "source_files": [
+        "src/ingestion/provenance/supabase_store.py",
+        "src/ingestion/screening/image_screening.py",
+        "supabase/migrations/202611050001_ingestion_provenance.sql",
+        "supabase/migrations/202611110001_ingestion_image_storage.sql"
+      ],
+      "database_tables": [
+        "public.image_screening_results",
+        "public.ingestion_runs"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": [
+        "tests/ingestion/test_supabase_provenance.py::test_image_upload_retries_and_persists_private_object_metadata",
+        "tests/ingestion/test_supabase_provenance.py::test_image_upload_rejects_hash_mismatch_before_storage_or_rpc"
+      ]
+    },
+    {
+      "id": "full_visual_asset_provenance",
+      "name": "Provenance links to document hash, run, physical page, source block, and asset ID",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "finding": "Run ID, page, block and image digest are explicit. Document SHA is derivable through the run FK. No standalone asset ID or direct source SHA column is stored on image_screening_results.",
+      "source_files": [
+        "src/ingestion/screening/image_screening.py",
+        "src/ingestion/provenance/supabase_store.py",
+        "supabase/migrations/202611050001_ingestion_provenance.sql"
+      ],
+      "database_tables": [
+        "public.image_screening_results",
+        "public.ingestion_runs",
+        "public.ingestion_documents"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": [
+        "tests/ingestion/test_image_screening.py::test_image_ocr_text_is_screened_and_keeps_image_provenance",
+        "tests/ingestion/test_supabase_provenance.py::test_image_upload_retries_and_persists_private_object_metadata"
+      ]
+    },
+    {
+      "id": "image_ocr_text",
+      "name": "OCR/text extraction from images",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "finding": "Local page OCR can emit canonical TEXT blocks and blank IMAGE crops have a dedicated Tesseract OCR screening path. Crop OCR text is transient; only its hash and length are persisted and it does not enter chunks/retrieval text.",
+      "source_files": [
+        "src/ingestion/parser_worker/runner.py",
+        "src/ingestion/parser_worker/worker.py",
+        "src/ingestion/parsers.py",
+        "src/ingestion/screening/image_screening.py",
+        "src/api/main.py"
+      ],
+      "database_tables": [
+        "public.image_screening_results",
+        "public.ingestion_chunks"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": [
+        "tests/ingestion/test_parser_worker_image_ocr.py",
+        "tests/ingestion/test_image_screening.py",
+        "tests/test_ingestion_adapters.py::test_ocr_parser_uses_rapidocr_output_and_returns_canonical_blocks",
+        "tests/test_ingestion_adapters.py::test_ocr_parser_parses_tesseract_tsv"
+      ]
+    },
+    {
+      "id": "visual_captions_and_summaries",
+      "name": "Image captions, descriptions, and visual summaries",
+      "status": "NOT_IMPLEMENTED",
+      "finding": "No generated visual descriptions, captioning service, persisted descriptive field, or caption-to-image relation was found.",
+      "source_files": [
+        "src/ingestion/parsers.py",
+        "src/ingestion/parser_contracts.py"
+      ],
+      "database_tables": [
+        "public.image_screening_results (no caption/description columns)"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": []
+    },
+    {
+      "id": "canonical_visual_references",
+      "name": "Image, table, and figure references in canonical documents",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "finding": "CanonicalBlock supports IMAGE and TABLE types with page-scoped block IDs, text and coordinates. There is no canonical storage reference, asset ID, figure number, or explicit caption relationship; the full canonical document is represented durably by a digest rather than a canonical table row.",
+      "source_files": [
+        "src/ingestion/parser_contracts.py",
+        "src/ingestion/parsers.py",
+        "src/ingestion/chunk_contracts.py",
+        "src/ingestion/chunking.py",
+        "src/api/main.py"
+      ],
+      "database_tables": [
+        "public.ingestion_documents",
+        "public.ingestion_chunks"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": [
+        "tests/test_ingestion_adapters.py::test_structured_parser_preserves_text_on_image_blocks",
+        "tests/test_ingestion_chunk_contracts.py IMAGE/TABLE provenance validation cases"
+      ]
+    },
+    {
+      "id": "asset_chunk_relationship",
+      "name": "Relationships between visual assets and document chunks",
+      "status": "NOT_IMPLEMENTED",
+      "finding": "No persistent asset-to-chunk FK, relationship record, CPCR mapping, or graph edge exists. Live comparison found 0 of 32 current image page/block pairs in chunk source metadata.",
+      "source_files": [
+        "src/ingestion/provenance/supabase_store.py",
+        "src/ingestion/chunk_contracts.py",
+        "src/graph/corpus_reader.py",
+        "src/graph/structural_writer.py"
+      ],
+      "database_tables": [
+        "public.image_screening_results",
+        "public.ingestion_chunks",
+        "public.ingestion_cpcr_outputs"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": []
+    },
+    {
+      "id": "visual_retrieval_evidence",
+      "name": "Visual content availability to retrieval and evidence assembly",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "finding": "Text emitted by OCR/page parsing can enter ordinary text chunks. Crop OCR is not canonicalized or chunked; EvidenceBundle and Neo4j graph contain text and source coordinates but no visual asset reference or bytes.",
+      "source_files": [
+        "src/graph/retrieval.py",
+        "src/graph/structural_writer.py",
+        "src/graph/corpus_reader.py",
+        "src/ingestion/chunk_contracts.py"
+      ],
+      "database_tables": [
+        "public.ingestion_chunks",
+        "public.ingestion_cpcr_outputs",
+        "public.image_screening_results"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": [
+        "tests/graph/test_hybrid_retrieval.py",
+        "tests/graph/test_retrieval_smoke.py"
+      ]
+    },
+    {
+      "id": "asset_lifecycle",
+      "name": "Failure handling, idempotency, and asset versioning",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "substatus": {
+        "failure_handling": "IMPLEMENTED",
+        "exact_replay_idempotency": "IMPLEMENTED",
+        "run_scoped_versioning": "IMPLEMENTED",
+        "explicit_asset_version_registry": "NOT_IMPLEMENTED"
+      },
+      "finding": "Upload retry, digest/path determinism, exact-replay upsert, immutable metadata keys and safe orphan reconciliation exist. Each run gets a separate hashed prefix; there is no independent asset version registry or stable asset ID.",
+      "source_files": [
+        "src/ingestion/provenance/supabase_store.py",
+        "src/ingestion/screening/image_screening.py",
+        "src/api/main.py",
+        "supabase/migrations/202611080001_ingestion_provenance_immutability.sql",
+        "supabase/migrations/202611110001_ingestion_image_storage.sql"
+      ],
+      "database_tables": [
+        "public.image_screening_results",
+        "public.ingestion_runs"
+      ],
+      "storage_buckets": [
+        "ingestion-image-crops"
+      ],
+      "tests": [
+        "tests/ingestion/test_supabase_provenance.py::test_image_upload_retries_and_persists_private_object_metadata",
+        "tests/ingestion/test_supabase_provenance.py::test_partial_image_upload_failure_does_not_persist_metadata",
+        "tests/ingestion/test_supabase_provenance.py::test_rpc_failure_only_deletes_images_confirmed_unreferenced",
+        "tests/ingestion/test_image_screening.py::test_image_ocr_failure_fails_closed_and_blank_result_is_not_content"
+      ]
+    }
+  ],
+  "recommended_remaining_tasks": [
+    "Use the existing ingestion-run/page/block key and image digest/path to resolve image assets; do not mint a second asset ID.",
+    "Preserve admitted crop OCR as source-backed canonical text with offsets and provenance, then include it in existing chunk/retrieval processing.",
+    "Link chunks/evidence to existing image metadata by the stable run/page/block key and test identity/provenance checks.",
+    "Add captions or visual descriptions only for cases OCR cannot represent, with a documented retention and screening contract.",
+    "Add lifecycle tests for replay, same-key content conflict, new-run versioning, reconciliation failures, and asset-backed evidence."
+  ]
+}
