@@ -40,4 +40,5 @@ dev = [
 markers = [
     "live_cdm: makes real ScaleDown API calls; opt in with CPCR_LIVE_CDM=1",
     "neo4j_integration: connects only to an isolated Neo4j test database when explicitly configured",
+    "live_retrieval: read-only retrieval evaluation against an explicitly selected existing Neo4j database",
 ]

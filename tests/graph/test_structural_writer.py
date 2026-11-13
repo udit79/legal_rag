@@ -18,15 +18,19 @@ from src.graph.structural_writer import (
 )
 
 
-def _doc(indices=(0, 1), decisions=None, run_id="run", policy="policy", created_at=None):
-    decisions = decisions or ["ADMITTED"] * len(indices)
+def _doc(indices=(0, 1), decisions=None, run_id="run", policy="policy", created_at=None,
+         original_indices_groups=None):
+    groups = original_indices_groups or tuple((i,) for i in indices)
+    decisions = decisions or ["ADMITTED"] * len(groups)
     chunks = tuple(CorpusChunk(
-        id=hashlib.sha256(f"{'b' * 64}\0{policy}\0{i}".encode()).hexdigest(), chunk_index=position,
-        original_chunk_indices=(i,), raw_text=f"raw {i}",
-        retrieval_text=f"retrieval {i}", chunk_sha256="a" * 64,
-        sources=[{"page_number": 1, "block_id": f"page-1-block-{i}"}],
+        id=hashlib.sha256(
+            f"{'b' * 64}\0{policy}\0{group[0] if len(group) == 1 else ','.join(map(str, group))}".encode()
+        ).hexdigest(), chunk_index=position,
+        original_chunk_indices=group, raw_text=f"raw {group}",
+        retrieval_text=f"retrieval {group}", chunk_sha256="a" * 64,
+        sources=[{"page_number": 1, "block_id": f"page-1-block-{group[0]}"}],
         retrieval_text_edits=[], admission_decisions=[decisions[position]],
-    ) for position, i in enumerate(indices))
+    ) for position, group in enumerate(groups))
     return CorpusDocument("b" * 64, "d" * 64, 1, run_id,
                           created_at or datetime(2026, 11, 12, tzinfo=timezone.utc), policy,
                           "screening-1", "c" * 64, chunks)
@@ -201,6 +205,46 @@ def test_writer_does_not_bridge_original_chunk_gaps():
         await StructuralGraphWriter().write(_Db(tx), (_doc((0, 2)),))
         next_calls = [kwargs for query, kwargs in tx.calls if "NEXT_CHUNK" in query]
         assert next_calls == []
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("groups", "expected_edge"),
+    [
+        (((2,), (3,)), True),
+        (((2,), (2, 3)), True),
+        (((5,), (5, 6)), True),
+        (((2,), (2, 4)), False),
+        (((1, 2), (2, 3, 4)), True),
+    ],
+)
+def test_writer_links_next_original_index_within_right_chunk(groups, expected_edge):
+    async def run():
+        document = _doc(original_indices_groups=groups)
+        tx = _Tx()
+        await StructuralGraphWriter().write(_Db(tx), (document,))
+        next_calls = [kwargs for query, kwargs in tx.calls if "NEXT_CHUNK" in query]
+        rows = next_calls[0]["rows"] if next_calls else []
+        assert bool(rows) is expected_edge
+        if expected_edge:
+            assert [(row["from_id"], row["to_id"]) for row in rows] == [
+                (document.chunks[0].id, document.chunks[1].id)
+            ]
+    asyncio.run(run())
+
+
+def test_overlapping_next_chunk_imports_remain_idempotent():
+    async def run():
+        tx = _Tx()
+        writer = StructuralGraphWriter()
+        document = _doc(original_indices_groups=((2,), (2, 3)))
+        first = await writer.write(_Db(tx), (document,))
+        second = await writer.write(_Db(tx), (document,))
+        next_writes = [kwargs["rows"] for query, kwargs in tx.calls
+                       if "MERGE (a)-[r:NEXT_CHUNK" in query]
+        assert next_writes[0] == next_writes[1]
+        assert first["next_chunk"] == second["next_chunk"] == 1
+        assert second["created_records"] == 0
     asyncio.run(run())
 
 

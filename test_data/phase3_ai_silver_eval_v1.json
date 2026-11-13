@@ -1,0 +1,2992 @@
+{
+  "dataset_id": "phase3-ai-silver-development-evaluation",
+  "version": "v1.0-provisional",
+  "dataset_status": "AI_SILVER_LABELS_READY_FOR_INTERNAL_DEVELOPMENT_BENCHMARK",
+  "label_provenance": "AI_GENERATED_AND_AI_SOURCE_CHECKED",
+  "human_verification_status": "NOT_PERFORMED",
+  "ground_truth_status": "NOT_ESTABLISHED",
+  "synthetic": true,
+  "synthetic_flag_explanation": "Inherited from the candidate dataset. Query candidates are synthetic evaluation questions over a real corpus; labels and absence judgments are AI-generated and provisional.",
+  "benchmark_use": {
+    "allowed": "Internal development, regression comparison, and exploratory analysis only.",
+    "not_allowed": [
+      "Claims of human-verified ground truth",
+      "Publication as an authoritative benchmark",
+      "Claims of statistically conclusive retrieval superiority",
+      "Current legal/regulatory advice derived from the withdrawn RBI PDF"
+    ],
+    "required_reporting_language": "AI-labelled provisional (silver) evaluation set",
+    "small_sample_caution": "30 queries support initial development comparisons, not strong statistical claims or broad generalization."
+  },
+  "corpus": {
+    "database": "rag",
+    "document_count": 6,
+    "chunk_count": 333,
+    "document_sha256_to_ingestion_run_id": {
+      "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+      "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3": "b4e8767410ab4888a574570b9d8a00c9",
+      "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81": "864eef9576a8461da85bf3361df4e099",
+      "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43": "e391994767e943d8a5584cdc3dc387b0",
+      "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+      "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24": "9bed2588d3e4494f8cac83fc4febba3e"
+    },
+    "source_export_status": "VERIFIED_SOURCE_EXPORT"
+  },
+  "source_pdf_reverification": {
+    "verification_type": "AI_SOURCE_DOCUMENT_RECHECK_NOT_HUMAN_VERIFICATION",
+    "verification_date": "2026-11-13",
+    "human_verification_status": "NOT_PERFORMED",
+    "all_six_pdf_hashes_match_corpus": true,
+    "evidence_references_rechecked": 49,
+    "unique_cited_pages_visually_inspected": 30,
+    "quote_matches_on_pdf_pages": 49,
+    "page_images_rendered_and_visually_inspected": 31,
+    "limitations": [
+      "Only pages cited by current evidence references and one context page were visually inspected, not every page of every PDF.",
+      "The five additional unanswerable candidates A01-A05 were not part of the source PDF page re-verification."
+    ]
+  },
+  "special_source_qualifications": [
+    {
+      "document": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
+      "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+      "qualification": "The supplied PDF pages carry a Withdrawn watermark. P09-P12 are phrased as questions about the supplied document's content only."
+    }
+  ],
+  "distribution": {
+    "query_count": 30,
+    "answerable_count": 24,
+    "unanswerable_count": 6,
+    "answerable_query_ids": [
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12",
+      "P13",
+      "P14",
+      "P15",
+      "P16",
+      "P17",
+      "P18",
+      "P19",
+      "P20",
+      "P21",
+      "P22",
+      "P23",
+      "P24"
+    ],
+    "unanswerable_query_ids": [
+      "P25",
+      "A01",
+      "A02",
+      "A03",
+      "A04",
+      "A05"
+    ]
+  },
+  "queries": [
+    {
+      "query_id": "P01",
+      "query": "According to NIST CSF 2.0, are the CSF Core outcomes a checklist of actions to perform?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "No. The CSF Core is a set of cybersecurity outcomes, not a checklist of actions. The actions used to achieve an outcome, and the individuals responsible for them, vary by organization and use case.",
+      "expected_relevant_chunk_ids": [
+        "42bacd9ad2b25a43ec43d0255cc8cd48f77309d69063d7f6e31f34a4d1d1c78b"
+      ],
+      "expected_document_sha256s": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+          "chunk_id": "42bacd9ad2b25a43ec43d0255cc8cd48f77309d69063d7f6e31f34a4d1d1c78b",
+          "canonical_page": 8,
+          "source_page_numbers": [
+            8
+          ],
+          "source_block_ids": [
+            "page-8-block-0",
+            "page-8-block-1",
+            "page-8-block-3",
+            "page-8-block-4"
+          ],
+          "exact_quote_from_raw_text": "These outcomes are not a checklist of actions to perform; specific actions taken to achieve an outcome will vary by organization and use case, as will the individual responsible for those actions.",
+          "evidence_role": "direct",
+          "chunk_index": 14,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The cited CSF Core passage directly says the outcomes are not a checklist and states that actions vary by organization and use case.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "According to NIST CSF 2.0, are the CSF Core outcomes a checklist of actions to perform?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P02",
+      "query": "What does the GOVERN function establish, communicate, and monitor?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The GOVERN function establishes, communicates, and monitors the organization's cybersecurity risk-management strategy, expectations, and policy. Its outcomes inform how the organization achieves and prioritizes the outcomes of the other five CSF functions in the context of its mission and stakeholder expectations.",
+      "expected_relevant_chunk_ids": [
+        "d1a5a3d681dbb428778b790c361fb58587ba9a2ad34789d69212c7a961b99eac",
+        "cf063467eea961e7224ee019bb120ac8fd7272bb462b65f36d9d92ce459cf3ca"
+      ],
+      "expected_document_sha256s": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+          "chunk_id": "d1a5a3d681dbb428778b790c361fb58587ba9a2ad34789d69212c7a961b99eac",
+          "canonical_page": 8,
+          "source_page_numbers": [
+            8
+          ],
+          "source_block_ids": [
+            "page-8-block-5",
+            "page-8-block-6"
+          ],
+          "exact_quote_from_raw_text": "GOVERN (GV) — The organization's cybersecurity risk management strategy, expectations, and policy are established, communicated, and monitored",
+          "evidence_role": "direct",
+          "chunk_index": 15,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+          "chunk_id": "cf063467eea961e7224ee019bb120ac8fd7272bb462b65f36d9d92ce459cf3ca",
+          "canonical_page": 21,
+          "source_page_numbers": [
+            21
+          ],
+          "source_block_ids": [
+            "page-21-block-0",
+            "page-21-block-1",
+            "page-21-block-2",
+            "page-21-block-3",
+            "page-21-block-4",
+            "page-21-block-5",
+            "page-21-block-6",
+            "page-21-block-7",
+            "page-21-block-8"
+          ],
+          "exact_quote_from_raw_text": "GOVERN (GV): The organization's cybersecurity risk management strategy, expectations, and policy are established, communicated, and monitored",
+          "evidence_role": "corroborating_core_appendix",
+          "chunk_index": 43,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The proposed answer is supported by the function definition and its explanatory governance-context sentence. A second Core appendix chunk restates the key definition.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What does the GOVERN function establish, communicate, and monitor?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P03",
+      "query": "What is the purpose of the PROTECT function?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The PROTECT function uses safeguards to manage cybersecurity risks. Once assets and risks are identified and prioritized, it supports securing those assets to prevent or lower the likelihood and impact of adverse cybersecurity events. Its outcomes cover identity management, authentication and access control; awareness and training; data security; platform security; and technology-infrastructure resilience.",
+      "expected_relevant_chunk_ids": [
+        "167584e7e9358793d929fb5ef7b3caae5fb179f356d78517b512f77233c20f8b",
+        "9b2013318643cb29b3611351a0a1853757bfeb2e428b7a253ad7ca0bc71cf4c5"
+      ],
+      "expected_document_sha256s": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+          "chunk_id": "167584e7e9358793d929fb5ef7b3caae5fb179f356d78517b512f77233c20f8b",
+          "canonical_page": 9,
+          "source_page_numbers": [
+            9
+          ],
+          "source_block_ids": [
+            "page-9-block-0",
+            "page-9-block-1",
+            "page-9-block-2",
+            "page-9-block-3"
+          ],
+          "exact_quote_from_raw_text": "Once assets and risks are identified and prioritized , PROTECT supports the ability to secure those assets to prevent or lower the likelihood and impact of adverse cybersecurity events",
+          "evidence_role": "direct",
+          "chunk_index": 16,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+          "chunk_id": "9b2013318643cb29b3611351a0a1853757bfeb2e428b7a253ad7ca0bc71cf4c5",
+          "canonical_page": 24,
+          "source_page_numbers": [
+            24
+          ],
+          "source_block_ids": [
+            "page-24-block-13",
+            "page-24-block-14",
+            "page-24-block-15",
+            "page-24-block-16",
+            "page-24-block-17",
+            "page-24-block-18",
+            "page-24-block-19"
+          ],
+          "exact_quote_from_raw_text": "PROTECT (PR): Safeguards to manage the organization's cybersecurity risks are used",
+          "evidence_role": "corroborating_core_appendix",
+          "chunk_index": 50,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The main narrative chunk explicitly defines PROTECT and explains how it supports securing identified assets; the Core appendix repeats the headline outcome.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What is the purpose of the PROTECT function?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P04",
+      "query": "What does the RECOVER function do?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The RECOVER function restores assets and operations affected by a cybersecurity incident. It supports timely restoration of normal operations and appropriate communication during recovery efforts.",
+      "expected_relevant_chunk_ids": [
+        "3a98a0a3a47100a9590bce2f1d98161c50c261f7982ed3bd37f4619375023d1c",
+        "805cc5ce96d4c6fc40c5a948eaf81a75d7e03f569b0349bb7fd566d077f684fd"
+      ],
+      "expected_document_sha256s": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+          "chunk_id": "3a98a0a3a47100a9590bce2f1d98161c50c261f7982ed3bd37f4619375023d1c",
+          "canonical_page": 9,
+          "source_page_numbers": [
+            9
+          ],
+          "source_block_ids": [
+            "page-9-block-4",
+            "page-9-block-5",
+            "page-9-block-6"
+          ],
+          "exact_quote_from_raw_text": "RECOVER (RC) — Assets and operations affected by a cybersecurity incident are restored . RECOVER supports the timely restoration of normal operations to reduce the effects of cybersecurity incidents and enable appropriate communication during recovery efforts .",
+          "evidence_role": "direct",
+          "chunk_index": 17,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+          "chunk_id": "805cc5ce96d4c6fc40c5a948eaf81a75d7e03f569b0349bb7fd566d077f684fd",
+          "canonical_page": 27,
+          "source_page_numbers": [
+            27
+          ],
+          "source_block_ids": [
+            "page-27-block-15",
+            "page-27-block-16",
+            "page-27-block-17",
+            "page-27-block-18",
+            "page-27-block-19",
+            "page-27-block-20"
+          ],
+          "exact_quote_from_raw_text": "RECOVER (RC): Assets and operations affected by a cybersecurity incident are restored",
+          "evidence_role": "corroborating_core_appendix",
+          "chunk_index": 56,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The main narrative chunk directly defines RECOVER and states the timely-restoration and communication purposes; the Core appendix repeats the outcome heading.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What does the RECOVER function do?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P05",
+      "query": "According to finding 8.2 of the Kerala IFMS-K audit, what third-party independent testing had not been performed?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "In finding 8.2, the audit said that third-party independent testing of IFMS-K to identify design flaws had not been performed. It recorded that testing of applications under the Department of Finance had been initiated, while security testing had not been undertaken for applications managed by the Department of Treasuries. This second point must be read narrowly as the finding's stated testing scope; a separate Safe-to-Host/security-audit finding uses different wording and describes a different status, so this item requires human adjudication.",
+      "expected_relevant_chunk_ids": [
+        "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+        "5d8a6ec808294b59331a8c63adca368eb9b219699f0f58ccf408282ee5ac8359"
+      ],
+      "expected_document_sha256s": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+          "canonical_page": 3,
+          "source_page_numbers": [
+            3
+          ],
+          "source_block_ids": [
+            "page-3-block-0",
+            "page-3-block-1"
+          ],
+          "exact_quote_from_raw_text": "The Department failed to conduct third party independent testing.",
+          "evidence_role": "executive_summary",
+          "chunk_index": 1,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "5d8a6ec808294b59331a8c63adca368eb9b219699f0f58ccf408282ee5ac8359",
+          "canonical_page": 4,
+          "source_page_numbers": [
+            4
+          ],
+          "source_block_ids": [
+            "page-4-block-0",
+            "page-4-block-1",
+            "page-4-block-2",
+            "page-4-block-3",
+            "page-4-block-4"
+          ],
+          "exact_quote_from_raw_text": "no such third - party independent testing of the IFMS-K to identify design flaws was performed for assurance on the reliability of the system.\n\nGovernment stated (March 2023) that third party security testing of applications under the direct control of the Department of Finance have been initiated.\n\nWhile noting the action initiated by State Government, the fact remains that security testing has not been undertaken for the applications managed by Department of Treasuries.",
+          "evidence_role": "direct",
+          "chunk_index": 4,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "INCLUDE_AFTER_SCOPE_NARROWING",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The specific 8.2 text supports the independent-testing claim and the Finance/Treasuries qualification. However, section 8.3 separately says Treasury applications had been security-audited while Finance applications had not been security-audited for the Safe-to-Host finding. The wording may refer to different testing/certification scopes, but this distinction should be adjudicated by a human before this becomes ground truth.",
+        "unsupported_or_overstated_claims": [
+          "The second sentence is supportable only when read as the specific 8.2 independent-testing finding; it becomes misleading if generalized to all security audits because section 8.3 records a different Safe-to-Host/security-audit status."
+        ],
+        "unresolved_concerns": [
+          "A human reviewer should reconcile the section 8.2 statement about independent testing with the separate section 8.3 Safe-to-Host/security-audit wording. Do not collapse 'third-party independent testing', 'security audit', and 'Safe to Host certificate' into a single test category."
+        ],
+        "scope_adjustment": "The review left the original broad wording for human adjudication. For this provisional internal benchmark, the query is narrowed to finding 8.2, and the separate Safe-to-Host/security-audit discussion in finding 8.3 is not conflated with it. This is an AI scoping decision, not human adjudication."
+      },
+      "source_review_query": "What independent security testing did the audit say had not been performed for IFMS-K?",
+      "source_review_recommendation": "NEEDS_HUMAN_ADJUDICATION",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P06",
+      "query": "What did the audit observe about simultaneous multiple logins in IFMS-K?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The audit reported that simultaneous logins were allowed in web-based applications managed by the Department of Finance, with users able to access applications from multiple computers. Test checks in BIMS/BAMS also found multiple user sign-ins. The audit clarified that its concern was simultaneous use of the same username and password from different computers, rather than IP binding as such.",
+      "expected_relevant_chunk_ids": [
+        "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+        "a82d8297149c38c2a463228b1060161f40b53f7bbd00a4ccce4b9437cc43e6be",
+        "b3f468bbf39bf0c05740f68bb9dd9cd5fe8c96fea2ec4f82f07c24bd0dc8975e"
+      ],
+      "expected_document_sha256s": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+          "canonical_page": 3,
+          "source_page_numbers": [
+            3
+          ],
+          "source_block_ids": [
+            "page-3-block-0",
+            "page-3-block-1"
+          ],
+          "exact_quote_from_raw_text": "The system allowed multiple logins in various web-based applications.",
+          "evidence_role": "executive_summary",
+          "chunk_index": 1,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "a82d8297149c38c2a463228b1060161f40b53f7bbd00a4ccce4b9437cc43e6be",
+          "canonical_page": 4,
+          "source_page_numbers": [
+            4
+          ],
+          "source_block_ids": [
+            "page-4-block-10",
+            "page-4-block-11",
+            "page-4-block-12",
+            "page-4-block-13"
+          ],
+          "exact_quote_from_raw_text": "Audit observed that multiple logins were allowed with no IP restrictions and the users could access applications from multiple computers simultaneously regarding applications managed by Department of Finance .",
+          "evidence_role": "direct",
+          "chunk_index": 6,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "b3f468bbf39bf0c05740f68bb9dd9cd5fe8c96fea2ec4f82f07c24bd0dc8975e",
+          "canonical_page": 5,
+          "source_page_numbers": [
+            5
+          ],
+          "source_block_ids": [
+            "page-5-block-0",
+            "page-5-block-1",
+            "page-5-block-2",
+            "page-5-block-3",
+            "page-5-block-4"
+          ],
+          "exact_quote_from_raw_text": "BAMS) also revealed that internet-based applications permitted multiple user sign in. This lapse has made the applications vulnerable to security incidents.\n\nGovernment stated (March 2023) that IP binding is not possible for Internet based applications and possible only for Intranet applications.\n\nThe reply is not tenable. The Audit comment is not about IP binding of Internet based applications but about simultaneous login with same username and password from different computers which can be restricted.",
+          "evidence_role": "scope_clarification",
+          "chunk_index": 7,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "REVISE",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The suggested chunk is real and directly supports multiple logins, but the adjacent continuation narrows the audit's criticism to simultaneous use of the same username/password on different computers and clarifies that the point was not IP binding. The answer should preserve that distinction and scope.",
+        "unsupported_or_overstated_claims": [
+          "The phrase 'without IP restrictions' should not be the sole explanation; the audit clarifies that simultaneous use of the same username/password from different computers was the core concern."
+        ],
+        "unresolved_concerns": [
+          "Keep simultaneous same-credential logins distinct from IP binding. The audit's text first mentions no IP restrictions, then clarifies the criticism is about simultaneous access using the same username/password from different computers."
+        ]
+      },
+      "source_review_query": "What did the audit observe about simultaneous multiple logins in IFMS-K?",
+      "source_review_recommendation": "REVISE",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P07",
+      "query": "Which plans does the audit describe as absent in the continuity and disaster-management finding?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The Kerala audit's section 8.9 is headed 'Absence of Business continuity/Disaster management plan'. More specifically, the audit states that the Department had not formulated and documented any Disaster Recovery Policy or Business Continuity Plan; subsection 8.9.2 is separately headed 'Absence of a Disaster Recovery Plan'.",
+      "expected_relevant_chunk_ids": [
+        "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+        "7891b70adfc678d4ca66e6163b0e49b8040a346aab49ecb9f93867f78aeec9ff",
+        "5ba9b815e551a547a2c22a7b8b60154f687dda47beddf7d5b0a6ca6c0d988ea8",
+        "19b99c8658313b959850584600526dbc88408283a10a7ef8c2c4788b672d6cd3"
+      ],
+      "expected_document_sha256s": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+          "canonical_page": 3,
+          "source_page_numbers": [
+            3
+          ],
+          "source_block_ids": [
+            "page-3-block-0",
+            "page-3-block-1"
+          ],
+          "exact_quote_from_raw_text": "Disaster Recovery (DR) Plan and Data Retention Policy were not formulated",
+          "evidence_role": "chapter_summary",
+          "chunk_index": 1,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "7891b70adfc678d4ca66e6163b0e49b8040a346aab49ecb9f93867f78aeec9ff",
+          "canonical_page": 7,
+          "source_page_numbers": [
+            7
+          ],
+          "source_block_ids": [
+            "page-7-block-9",
+            "page-7-block-10",
+            "page-7-block-11",
+            "page-7-block-12"
+          ],
+          "exact_quote_from_raw_text": "8.9 Absence of Business continuity/ Disaster management plan",
+          "evidence_role": "parent_finding_heading",
+          "chunk_index": 15,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "5ba9b815e551a547a2c22a7b8b60154f687dda47beddf7d5b0a6ca6c0d988ea8",
+          "canonical_page": 8,
+          "source_page_numbers": [
+            8
+          ],
+          "source_block_ids": [
+            "page-8-block-9",
+            "page-8-block-10",
+            "page-8-block-11",
+            "page-8-block-12"
+          ],
+          "exact_quote_from_raw_text": "8.9.2 Absence of a Disaster Recovery Plan",
+          "evidence_role": "specific_finding_heading",
+          "chunk_index": 18,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "19b99c8658313b959850584600526dbc88408283a10a7ef8c2c4788b672d6cd3",
+          "canonical_page": 9,
+          "source_page_numbers": [
+            9
+          ],
+          "source_block_ids": [
+            "page-9-block-0",
+            "page-9-block-1",
+            "page-9-block-2",
+            "page-9-block-3",
+            "page-9-block-4"
+          ],
+          "exact_quote_from_raw_text": "Audit observed that the Department has not formulated and documented any Disaster Recovery Policy or Business Continuity Plan .",
+          "evidence_role": "direct",
+          "chunk_index": 19,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "REVISE",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The suggested chunk is only the parent heading. The complete corpus contains a specific DRP subsection and an explicit audit observation that neither a Disaster Recovery Policy nor a Business Continuity Plan had been formulated/documented. The answer should cite those body passages rather than only the heading.",
+        "unsupported_or_overstated_claims": [
+          "The proposed answer did not identify the explicit body finding that no Disaster Recovery Policy or Business Continuity Plan had been formulated/documented."
+        ],
+        "unresolved_concerns": [
+          "Do not confuse the Kerala report's parent heading and DRP subsection with the Uttarakhand BCP and DR-site findings in P18/P19."
+        ]
+      },
+      "source_review_query": "Which plans does the audit describe as absent in the continuity and disaster-management finding?",
+      "source_review_recommendation": "REVISE",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P08",
+      "query": "What plan did the audit identify as absent for disaster recovery?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The audit identified the absence of a Disaster Recovery Plan (DRP). It states that the Department had not formulated and documented a Disaster Recovery Policy or Business Continuity Plan.",
+      "expected_relevant_chunk_ids": [
+        "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+        "5ba9b815e551a547a2c22a7b8b60154f687dda47beddf7d5b0a6ca6c0d988ea8",
+        "19b99c8658313b959850584600526dbc88408283a10a7ef8c2c4788b672d6cd3"
+      ],
+      "expected_document_sha256s": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+          "canonical_page": 3,
+          "source_page_numbers": [
+            3
+          ],
+          "source_block_ids": [
+            "page-3-block-0",
+            "page-3-block-1"
+          ],
+          "exact_quote_from_raw_text": "Disaster Recovery (DR) Plan and Data Retention Policy were not formulated",
+          "evidence_role": "chapter_summary",
+          "chunk_index": 1,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "5ba9b815e551a547a2c22a7b8b60154f687dda47beddf7d5b0a6ca6c0d988ea8",
+          "canonical_page": 8,
+          "source_page_numbers": [
+            8
+          ],
+          "source_block_ids": [
+            "page-8-block-9",
+            "page-8-block-10",
+            "page-8-block-11",
+            "page-8-block-12"
+          ],
+          "exact_quote_from_raw_text": "8.9.2 Absence of a Disaster Recovery Plan",
+          "evidence_role": "direct_heading",
+          "chunk_index": 18,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "chunk_id": "19b99c8658313b959850584600526dbc88408283a10a7ef8c2c4788b672d6cd3",
+          "canonical_page": 9,
+          "source_page_numbers": [
+            9
+          ],
+          "source_block_ids": [
+            "page-9-block-0",
+            "page-9-block-1",
+            "page-9-block-2",
+            "page-9-block-3",
+            "page-9-block-4"
+          ],
+          "exact_quote_from_raw_text": "Audit observed that the Department has not formulated and documented any Disaster Recovery Policy or Business Continuity Plan .",
+          "evidence_role": "direct",
+          "chunk_index": 19,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The DRP is explicitly named in subsection 8.9.2, and the following passage states that the Department had not formulated/documented a Disaster Recovery Policy. The separate far-DR-centre passage concerns a site, not the plan itself.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": [
+          "Do not equate the absence of a DR Plan with the separate non-availability of a far DR centre/site discussed in subsection 8.9.1."
+        ]
+      },
+      "source_review_query": "What plan did the audit identify as absent for disaster recovery?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P09",
+      "query": "According to the supplied RBI Master Direction copy marked “Withdrawn”, how often does the document say the Board should review IT and related security strategies and policies?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The Board of Directors must review the listed IT, information-assets, business-continuity, information-security, and cybersecurity strategies and policies at least annually.",
+      "expected_relevant_chunk_ids": [
+        "15dfa996d1df4c467f12e5e86b5c9f8c1a962c4849d724381ea6f2b944656878"
+      ],
+      "expected_document_sha256s": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+          "chunk_id": "15dfa996d1df4c467f12e5e86b5c9f8c1a962c4849d724381ea6f2b944656878",
+          "canonical_page": 8,
+          "source_page_numbers": [
+            8
+          ],
+          "source_block_ids": [
+            "page-8-block-3",
+            "page-8-block-4",
+            "page-8-block-5",
+            "page-8-block-6",
+            "page-8-block-7",
+            "page-8-block-8",
+            "page-8-block-9",
+            "page-8-block-10",
+            "page-8-block-11",
+            "page-8-block-12",
+            "page-8-block-13",
+            "page-8-block-14",
+            "page-8-block-15"
+          ],
+          "exact_quote_from_raw_text": "Such strategies and policies shall be reviewed at least annually by the Board",
+          "evidence_role": "direct",
+          "chunk_index": 14,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The provision lists the relevant strategy/policy categories and says the Board shall review them at least annually.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_qualification": "The supplied RBI Master Direction PDF carries a Withdrawn watermark. This tests the supplied document's content, not current regulatory applicability.",
+      "source_review_query": "How often must the Board review IT and related security strategies and policies?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P10",
+      "query": "According to the supplied RBI Master Direction copy marked “Withdrawn”, what must the IT Strategy Committee ensure about IT strategic planning?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The IT Strategy Committee must ensure that the regulated entity has an effective IT strategic-planning process in place. It must also guide preparation of the IT Strategy and ensure that it aligns with the entity's overall strategy and business objectives.",
+      "expected_relevant_chunk_ids": [
+        "f0c4c1f36e771206bd3dff6cb21bcef503978821220da773af404adee339d5b7"
+      ],
+      "expected_document_sha256s": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+          "chunk_id": "f0c4c1f36e771206bd3dff6cb21bcef503978821220da773af404adee339d5b7",
+          "canonical_page": 9,
+          "source_page_numbers": [
+            9
+          ],
+          "source_block_ids": [
+            "page-9-block-0",
+            "page-9-block-1",
+            "page-9-block-2",
+            "page-9-block-3",
+            "page-9-block-4",
+            "page-9-block-5",
+            "page-9-block-6",
+            "page-9-block-7",
+            "page-9-block-8"
+          ],
+          "exact_quote_from_raw_text": "Ensure that the RE has put an effective IT strategic planning process in place;\n\n(ii) Guide in preparation of IT Strategy and ensure that the IT Strategy aligns with the overall strategy of the RE towards accomplishment of its business objectives;",
+          "evidence_role": "direct",
+          "chunk_index": 16,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The ITSC responsibility is stated in the same chunk as the process requirement and strategy-alignment requirement.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_qualification": "The supplied RBI Master Direction PDF carries a Withdrawn watermark. This tests the supplied document's content, not current regulatory applicability.",
+      "source_review_query": "What must the IT Strategy Committee ensure about IT strategic planning?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P11",
+      "query": "According to the supplied RBI Master Direction copy marked “Withdrawn”, what vendor-risk controls does it describe for third-party arrangements outside the applicability of the RBI Outsourcing Directions, 2023?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "For third-party arrangements in the IT/cybersecurity ecosystem that are outside the applicability of the RBI Outsourcing of Information Technology Services Directions, 2023, the regulated entity must put in place a vendor-risk assessment process and controls proportionate to assessed risk and materiality. The listed areas are concentration risk, conflicts of interest, single points of failure, legal/regulatory requirements and standards for customer-data protection, high availability, and supply-chain risk.",
+      "expected_relevant_chunk_ids": [
+        "0a92faf42e057dd6527311acea3c181c4e2596fcb66a47dc6cd7770c0fa7b43b"
+      ],
+      "expected_document_sha256s": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+          "chunk_id": "0a92faf42e057dd6527311acea3c181c4e2596fcb66a47dc6cd7770c0fa7b43b",
+          "canonical_page": 11,
+          "source_page_numbers": [
+            11
+          ],
+          "source_block_ids": [
+            "page-11-block-17",
+            "page-11-block-18",
+            "page-11-block-19",
+            "page-11-block-20",
+            "page-11-block-21",
+            "page-11-block-22",
+            "page-11-block-23",
+            "page-11-block-24",
+            "page-11-block-25",
+            "page-11-block-26",
+            "page-11-block-27",
+            "page-11-block-28",
+            "page-11-block-29",
+            "page-11-block-30"
+          ],
+          "exact_quote_from_raw_text": "Where third-party arrangements in the Information Technology/ Cyber Security \n\necosystem are not within the applicability of the Reserve Bank of India (Outsourcing \n\nof Information Technology Services) Directions, 2023, REs shall, put in place \n\nappropriate vendor risk assessment process and controls proportionate to the \n\nassessed risk and materiality to, inter alia:  \n\n(a) \nmitigate concentration risk; \n\n(b) \neliminate or address any conflict of interests;  \n\n(c) \nmitigate risks associated with single point of failure;  \n\n(d) \ncomply with applicable legal, regulatory requirements and standards to protect \n\ncustomer data; \n\n(e) \nprovide high availability (for uninterrupted customer service); and  \n\n(f) \nmanage supply chain risks effectively.",
+          "evidence_role": "direct_with_scope_qualification",
+          "chunk_index": 21,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "REVISE",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The draft captures the control categories but omits the applicability qualifier: this paragraph applies where the third-party arrangement is not within the scope of the RBI Outsourcing of Information Technology Services Directions, 2023.",
+        "unsupported_or_overstated_claims": [
+          "The proposed answer omits the outside-scope condition for the RBI Outsourcing Directions."
+        ],
+        "unresolved_concerns": [
+          "Retain the paragraph's condition that it applies to IT/cybersecurity third-party arrangements outside the RBI Outsourcing Directions' applicability."
+        ]
+      },
+      "source_qualification": "The supplied RBI Master Direction PDF carries a Withdrawn watermark. This tests the supplied document's content, not current regulatory applicability.",
+      "source_review_query": "What vendor-risk controls are required for applicable third-party arrangements?",
+      "source_review_recommendation": "REVISE",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P12",
+      "query": "According to the supplied RBI Master Direction copy marked “Withdrawn”, what logging capability does it specify for IT applications that can access or affect critical or sensitive information?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "Every IT application that can access or affect critical or sensitive information shall have the necessary audit and system-logging capability and should provide audit trails. The audit trails must be sufficiently detailed to facilitate audit, serve as forensic evidence when required, and assist dispute resolution, including non-repudiation. The distinction between 'shall have' and 'should provide' follows the source wording.",
+      "expected_relevant_chunk_ids": [
+        "79b5dfc07fc95827822bc2270baca7f83a349457dec1573227751052a0b4fc36"
+      ],
+      "expected_document_sha256s": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+          "chunk_id": "79b5dfc07fc95827822bc2270baca7f83a349457dec1573227751052a0b4fc36",
+          "canonical_page": 14,
+          "source_page_numbers": [
+            14
+          ],
+          "source_block_ids": [
+            "page-14-block-0",
+            "page-14-block-1",
+            "page-14-block-2",
+            "page-14-block-3",
+            "page-14-block-4",
+            "page-14-block-5",
+            "page-14-block-6",
+            "page-14-block-7",
+            "page-14-block-8",
+            "page-14-block-9",
+            "page-14-block-10"
+          ],
+          "exact_quote_from_raw_text": "Every IT application which can access or affect critical or sensitive information, \n\nshall have necessary audit and system logging capability and should provide \n\naudit trails.   \n\n(b) \nThe audit trails shall satisfy a RE’s business requirements apart from regulatory \n\nand legal requirements. The audit trails must be detailed enough to facilitate the \n\nconduct of audit, serve as forensic evidence when required and assist in dispute \n\nresolution, including for non-repudiation purposes.",
+          "evidence_role": "direct_with_modal_qualification",
+          "chunk_index": 26,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "REVISE",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The draft upgrades 'should provide audit trails' to 'must provide audit trails'. The source uses 'shall' for the capability and 'should' for provision of trails, then requires the trails to be detailed enough for audit/forensic/dispute purposes. Preserve the modal wording.",
+        "unsupported_or_overstated_claims": [
+          "The proposed answer changes 'should provide audit trails' into a mandatory 'must provide'."
+        ],
+        "unresolved_concerns": [
+          "Preserve the different normative force of 'shall have' and 'should provide' from the source text."
+        ]
+      },
+      "source_qualification": "The supplied RBI Master Direction PDF carries a Withdrawn watermark. This tests the supplied document's content, not current regulatory applicability.",
+      "source_review_query": "What logging capability must critical or sensitive IT applications provide?",
+      "source_review_recommendation": "REVISE",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P13",
+      "query": "What were the General preliminary cutoff and Respondent No. 1’s score?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The General-category Preliminary Examination cutoff was 267 marks, and Respondent No. 1 scored 247.18 marks.",
+      "expected_relevant_chunk_ids": [
+        "7dec722330eff0d95ac85aac8e3d450fd81120bba96756c607d64fa588deaa66",
+        "f30d44867a10e86f2543ef57a15ce582db3041ea2119abb0ddbdd7f0c5348489",
+        "9836bb9d0ad70f663d1a823f43d8f345ed4c1b4194c68c6aa48148d8ca8d2420"
+      ],
+      "expected_document_sha256s": [
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "7dec722330eff0d95ac85aac8e3d450fd81120bba96756c607d64fa588deaa66",
+          "canonical_page": 4,
+          "source_page_numbers": [
+            4
+          ],
+          "source_block_ids": [
+            "page-4-block-3"
+          ],
+          "exact_quote_from_raw_text": "the cutoff to qualify by General Category candidates was 267 and the cutoff to qualify by SC category candidates was 233. Respondent No. 1 secured 247.18 marks",
+          "evidence_role": "direct",
+          "chunk_index": 5,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "f30d44867a10e86f2543ef57a15ce582db3041ea2119abb0ddbdd7f0c5348489",
+          "canonical_page": 5,
+          "source_page_numbers": [
+            5
+          ],
+          "source_block_ids": [
+            "page-5-block-1"
+          ],
+          "exact_quote_from_raw_text": "G Kiran [Respondent No. 1]            | SC                                                       |                                                  233 |                                   247.18",
+          "evidence_role": "tabular_corroboration",
+          "chunk_index": 7,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "9836bb9d0ad70f663d1a823f43d8f345ed4c1b4194c68c6aa48148d8ca8d2420",
+          "canonical_page": 34,
+          "source_page_numbers": [
+            34
+          ],
+          "source_block_ids": [
+            "page-34-block-3"
+          ],
+          "exact_quote_from_raw_text": "247.18",
+          "evidence_role": "corroborating_judgment_reasoning",
+          "chunk_index": 59,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The judgment's earlier fact paragraph and table both state the General preliminary cutoff and Respondent No. 1's preliminary score; the later paragraph repeats them.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What were the General preliminary cutoff and Respondent No. 1’s score?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P14",
+      "query": "Who was allocated the General Insider vacancy in Karnataka by the Court?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The Court held that the General Insider vacancy in Karnataka was rightfully allocated to Respondent No. 3, who qualified the Preliminary Examination, Main Examination, and Interview on the general standard.",
+      "expected_relevant_chunk_ids": [
+        "18289681d9b445e35ae414c17f4676c28944ec8c4414b8c0fd78eb100c69772d",
+        "a5d42596698b09f31c0460a6fb1739ca49a199f99be69a047491ce6c96eccbe4",
+        "f132d558d518ed26ac682696bdf976022ccb7d2fa83d261b5ba582bbb6a6686d"
+      ],
+      "expected_document_sha256s": [
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "18289681d9b445e35ae414c17f4676c28944ec8c4414b8c0fd78eb100c69772d",
+          "canonical_page": 35,
+          "source_page_numbers": [
+            35
+          ],
+          "source_block_ids": [
+            "page-35-block-7",
+            "page-35-block-8",
+            "page-35-block-9",
+            "page-35-block-10",
+            "page-35-block-11",
+            "page-35-block-12",
+            "page-35-block-13",
+            "page-35-block-14",
+            "page-35-block-15",
+            "page-35-block-16",
+            "page-35-block-17"
+          ],
+          "exact_quote_from_raw_text": "that in the present fact situation, the ‘General Insider’ vacancy in\n\nKarnataka was rightfully allocated to Respondent No. 3, who\n\nqualified the Preliminary Examination, Main Examination, and\n\nInterview on general standard.",
+          "evidence_role": "direct",
+          "chunk_index": 61,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "a5d42596698b09f31c0460a6fb1739ca49a199f99be69a047491ce6c96eccbe4",
+          "canonical_page": 36,
+          "source_page_numbers": [
+            36
+          ],
+          "source_block_ids": [
+            "page-36-block-0",
+            "page-36-block-1",
+            "page-36-block-2",
+            "page-36-block-3"
+          ],
+          "exact_quote_from_raw_text": "Consequently, he is not entitled to be allocated against the \"General Insider\" vacancy in the Karnataka Cadre in place of Respondent No.3.",
+          "evidence_role": "reasoning",
+          "chunk_index": 62,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "f132d558d518ed26ac682696bdf976022ccb7d2fa83d261b5ba582bbb6a6686d",
+          "canonical_page": 37,
+          "source_page_numbers": [
+            37
+          ],
+          "source_block_ids": [
+            "page-37-block-0",
+            "page-37-block-1",
+            "page-37-block-2",
+            "page-37-block-3",
+            "page-37-block-4",
+            "page-37-block-5",
+            "page-37-block-6",
+            "page-37-block-7"
+          ],
+          "exact_quote_from_raw_text": "the Karnataka Cadre to Respondent No. 3 and\n\nTamil Nadu Cadre to Respondent No. 1 is upheld as correct in eyes\n\nof law and without any alteration.",
+          "evidence_role": "operative_order",
+          "chunk_index": 63,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The Court's reasoning explicitly says the Karnataka General Insider vacancy was rightfully allocated to Respondent No. 3; the operative order confirms the allocation.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "Who was allocated the General Insider vacancy in Karnataka by the Court?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P15",
+      "query": "What did the Supreme Court conclude about the Tribunal and High Court judgments?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The Supreme Court held that the Tribunal and High Court had incorrectly interpreted the relevant Exam Rules, 2013 and Paragraph 9 of the Policy, and that their judgments should be set aside. It also held that Respondent No. 1, having used the relaxed standard in the Preliminary Examination, could not be treated as selected on the General Standard.",
+      "expected_relevant_chunk_ids": [
+        "a5d42596698b09f31c0460a6fb1739ca49a199f99be69a047491ce6c96eccbe4",
+        "f132d558d518ed26ac682696bdf976022ccb7d2fa83d261b5ba582bbb6a6686d"
+      ],
+      "expected_document_sha256s": [
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "a5d42596698b09f31c0460a6fb1739ca49a199f99be69a047491ce6c96eccbe4",
+          "canonical_page": 36,
+          "source_page_numbers": [
+            36
+          ],
+          "source_block_ids": [
+            "page-36-block-0",
+            "page-36-block-1",
+            "page-36-block-2",
+            "page-36-block-3"
+          ],
+          "exact_quote_from_raw_text": "Therefore, the judgments of the Tribunal and the High Court deserve to be set aside.\n\nCONCLUSION\n\n39. In view of the foregoing, we hold that the Tribunal and the High Court were not correct in interpreting the relevant provisions of Exam Rules, 2013 and Paragraph 9 of the Policy and committed mistake in granting the relief to Respondent No. 1. We hold that Respondent No. 1, having availed the benefit of \"Relaxed Standard\" in the Preliminary Examination, cannot be treated as a candidate selected on \"General Standard\". Consequently, he is not entitled to be allocated against the \"General Insider\" vacancy in the Karnataka Cadre in place of Respondent No.3.",
+          "evidence_role": "direct",
+          "chunk_index": 62,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "f132d558d518ed26ac682696bdf976022ccb7d2fa83d261b5ba582bbb6a6686d",
+          "canonical_page": 37,
+          "source_page_numbers": [
+            37
+          ],
+          "source_block_ids": [
+            "page-37-block-0",
+            "page-37-block-1",
+            "page-37-block-2",
+            "page-37-block-3",
+            "page-37-block-4",
+            "page-37-block-5",
+            "page-37-block-6",
+            "page-37-block-7"
+          ],
+          "exact_quote_from_raw_text": "are hereby set\n\naside.",
+          "evidence_role": "operative_order",
+          "chunk_index": 63,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The conclusion explicitly says the Tribunal and High Court were incorrect in interpreting the relevant rules/policy and that their judgments deserved to be set aside.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What did the Supreme Court conclude about the Tribunal and High Court judgments?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P16",
+      "query": "What did the Court uphold regarding the Karnataka and Tamil Nadu cadre allocations?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The Court set aside the challenged Tribunal/High Court decisions and upheld the notification allocating Karnataka cadre to Respondent No. 3 and Tamil Nadu cadre to Respondent No. 1 as correct in law and without alteration.",
+      "expected_relevant_chunk_ids": [
+        "18289681d9b445e35ae414c17f4676c28944ec8c4414b8c0fd78eb100c69772d",
+        "a5d42596698b09f31c0460a6fb1739ca49a199f99be69a047491ce6c96eccbe4",
+        "f132d558d518ed26ac682696bdf976022ccb7d2fa83d261b5ba582bbb6a6686d"
+      ],
+      "expected_document_sha256s": [
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "18289681d9b445e35ae414c17f4676c28944ec8c4414b8c0fd78eb100c69772d",
+          "canonical_page": 35,
+          "source_page_numbers": [
+            35
+          ],
+          "source_block_ids": [
+            "page-35-block-7",
+            "page-35-block-8",
+            "page-35-block-9",
+            "page-35-block-10",
+            "page-35-block-11",
+            "page-35-block-12",
+            "page-35-block-13",
+            "page-35-block-14",
+            "page-35-block-15",
+            "page-35-block-16",
+            "page-35-block-17"
+          ],
+          "exact_quote_from_raw_text": "that in the present fact situation, the ‘General Insider’ vacancy in\n\nKarnataka was rightfully allocated to Respondent No. 3, who\n\nqualified the Preliminary Examination, Main Examination, and\n\nInterview on general standard.",
+          "evidence_role": "allocation_reasoning",
+          "chunk_index": 61,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "a5d42596698b09f31c0460a6fb1739ca49a199f99be69a047491ce6c96eccbe4",
+          "canonical_page": 36,
+          "source_page_numbers": [
+            36
+          ],
+          "source_block_ids": [
+            "page-36-block-0",
+            "page-36-block-1",
+            "page-36-block-2",
+            "page-36-block-3"
+          ],
+          "exact_quote_from_raw_text": "Consequently, he is not entitled to be allocated against the \"General Insider\" vacancy in the Karnataka Cadre in place of Respondent No.3.",
+          "evidence_role": "allocation_reasoning",
+          "chunk_index": 62,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "chunk_id": "f132d558d518ed26ac682696bdf976022ccb7d2fa83d261b5ba582bbb6a6686d",
+          "canonical_page": 37,
+          "source_page_numbers": [
+            37
+          ],
+          "source_block_ids": [
+            "page-37-block-0",
+            "page-37-block-1",
+            "page-37-block-2",
+            "page-37-block-3",
+            "page-37-block-4",
+            "page-37-block-5",
+            "page-37-block-6",
+            "page-37-block-7"
+          ],
+          "exact_quote_from_raw_text": "the Karnataka Cadre to Respondent No. 3 and\n\nTamil Nadu Cadre to Respondent No. 1 is upheld as correct in eyes\n\nof law and without any alteration.",
+          "evidence_role": "operative_order",
+          "chunk_index": 63,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The judgment's reasoning and operative order explicitly confirm Karnataka to Respondent No. 3 and Tamil Nadu to Respondent No. 1.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What did the Court uphold regarding the Karnataka and Tamil Nadu cadre allocations?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P17",
+      "query": "How many DDOs were registered with personal email IDs in the Uttarakhand IFMS audit?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The audit found that 2,912 of 4,586 DDOs (63%) were registered with personal email IDs.",
+      "expected_relevant_chunk_ids": [
+        "448b6bdf2f9bdbc2e7112d4252e840260a6f649177e76db10c7fbca69d98c51f"
+      ],
+      "expected_document_sha256s": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "448b6bdf2f9bdbc2e7112d4252e840260a6f649177e76db10c7fbca69d98c51f",
+          "canonical_page": 4,
+          "source_page_numbers": [
+            4
+          ],
+          "source_block_ids": [
+            "page-4-block-4",
+            "page-4-block-5",
+            "page-4-block-6",
+            "page-4-block-7",
+            "page-4-block-8",
+            "page-4-block-10",
+            "page-4-block-11",
+            "page-4-block-12",
+            "page-4-block-13"
+          ],
+          "exact_quote_from_raw_text": "2912 (63%) out of 4586 DDOs were registered with their personal e-mail IDs",
+          "evidence_role": "direct",
+          "chunk_index": 8,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The audit table/chunk gives 2,912, 4,586, and 63% in one sentence.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "How many DDOs were registered with personal email IDs in the Uttarakhand IFMS audit?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P18",
+      "query": "What was the audit finding about IFMS business continuity planning?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The Uttarakhand audit found that a Business Continuity Plan (BCP) had not been framed and adopted for IFMS, even after four years of operation. In its absence, users were unaware of the procedures to follow during disruptions/disasters and were not trained to prevent, mitigate, or respond to emergencies.",
+      "expected_relevant_chunk_ids": [
+        "d685ddebd1da61e7cd616331d50f1e4eccd0bb7ae87cefdc6c985146b6f6032a",
+        "010f26b67e88a9a6ac120633690e12bb6687400e4d594bb925c5e80314d19811",
+        "57c65f616e8ba74996778f95de0b804555de1e531e681e129ddf3b1d7e312fea",
+        "694575d05e995d14bd94a73488147f50c393cd8730acef420de778a0ad5bb1c9"
+      ],
+      "expected_document_sha256s": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "d685ddebd1da61e7cd616331d50f1e4eccd0bb7ae87cefdc6c985146b6f6032a",
+          "canonical_page": 5,
+          "source_page_numbers": [
+            5
+          ],
+          "source_block_ids": [
+            "page-5-block-11",
+            "page-5-block-12",
+            "page-5-block-13"
+          ],
+          "exact_quote_from_raw_text": "Audit noticed that BCP had not been framed and adopted for IFMS, even after four years since operation.",
+          "evidence_role": "direct",
+          "chunk_index": 11,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "010f26b67e88a9a6ac120633690e12bb6687400e4d594bb925c5e80314d19811",
+          "canonical_page": 6,
+          "source_page_numbers": [
+            6
+          ],
+          "source_block_ids": [
+            "page-6-block-0",
+            "page-6-block-1",
+            "page-6-block-2"
+          ],
+          "exact_quote_from_raw_text": "In absence of BCP, business continuity of IFMS remained at risk in case of disruptions/disasters.",
+          "evidence_role": "direct_continuation",
+          "chunk_index": 12,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "57c65f616e8ba74996778f95de0b804555de1e531e681e129ddf3b1d7e312fea",
+          "canonical_page": 8,
+          "source_page_numbers": [
+            8
+          ],
+          "source_block_ids": [
+            "page-8-block-8",
+            "page-8-block-9"
+          ],
+          "exact_quote_from_raw_text": "Department did not frame BCP/set up any functional DR site.",
+          "evidence_role": "conclusion",
+          "chunk_index": 20,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "694575d05e995d14bd94a73488147f50c393cd8730acef420de778a0ad5bb1c9",
+          "canonical_page": 9,
+          "source_page_numbers": [
+            9
+          ],
+          "source_block_ids": [
+            "page-9-block-0",
+            "page-9-block-1",
+            "page-9-block-2",
+            "page-9-block-3",
+            "page-9-block-4",
+            "page-9-block-5",
+            "page-9-block-6",
+            "page-9-block-8",
+            "page-9-block-9",
+            "page-9-block-11",
+            "page-9-block-12"
+          ],
+          "exact_quote_from_raw_text": "The Department should formulate Business Continuity Plan and set up Disaster Recovery site",
+          "evidence_role": "recommendation_context",
+          "chunk_index": 21,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The Uttarakhand report has a dedicated BCP finding, its continuation describes the operational consequences, and its conclusion repeats that BCP was not framed.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": [
+          "This is the Uttarakhand report's BCP finding; it is distinct from the Kerala report's P07/P08 findings."
+        ]
+      },
+      "source_review_query": "What was the audit finding about IFMS business continuity planning?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P19",
+      "query": "What did the audit report say about the Disaster Recovery site?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The Uttarakhand audit found that no efforts had been made to set up a Disaster Recovery (DR) site. The DPR had envisaged the State Data Centre (SDC) at ITDA as the DR site, but it also envisaged moving IFMS operations from the Finance Data Centre (FDC) to the SDC; the audit considered those provisions contradictory because a DR site must be geographically separate. The FDC and SDC were approximately 6.5 km apart.",
+      "expected_relevant_chunk_ids": [
+        "c9950d83cdc59c5e470473ce4c55100208619114e3a02f8ae150c059c1300995",
+        "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477",
+        "57c65f616e8ba74996778f95de0b804555de1e531e681e129ddf3b1d7e312fea",
+        "694575d05e995d14bd94a73488147f50c393cd8730acef420de778a0ad5bb1c9"
+      ],
+      "expected_document_sha256s": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "c9950d83cdc59c5e470473ce4c55100208619114e3a02f8ae150c059c1300995",
+          "canonical_page": 6,
+          "source_page_numbers": [
+            6
+          ],
+          "source_block_ids": [
+            "page-6-block-3",
+            "page-6-block-4",
+            "page-6-block-5"
+          ],
+          "exact_quote_from_raw_text": "4.2.4 Disaster Recovery site not set up\n\nDisaster Recovery (DR) aims at protecting the Department from the effects of significant catastrophic events. It allows the Department to quickly resume mission-critical functions after a disaster. Various possible disasters that can take place are – human error, epidemic, power outage, fire or explosions etc. The distance for a DR site can vary depending on the types of disaster - such as earthquakes, floods, terror attacks, etc. The Department should choose a DR location that fits its business model and regulatory requirements.\n\nAudit observed that as per the DPR of the project, DR site was to be set up at State Data Centre (SDC) at ITDA. In the same DPR, it was envisaged that once the SDC at ITDA becomes operational, all IT infrastructure and IFMS operations at Finance Data Center 3 (FDC) would be relocated to SDC and the former would act as an archival site. The proposal to make SDC the DR site was reiterated in a meeting held with DTPE, NIC & ITDA under chairmanship of Finance Secretary on 03 December 2021.",
+          "evidence_role": "direct_heading_and_DPR_context",
+          "chunk_index": 13,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477",
+          "canonical_page": 6,
+          "source_page_numbers": [
+            6
+          ],
+          "source_block_ids": [
+            "page-6-block-6",
+            "page-6-block-7",
+            "page-6-block-8",
+            "page-6-block-9"
+          ],
+          "exact_quote_from_raw_text": "Audit noticed that the two provisions of DPR were mutually contradictory as in case of shifting of IFMS operations from FDC to SDC, the latter could not act as DR site which by definition had to be present at geographically different location. Moreover, both FDC and SDC were located near to each other, around 6.5 kilometers apart and in a region vulnerable to disasters (Seismic zone IV). Recently, flash flood like situation was created in the region due to cloudburst on 25 August 2021. Thus, despite IFMS being operational since 1 April 2019, no efforts had been made to set up a DR Site, in absence of which the critical financial operations of GoU remained vulnerable in case of any disaster.\n\nDuring exit conference (Jun 2023), Government accepted the importance of DR site and stated that IFMS application, presently hosted in FDC was planned to be shifted to SDC in ITDA. Further, ITDA was planning to create a 'far' DR site for all the applications hosted in SDC.\n\nReply was not acceptable as Dehradun lies in seismic zone and prone to natural disasters like earthquakes, floods, cloud bursts etc. In absence of a functional DR site, business continuity of IFMS remained at risk in case of disasters.",
+          "evidence_role": "direct",
+          "chunk_index": 14,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "57c65f616e8ba74996778f95de0b804555de1e531e681e129ddf3b1d7e312fea",
+          "canonical_page": 8,
+          "source_page_numbers": [
+            8
+          ],
+          "source_block_ids": [
+            "page-8-block-8",
+            "page-8-block-9"
+          ],
+          "exact_quote_from_raw_text": "Department did not frame BCP/set up any functional DR site.",
+          "evidence_role": "conclusion",
+          "chunk_index": 20,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "694575d05e995d14bd94a73488147f50c393cd8730acef420de778a0ad5bb1c9",
+          "canonical_page": 9,
+          "source_page_numbers": [
+            9
+          ],
+          "source_block_ids": [
+            "page-9-block-0",
+            "page-9-block-1",
+            "page-9-block-2",
+            "page-9-block-3",
+            "page-9-block-4",
+            "page-9-block-5",
+            "page-9-block-6",
+            "page-9-block-8",
+            "page-9-block-9",
+            "page-9-block-11",
+            "page-9-block-12"
+          ],
+          "exact_quote_from_raw_text": "The Department should formulate Business Continuity Plan and set up Disaster Recovery site",
+          "evidence_role": "recommendation_context",
+          "chunk_index": 21,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "REVISE",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The dedicated DR-site finding and its continuation say no efforts had been made to set up the site and explain the DPR contradiction and 6.5 km separation. The conclusion repeats that no functional DR site was set up.",
+        "unsupported_or_overstated_claims": [
+          "The proposed answer omits the contradictory DPR design and the short geographic separation between FDC and SDC."
+        ],
+        "unresolved_concerns": [
+          "This is a DR-site implementation finding, not an absent DR-plan finding. It is a separate document from P07/P08 and must not be merged with P18's BCP finding."
+        ]
+      },
+      "source_review_query": "What did the audit report say about the Disaster Recovery site?",
+      "source_review_recommendation": "REVISE",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P20",
+      "query": "What does the cited backup guidance say organizations must do with backup copies?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "The cited guidance says organizations must maintain backup copies for all operational data, and that backup copies of information and software shall be taken and tested regularly in accordance with the agreed backup policy. This is the guidance requirement; the same audit separately observed that the Department had not formulated a backup policy or tested restoration from backup data.",
+      "expected_relevant_chunk_ids": [
+        "92394f90c5d1ace85a4d6aeb2eb2af2da9a08117e47da7e3bc52623dd782a95a"
+      ],
+      "expected_document_sha256s": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+          "chunk_id": "92394f90c5d1ace85a4d6aeb2eb2af2da9a08117e47da7e3bc52623dd782a95a",
+          "canonical_page": 7,
+          "source_page_numbers": [
+            7
+          ],
+          "source_block_ids": [
+            "page-7-block-0",
+            "page-7-block-1",
+            "page-7-block-2",
+            "page-7-block-3"
+          ],
+          "exact_quote_from_raw_text": "National Information Security Policy and Guidelines, 2014 provides that organization must ensure that backup copies are maintained for all operational data to enable reconstruction should they be inadvertently destroyed or lost. Also, Back-up copies of information and software shall be taken and tested regularly in accordance with the agreed backup policy.",
+          "evidence_role": "direct_guidance",
+          "chunk_index": 15,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "REVISE",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The cited guidance states 'must ensure' maintenance and says copies 'shall be taken and tested'. The draft's 'should' weakens the requirement. The audit's own backup-policy deficiency is a separate fact and should not be merged with the quoted guidance.",
+        "unsupported_or_overstated_claims": [
+          "The proposed answer softens 'must ensure'/'shall be taken and tested' into 'should'."
+        ],
+        "unresolved_concerns": [
+          "Keep the normative backup guidance separate from the audit's observation that the Department had not formulated a backup policy or tested restoration."
+        ]
+      },
+      "source_review_query": "What does the cited backup guidance say organizations must do with backup copies?",
+      "source_review_recommendation": "REVISE",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P21",
+      "query": "In the Act’s example, what should the online marketplace do with personal data after the sale purpose ends?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "In the online-marketplace illustration, once the marketplace has helped conclude the sale of the used car, the marketplace (Y) shall no longer retain X's personal data.",
+      "expected_relevant_chunk_ids": [
+        "f40d1c3b5ffb23a3bba078927c638bb286cd921ef095c4f302cecc1cf6e641d8"
+      ],
+      "expected_document_sha256s": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "chunk_id": "f40d1c3b5ffb23a3bba078927c638bb286cd921ef095c4f302cecc1cf6e641d8",
+          "canonical_page": 11,
+          "source_page_numbers": [
+            11
+          ],
+          "source_block_ids": [
+            "page-11-block-10",
+            "page-11-block-11",
+            "page-11-block-12",
+            "page-11-block-13",
+            "page-11-block-14",
+            "page-11-block-15",
+            "page-11-block-16"
+          ],
+          "exact_quote_from_raw_text": "(I) X, an individual, registers herself on an online marketplace operated by Y, an e-commerce \nservice provider. X gives her consent to Y for the processing of her personal data for selling her used \ncar. The online marketplace helps conclude the sale. Y shall no longer retain her personal data.",
+          "evidence_role": "direct_illustration",
+          "chunk_index": 27,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The complete statutory illustration states that after the marketplace helps conclude the sale, Y shall no longer retain X's personal data.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "In the Act’s example, what should the online marketplace do with personal data after the sale purpose ends?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P22",
+      "query": "What grievance mechanism must a Data Fiduciary establish?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "A Data Fiduciary shall establish an effective mechanism to redress the grievances of Data Principals.",
+      "expected_relevant_chunk_ids": [
+        "26035291b60e7352c4e63d8af3e34975166af91597699e4087cfbd739bd5fbd8",
+        "6d99b39c6d7d6871e7270404834e3fc76a8d8444054696ce7fce6fb6a03f4717"
+      ],
+      "expected_document_sha256s": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "chunk_id": "26035291b60e7352c4e63d8af3e34975166af91597699e4087cfbd739bd5fbd8",
+          "canonical_page": 11,
+          "source_page_numbers": [
+            11
+          ],
+          "source_block_ids": [
+            "page-11-block-17",
+            "page-11-block-18"
+          ],
+          "exact_quote_from_raw_text": "A Data Fiduciary shall establish an effective mechanism to redress the grievances of Data \nPrincipals",
+          "evidence_role": "direct",
+          "chunk_index": 28,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        },
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "chunk_id": "6d99b39c6d7d6871e7270404834e3fc76a8d8444054696ce7fce6fb6a03f4717",
+          "canonical_page": 13,
+          "source_page_numbers": [
+            13
+          ],
+          "source_block_ids": [
+            "page-13-block-12",
+            "page-13-block-13",
+            "page-13-block-14"
+          ],
+          "exact_quote_from_raw_text": "A Data Principal shall have the right to have readily \navailable means of grievance redressal provided by a Data Fiduciary or Consent Manager",
+          "evidence_role": "supporting_context",
+          "chunk_index": 36,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "Section 8(10) expressly requires a Data Fiduciary to establish an effective grievance-redress mechanism; the next chapter provision separately describes the Data Principal's readily available grievance-redressal right.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What grievance mechanism must a Data Fiduciary establish?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P23",
+      "query": "What rights does section 12 give a Data Principal over previously consented personal data?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "Section 12 gives a Data Principal the right to correction, completion, updating, and erasure of personal data for processing to which the Data Principal previously gave consent, subject to applicable legal requirements. The Data Fiduciary must erase the data on request unless retention is necessary for the specified purpose or compliance with law.",
+      "expected_relevant_chunk_ids": [
+        "80206eaec28fe3ac30f2b18db75455b7ba13b5b02babbc9887e3e53d77854d03"
+      ],
+      "expected_document_sha256s": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "chunk_id": "80206eaec28fe3ac30f2b18db75455b7ba13b5b02babbc9887e3e53d77854d03",
+          "canonical_page": 13,
+          "source_page_numbers": [
+            13
+          ],
+          "source_block_ids": [
+            "page-13-block-6",
+            "page-13-block-7",
+            "page-13-block-8",
+            "page-13-block-9",
+            "page-13-block-10",
+            "page-13-block-11"
+          ],
+          "exact_quote_from_raw_text": "A Data Principal shall have the right \nto correction, completion, updating and erasure of her personal data for the processing of which she has \npreviously given consent, including consent as referred to in clause (a) of section 7, in accordance with \nany requirement or procedure under any law for the time being in force.",
+          "evidence_role": "direct",
+          "chunk_index": 35,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The full section 12 passage supports the four rights and includes the express erasure exception for specified-purpose retention or legal compliance.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "What rights does section 12 give a Data Principal over previously consented personal data?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P24",
+      "query": "How long does a person generally have to file an appeal under section 29?",
+      "answerability": "ANSWERABLE",
+      "reference_answer": "An appeal under section 29 must be filed within 60 days from receipt of the Board's order or direction. The Appellate Tribunal may entertain a late appeal if satisfied that sufficient cause prevented filing within that period.",
+      "expected_relevant_chunk_ids": [
+        "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac"
+      ],
+      "expected_document_sha256s": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "chunk_id": "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+          "canonical_page": 18,
+          "source_page_numbers": [
+            18
+          ],
+          "source_block_ids": [
+            "page-18-block-16",
+            "page-18-block-17",
+            "page-18-block-18",
+            "page-18-block-19",
+            "page-18-block-20",
+            "page-18-block-21"
+          ],
+          "exact_quote_from_raw_text": "Every appeal under sub-section (1) shall be filed within a period of sixty days from the date of \nreceipt of the order or direction appealed against and it shall be in such form and manner and shall be \naccompanied by such fee as may be prescribed.  \n\n(3) The Appellate Tribunal may entertain an appeal after the expiry of the period specified in sub-\nsection (2), if it is satisfied that there was sufficient cause for not preferring the appeal within that \nperiod.",
+          "evidence_role": "direct",
+          "chunk_index": 58,
+          "provenance_validation": {
+            "chunk_id_exists": true,
+            "document_sha256_matches_chunk": true,
+            "ingestion_run_matches_snapshot": true,
+            "source_pages_match_export": true,
+            "source_block_ids_match_export": true,
+            "quotation_is_exact_raw_text_substring": true
+          }
+        }
+      ],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "ACCEPT",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "Section 29(2) supplies the 60-day period from receipt; subsection (3) supplies the sufficient-cause exception.",
+        "unsupported_or_overstated_claims": [],
+        "unresolved_concerns": []
+      },
+      "source_review_query": "How long does a person generally have to file an appeal under section 29?",
+      "source_review_recommendation": "ACCEPT",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "P25",
+      "query": "What exact dollar amount of ransom was paid in the cybersecurity incident described in this corpus?",
+      "answerability": "UNANSWERABLE",
+      "reference_answer": null,
+      "expected_relevant_chunk_ids": [],
+      "expected_document_sha256s": [],
+      "evidence_references": [],
+      "label_provenance": "AI_PROPOSED_AFTER_CORPUS_AND_SOURCE_PDF_RECHECK",
+      "ai_review_recommendation": "REVISE",
+      "source_pdf_recheck_status": "PASS",
+      "notes": {
+        "review_explanation": "The unanswerable classification is supported by a full-corpus search: there is one chunk containing a generic ransomware example in the NIST CSF document, but no actual incident, payment, or amount. The draft's statement that all six documents contain ransomware references is unsupported and must be corrected.",
+        "unsupported_or_overstated_claims": [
+          "The original answer's claim that all six documents contain general ransomware references is not supported; the corpus-wide term scan found 'ransomware' in one NIST chunk only."
+        ],
+        "unresolved_concerns": [
+          "The corpus establishes absence only within this six-document export. Human reviewer should approve the unanswerable label before it is treated as ground truth."
+        ]
+      },
+      "unanswerable_basis": "The corpus contains generic ransomware references but no description of the specific ransomware incident or ransom payment amount requested.",
+      "source_review_query": "What exact dollar amount of ransom was paid in the cybersecurity incident described in this corpus?",
+      "source_review_recommendation": "REVISE",
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "A01",
+      "query": "What exact numerical score or minimum point threshold must an organization attain to qualify for CSF Tier 4?",
+      "answerability": "UNANSWERABLE",
+      "reference_answer": null,
+      "expected_relevant_chunk_ids": [],
+      "expected_document_sha256s": [],
+      "evidence_references": [],
+      "label_provenance": "AI_PROPOSED_CORPUS_WIDE_ABSENCE_CHECK",
+      "ai_review_recommendation": "PROPOSED_UNANSWERABLE_CANDIDATE_NOT_VERIFIED",
+      "source_pdf_recheck_status": "NOT_RECHECKED_FOR_ADDITIONAL_CANDIDATE",
+      "unanswerable_basis": "The NIST CSF chunks characterize Tier 4 as the Adaptive tier and describe its qualitative practices. They do not define a numerical score, points system, certification threshold, or pass/fail cutoff for attaining Tier 4. No other corpus document supplies a CSF Tier 4 numeric threshold.",
+      "search_scope": {
+        "corpus_chunk_count": 333,
+        "documents_searched": [
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "title": "NIST Cybersecurity Framework (CSF) 2.0",
+            "chunk_count": 76
+          },
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "title": "Kerala IFMS-K audit, Chapter VIII — Information System Security Controls",
+            "chunk_count": 28
+          },
+          {
+            "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+            "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+            "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
+            "chunk_count": 60
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "title": "Supreme Court judgment — Union of India v. Kiran & Ors. / connected appeal, 2026 INSC 15",
+            "chunk_count": 65
+          },
+          {
+            "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+            "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+            "title": "Uttarakhand IFMS audit, Chapter 4 — Information System Security",
+            "chunk_count": 22
+          },
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "title": "Digital Personal Data Protection Act, 2023 [as on 19 November 2025]",
+            "chunk_count": 82
+          }
+        ],
+        "search_methodology": {
+          "corpus_scope": "All 333 raw_text chunks across all six documents.",
+          "terms_and_concepts": [
+            "Tier 4",
+            "Tier Four",
+            "Adaptive",
+            "CSF Tier",
+            "score",
+            "scoring",
+            "points",
+            "threshold",
+            "qualifying",
+            "certification",
+            "maturity level"
+          ],
+          "result_summary": "Tier 4-specific matches occur in the NIST CSF document. Score/scoring and qualification matches elsewhere concern unrelated RBI maturity metrics or the Supreme Court recruitment judgment, not a CSF tier qualification threshold."
+        },
+        "potentially_confusing_passages": [
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "chunk_id": "30b5590eeb3ca4ce6bc65c4b48ed794a01d33c126963a2e1c10f75501b291ba5",
+            "canonical_page": 12,
+            "source_page_numbers": [
+              12
+            ],
+            "source_block_ids": [
+              "page-12-block-10"
+            ],
+            "exact_quote_from_raw_text": "The Tiers, as shown in Fig. 4",
+            "evidence_role": "Introduces the qualitative tier characterization; no numerical threshold.",
+            "chunk_index": 25,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "chunk_id": "dfd4d73b9f81fa0cbbfb8a9f0c68c12030a8c4b254cb22b256cc823dee8b4b01",
+            "canonical_page": 30,
+            "source_page_numbers": [
+              30
+            ],
+            "source_block_ids": [
+              "page-30-block-0"
+            ],
+            "exact_quote_from_raw_text": "Tier 4:  Adaptive",
+            "evidence_role": "Names the tier; its accompanying description is qualitative.",
+            "chunk_index": 71,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "chunk_id": "ca2bc786f69c69f23b8062143457261fd476d69a7a0c7376360304f294ca585e",
+            "canonical_page": 31,
+            "source_page_numbers": [
+              31
+            ],
+            "source_block_ids": [
+              "page-31-block-10",
+              "page-31-block-11",
+              "page-31-block-12",
+              "page-31-block-13",
+              "page-31-block-14"
+            ],
+            "exact_quote_from_raw_text": "There are four Tiers: Partial (Tier 1)",
+            "evidence_role": "Defines the four tier labels, but no score or threshold.",
+            "chunk_index": 74,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          }
+        ],
+        "potentially_confusing_chunk_ids": [
+          "30b5590eeb3ca4ce6bc65c4b48ed794a01d33c126963a2e1c10f75501b291ba5",
+          "dfd4d73b9f81fa0cbbfb8a9f0c68c12030a8c4b254cb22b256cc823dee8b4b01",
+          "ca2bc786f69c69f23b8062143457261fd476d69a7a0c7376360304f294ca585e"
+        ]
+      },
+      "notes": {
+        "review_note": "The candidate asks for a specific quantity the corpus does not state. A human reviewer should confirm the full source corpus and query wording before approving it as unanswerable ground truth."
+      },
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "A02",
+      "query": "How many distinct IFMS-K user accounts did the audit find had actually performed simultaneous multiple logins?",
+      "answerability": "UNANSWERABLE",
+      "reference_answer": null,
+      "expected_relevant_chunk_ids": [],
+      "expected_document_sha256s": [],
+      "evidence_references": [],
+      "label_provenance": "AI_PROPOSED_CORPUS_WIDE_ABSENCE_CHECK",
+      "ai_review_recommendation": "PROPOSED_UNANSWERABLE_CANDIDATE_NOT_VERIFIED",
+      "source_pdf_recheck_status": "NOT_RECHECKED_FOR_ADDITIONAL_CANDIDATE",
+      "unanswerable_basis": "The Kerala audit describes the system capability and audit observation that multiple logins were allowed, including same-username/password access from different computers. It does not quantify distinct accounts, affected users, or observed login events.",
+      "search_scope": {
+        "corpus_chunk_count": 333,
+        "documents_searched": [
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "title": "NIST Cybersecurity Framework (CSF) 2.0",
+            "chunk_count": 76
+          },
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "title": "Kerala IFMS-K audit, Chapter VIII — Information System Security Controls",
+            "chunk_count": 28
+          },
+          {
+            "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+            "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+            "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
+            "chunk_count": 60
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "title": "Supreme Court judgment — Union of India v. Kiran & Ors. / connected appeal, 2026 INSC 15",
+            "chunk_count": 65
+          },
+          {
+            "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+            "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+            "title": "Uttarakhand IFMS audit, Chapter 4 — Information System Security",
+            "chunk_count": 22
+          },
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "title": "Digital Personal Data Protection Act, 2023 [as on 19 November 2025]",
+            "chunk_count": 82
+          }
+        ],
+        "search_methodology": {
+          "corpus_scope": "All 333 raw_text chunks across all six documents.",
+          "terms_and_concepts": [
+            "multiple login",
+            "multiple logins",
+            "simultaneous",
+            "same username",
+            "same user",
+            "different systems",
+            "different computers",
+            "number of users",
+            "user accounts",
+            "account count",
+            "BIMS",
+            "BAMS"
+          ],
+          "result_summary": "Direct matching passages are in the Kerala IFMS-K audit, including its summary and finding 8.4. No count of affected user accounts or individual login events appears in the export."
+        },
+        "potentially_confusing_passages": [
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "chunk_id": "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+            "canonical_page": 3,
+            "source_page_numbers": [
+              3
+            ],
+            "source_block_ids": [
+              "page-3-block-0",
+              "page-3-block-1"
+            ],
+            "exact_quote_from_raw_text": "The system allowed multiple logins",
+            "evidence_role": "The executive summary records the control weakness, but gives no count of user accounts.",
+            "chunk_index": 1,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "chunk_id": "a82d8297149c38c2a463228b1060161f40b53f7bbd00a4ccce4b9437cc43e6be",
+            "canonical_page": 4,
+            "source_page_numbers": [
+              4
+            ],
+            "source_block_ids": [
+              "page-4-block-10",
+              "page-4-block-11",
+              "page-4-block-12",
+              "page-4-block-13"
+            ],
+            "exact_quote_from_raw_text": "Audit observed that multiple logins were allowed with no IP restrictions",
+            "evidence_role": "This is a qualitative audit observation for Finance-managed applications, not a measured account count.",
+            "chunk_index": 6,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "chunk_id": "b3f468bbf39bf0c05740f68bb9dd9cd5fe8c96fea2ec4f82f07c24bd0dc8975e",
+            "canonical_page": 5,
+            "source_page_numbers": [
+              5
+            ],
+            "source_block_ids": [
+              "page-5-block-0",
+              "page-5-block-1",
+              "page-5-block-2",
+              "page-5-block-3",
+              "page-5-block-4"
+            ],
+            "exact_quote_from_raw_text": "The Audit comment is not about IP binding of Internet based applications but about simultaneous login with same username and password from different computers",
+            "evidence_role": "Clarifies the mechanism under discussion, but does not quantify how many accounts did so.",
+            "chunk_index": 7,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          }
+        ],
+        "potentially_confusing_chunk_ids": [
+          "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+          "a82d8297149c38c2a463228b1060161f40b53f7bbd00a4ccce4b9437cc43e6be",
+          "b3f468bbf39bf0c05740f68bb9dd9cd5fe8c96fea2ec4f82f07c24bd0dc8975e"
+        ]
+      },
+      "notes": {
+        "review_note": "The passages establish an observed control weakness, not a population count. A human reviewer should confirm whether the intended query asks capability, actual observed events, or the number of affected accounts."
+      },
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "A03",
+      "query": "What exact Recovery Time Objective (RTO) and Recovery Point Objective (RPO) values were set for the Uttarakhand IFMS?",
+      "answerability": "UNANSWERABLE",
+      "reference_answer": null,
+      "expected_relevant_chunk_ids": [],
+      "expected_document_sha256s": [],
+      "evidence_references": [],
+      "label_provenance": "AI_PROPOSED_CORPUS_WIDE_ABSENCE_CHECK",
+      "ai_review_recommendation": "PROPOSED_UNANSWERABLE_CANDIDATE_NOT_VERIFIED",
+      "source_pdf_recheck_status": "NOT_RECHECKED_FOR_ADDITIONAL_CANDIDATE",
+      "unanswerable_basis": "The Uttarakhand audit discusses an unestablished disaster-recovery site, Business Continuity Plan and related readiness deficiencies, but it does not provide numeric RTO or RPO targets for Uttarakhand IFMS. The RBI Master Direction states a general expectation that regulated entities define suitable RTO/RPO metrics and describes recovery-management controls; it does not give values for Uttarakhand IFMS.",
+      "search_scope": {
+        "corpus_chunk_count": 333,
+        "documents_searched": [
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "title": "NIST Cybersecurity Framework (CSF) 2.0",
+            "chunk_count": 76
+          },
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "title": "Kerala IFMS-K audit, Chapter VIII — Information System Security Controls",
+            "chunk_count": 28
+          },
+          {
+            "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+            "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+            "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
+            "chunk_count": 60
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "title": "Supreme Court judgment — Union of India v. Kiran & Ors. / connected appeal, 2026 INSC 15",
+            "chunk_count": 65
+          },
+          {
+            "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+            "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+            "title": "Uttarakhand IFMS audit, Chapter 4 — Information System Security",
+            "chunk_count": 22
+          },
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "title": "Digital Personal Data Protection Act, 2023 [as on 19 November 2025]",
+            "chunk_count": 82
+          }
+        ],
+        "search_methodology": {
+          "corpus_scope": "All 333 raw_text chunks across all six documents.",
+          "terms_and_concepts": [
+            "RTO",
+            "RPO",
+            "Recovery Time Objective",
+            "Recovery Point Objective",
+            "recovery time",
+            "recovery point",
+            "DR site",
+            "disaster recovery",
+            "Business Continuity Plan",
+            "BCP"
+          ],
+          "result_summary": "RTO wording and express RTO/RPO requirements occur in the RBI Master Direction. RPO also occurs in the NIST CSF as a separate CSF category acronym in recovery-planning context. Uttarakhand passages discuss the DR site and BCP but give no system-specific RTO/RPO values."
+        },
+        "potentially_confusing_passages": [
+          {
+            "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+            "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+            "chunk_id": "ea7bb07711a5b7bb8d29bde5a9db11b664332493dc295f6568ee6756afb43f8c",
+            "canonical_page": 16,
+            "source_page_numbers": [
+              16
+            ],
+            "source_block_ids": [
+              "page-16-block-0",
+              "page-16-block-1",
+              "page-16-block-2",
+              "page-16-block-3"
+            ],
+            "exact_quote_from_raw_text": "including Recovery Point Objective (RPO) and Recovery Time Objective (RTO)",
+            "evidence_role": "General regulatory requirement directed to regulated entities; it supplies no Uttarakhand IFMS metric values.",
+            "chunk_index": 31,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+            "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+            "chunk_id": "1acfcf3147d07a42568d40d61711fdebf7ce9af37dca97ac37ee98eb155a4b59",
+            "canonical_page": 21,
+            "source_page_numbers": [
+              21
+            ],
+            "source_block_ids": [
+              "page-21-block-0",
+              "page-21-block-1",
+              "page-21-block-2",
+              "page-21-block-3",
+              "page-21-block-4",
+              "page-21-block-5",
+              "page-21-block-6",
+              "page-21-block-7"
+            ],
+            "exact_quote_from_raw_text": "REs should prioritise achieving minimal RTO",
+            "evidence_role": "General RBI direction; 'minimal' and 'near zero' are not stated numeric configurations for Uttarakhand IFMS.",
+            "chunk_index": 42,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+            "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+            "chunk_id": "c9950d83cdc59c5e470473ce4c55100208619114e3a02f8ae150c059c1300995",
+            "canonical_page": 6,
+            "source_page_numbers": [
+              6
+            ],
+            "source_block_ids": [
+              "page-6-block-3",
+              "page-6-block-4",
+              "page-6-block-5"
+            ],
+            "exact_quote_from_raw_text": "DR site was to be set up at State Data Centre (SDC) at ITDA",
+            "evidence_role": "Uttarakhand audit finding about site establishment; no RTO/RPO values.",
+            "chunk_index": 13,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+            "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+            "chunk_id": "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477",
+            "canonical_page": 6,
+            "source_page_numbers": [
+              6
+            ],
+            "source_block_ids": [
+              "page-6-block-6",
+              "page-6-block-7",
+              "page-6-block-8",
+              "page-6-block-9"
+            ],
+            "exact_quote_from_raw_text": "no efforts had been made to set up a DR Site",
+            "evidence_role": "This describes the absence of the site, not time or data-loss objectives.",
+            "chunk_index": 14,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          }
+        ],
+        "potentially_confusing_chunk_ids": [
+          "ea7bb07711a5b7bb8d29bde5a9db11b664332493dc295f6568ee6756afb43f8c",
+          "1acfcf3147d07a42568d40d61711fdebf7ce9af37dca97ac37ee98eb155a4b59",
+          "c9950d83cdc59c5e470473ce4c55100208619114e3a02f8ae150c059c1300995",
+          "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477"
+        ]
+      },
+      "notes": {
+        "review_note": "This is system-specific and cannot be answered by transferring RBI's general normative requirements into an Uttarakhand configuration. Human review should confirm the exact intended system name and scope."
+      },
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "A04",
+      "query": "What exact numerical marks did Respondent No. 1 obtain in the Main Examination (Written) in the cadre-allocation case?",
+      "answerability": "UNANSWERABLE",
+      "reference_answer": null,
+      "expected_relevant_chunk_ids": [],
+      "expected_document_sha256s": [],
+      "evidence_references": [],
+      "label_provenance": "AI_PROPOSED_CORPUS_WIDE_ABSENCE_CHECK",
+      "ai_review_recommendation": "PROPOSED_UNANSWERABLE_CANDIDATE_NOT_VERIFIED",
+      "source_pdf_recheck_status": "NOT_RECHECKED_FOR_ADDITIONAL_CANDIDATE",
+      "unanswerable_basis": "The judgment gives numerical scores and a table for the Preliminary Examination. It says both candidates appeared in and qualified the Main Examination, and reports that Respondent No. 1 had a higher Main Examination rank, but does not state Respondent No. 1's numerical Main Examination marks.",
+      "search_scope": {
+        "corpus_chunk_count": 333,
+        "documents_searched": [
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "title": "NIST Cybersecurity Framework (CSF) 2.0",
+            "chunk_count": 76
+          },
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "title": "Kerala IFMS-K audit, Chapter VIII — Information System Security Controls",
+            "chunk_count": 28
+          },
+          {
+            "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+            "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+            "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
+            "chunk_count": 60
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "title": "Supreme Court judgment — Union of India v. Kiran & Ors. / connected appeal, 2026 INSC 15",
+            "chunk_count": 65
+          },
+          {
+            "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+            "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+            "title": "Uttarakhand IFMS audit, Chapter 4 — Information System Security",
+            "chunk_count": 22
+          },
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "title": "Digital Personal Data Protection Act, 2023 [as on 19 November 2025]",
+            "chunk_count": 82
+          }
+        ],
+        "search_methodology": {
+          "corpus_scope": "All 333 raw_text chunks across all six documents.",
+          "terms_and_concepts": [
+            "Main Examination",
+            "Main Examination (Written)",
+            "marks obtained",
+            "marks secured",
+            "written examination",
+            "written marks",
+            "Respondent No. 1",
+            "247.18",
+            "270.68",
+            "rank"
+          ],
+          "result_summary": "The judgment contains numerous references to the Main Examination and marks, so the search included the full judgment rather than only the proposed chunk. The explicit numeric scores 247.18 and 270.68 and the table are expressly labelled Preliminary Examination. The judgment states a comparative Main Examination rank but no numeric Main Examination score."
+        },
+        "potentially_confusing_passages": [
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "chunk_id": "b40dcd88b4b09dc8ffc348866cd5cc8cf09c4c8c8bc2ef4c2e4b3243cb6d661c",
+            "canonical_page": null,
+            "source_page_numbers": [
+              4,
+              5
+            ],
+            "source_block_ids": [
+              "page-4-block-3",
+              "page-5-block-0"
+            ],
+            "exact_quote_from_raw_text": "Respondent No. 1 secured 247.18 marks",
+            "evidence_role": "This figure is in the surrounding description of the Preliminary Examination and must not be mistaken for Main Examination marks.",
+            "chunk_index": 6,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "chunk_id": "f30d44867a10e86f2543ef57a15ce582db3041ea2119abb0ddbdd7f0c5348489",
+            "canonical_page": 5,
+            "source_page_numbers": [
+              5
+            ],
+            "source_block_ids": [
+              "page-5-block-1"
+            ],
+            "exact_quote_from_raw_text": "Marks Obtained in the Preliminary Exam",
+            "evidence_role": "The table heading explicitly identifies the displayed numerical scores as Preliminary Examination marks.",
+            "chunk_index": 7,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "chunk_id": "cec9ff8710e7ba7fb1641911ec118c0391a610c9412d5c7b01809e0fd43313a2",
+            "canonical_page": 5,
+            "source_page_numbers": [
+              5
+            ],
+            "source_block_ids": [
+              "page-5-block-2"
+            ],
+            "exact_quote_from_raw_text": "Both the candidates appeared in the Main Examination (Written)",
+            "evidence_role": "Confirms attendance and qualification, but gives no marks.",
+            "chunk_index": 8,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "chunk_id": "d08df19406cb8ea9c0807600cb626bcdd179d8b24b8bb4a3611d7b840c8d9868",
+            "canonical_page": 7,
+            "source_page_numbers": [
+              7
+            ],
+            "source_block_ids": [
+              "page-7-block-0",
+              "page-7-block-1",
+              "page-7-block-2"
+            ],
+            "exact_quote_from_raw_text": "Respondent No. 1 had secured a higher rank in Main Examination (Written)",
+            "evidence_role": "Provides a relative rank statement, not a numerical score.",
+            "chunk_index": 11,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          }
+        ],
+        "potentially_confusing_chunk_ids": [
+          "b40dcd88b4b09dc8ffc348866cd5cc8cf09c4c8c8bc2ef4c2e4b3243cb6d661c",
+          "f30d44867a10e86f2543ef57a15ce582db3041ea2119abb0ddbdd7f0c5348489",
+          "cec9ff8710e7ba7fb1641911ec118c0391a610c9412d5c7b01809e0fd43313a2",
+          "d08df19406cb8ea9c0807600cb626bcdd179d8b24b8bb4a3611d7b840c8d9868"
+        ]
+      },
+      "notes": {
+        "review_note": "The distinction between Preliminary Examination marks and Main Examination rank is material. A human reviewer should verify that the requested marks were not supplied in another attached source before treating this as a final negative."
+      },
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    },
+    {
+      "query_id": "A05",
+      "query": "What prescribed inactivity period makes the specified purpose deemed no longer served under section 8(8) of the DPDP Act?",
+      "answerability": "UNANSWERABLE",
+      "reference_answer": null,
+      "expected_relevant_chunk_ids": [],
+      "expected_document_sha256s": [],
+      "evidence_references": [],
+      "label_provenance": "AI_PROPOSED_CORPUS_WIDE_ABSENCE_CHECK",
+      "ai_review_recommendation": "PROPOSED_UNANSWERABLE_CANDIDATE_NOT_VERIFIED",
+      "source_pdf_recheck_status": "NOT_RECHECKED_FOR_ADDITIONAL_CANDIDATE",
+      "unanswerable_basis": "The supplied DPDP Act text says the inactivity period is 'as may be prescribed' and that different periods may be prescribed for different classes and purposes. The supplied corpus does not include the corresponding prescribed duration or a numerical rule for section 8(8).",
+      "search_scope": {
+        "corpus_chunk_count": 333,
+        "documents_searched": [
+          {
+            "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+            "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+            "title": "NIST Cybersecurity Framework (CSF) 2.0",
+            "chunk_count": 76
+          },
+          {
+            "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+            "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+            "title": "Kerala IFMS-K audit, Chapter VIII — Information System Security Controls",
+            "chunk_count": 28
+          },
+          {
+            "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+            "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+            "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
+            "chunk_count": 60
+          },
+          {
+            "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+            "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+            "title": "Supreme Court judgment — Union of India v. Kiran & Ors. / connected appeal, 2026 INSC 15",
+            "chunk_count": 65
+          },
+          {
+            "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+            "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+            "title": "Uttarakhand IFMS audit, Chapter 4 — Information System Security",
+            "chunk_count": 22
+          },
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "title": "Digital Personal Data Protection Act, 2023 [as on 19 November 2025]",
+            "chunk_count": 82
+          }
+        ],
+        "search_methodology": {
+          "corpus_scope": "All 333 raw_text chunks across all six documents.",
+          "terms_and_concepts": [
+            "section 8(8)",
+            "sub-section (8)",
+            "time period",
+            "period as may be prescribed",
+            "purpose no longer be served",
+            "prescribed period",
+            "days",
+            "months",
+            "years",
+            "Data Fiduciary"
+          ],
+          "result_summary": "The operative section and the rule-making provision are present in the DPDP Act chunks. The Act delegates the period to rules; no numerical period for section 8(8) is stated in the corpus. Other time periods in the Act concern distinct obligations or examples."
+        },
+        "potentially_confusing_passages": [
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "chunk_id": "f40d1c3b5ffb23a3bba078927c638bb286cd921ef095c4f302cecc1cf6e641d8",
+            "canonical_page": 11,
+            "source_page_numbers": [
+              11
+            ],
+            "source_block_ids": [
+              "page-11-block-10",
+              "page-11-block-11",
+              "page-11-block-12",
+              "page-11-block-13",
+              "page-11-block-14",
+              "page-11-block-15",
+              "page-11-block-16"
+            ],
+            "exact_quote_from_raw_text": "for such time period as may be prescribed",
+            "evidence_role": "This is the operative delegation, not the duration itself.",
+            "chunk_index": 27,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "chunk_id": "044540c65ae3943a737a01c8fcf2cc487adc3203e257939e07ed85ada581cf5d",
+            "canonical_page": 21,
+            "source_page_numbers": [
+              21
+            ],
+            "source_block_ids": [
+              "page-21-block-12",
+              "page-21-block-13",
+              "page-21-block-14",
+              "page-21-block-15",
+              "page-21-block-16",
+              "page-21-block-17",
+              "page-21-block-18",
+              "page-21-block-19",
+              "page-21-block-20"
+            ],
+            "exact_quote_from_raw_text": "the time period for the specified purpose to be deemed as no longer being served",
+            "evidence_role": "Identifies a matter for rules to prescribe; it does not state the number of days/months/years.",
+            "chunk_index": 68,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          },
+          {
+            "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+            "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+            "chunk_id": "f40d1c3b5ffb23a3bba078927c638bb286cd921ef095c4f302cecc1cf6e641d8",
+            "canonical_page": 11,
+            "source_page_numbers": [
+              11
+            ],
+            "source_block_ids": [
+              "page-11-block-10",
+              "page-11-block-11",
+              "page-11-block-12",
+              "page-11-block-13",
+              "page-11-block-14",
+              "page-11-block-15",
+              "page-11-block-16"
+            ],
+            "exact_quote_from_raw_text": "a period of ten years beyond",
+            "evidence_role": "The ten-year example concerns legally required bank-record retention after account closure, not the section 8(8) inactivity period.",
+            "chunk_index": 27,
+            "provenance_validation": {
+              "chunk_id_exists": true,
+              "document_sha256_matches_chunk": true,
+              "ingestion_run_matches_snapshot": true,
+              "source_pages_match_export": true,
+              "source_block_ids_match_export": true,
+              "quotation_is_exact_raw_text_substring": true
+            }
+          }
+        ],
+        "potentially_confusing_chunk_ids": [
+          "f40d1c3b5ffb23a3bba078927c638bb286cd921ef095c4f302cecc1cf6e641d8",
+          "044540c65ae3943a737a01c8fcf2cc487adc3203e257939e07ed85ada581cf5d"
+        ]
+      },
+      "notes": {
+        "review_note": "The supplied source is the Act text as identified in the export; the candidate does not claim that no later rule exists outside this corpus. Human review should approve the exact corpus boundary and wording before ground-truth use."
+      },
+      "benchmark_inclusion_decision": "INCLUDE_AI_PROVISIONAL_INTERNAL"
+    }
+  ],
+  "dataset_limitations": [
+    "All labels are AI-generated; no human reviewer has approved them.",
+    "Unanswerable labels represent absence from the current six-document, 333-chunk corpus only.",
+    "Additional candidates A01-A05 have corpus-wide AI search notes but were not separately checked against rendered PDF pages.",
+    "P05 was narrowed to finding 8.2 to avoid conflating it with the separate Safe-to-Host finding 8.3.",
+    "The supplied RBI PDF is marked Withdrawn; P09-P12 test document retrieval, not current legal applicability.",
+    "The dataset is small and intended for exploratory internal development only."
+  ],
+  "validation": {
+    "validated_against_corpus_export": true,
+    "corpus_chunk_ids_available": 333,
+    "answerable_queries_have_relevant_chunks": true,
+    "unanswerable_queries_have_no_relevant_chunk_labels": true,
+    "all_existing_evidence_references_pass_local_integrity_checks": true,
+    "validation_errors": []
+  }
+}

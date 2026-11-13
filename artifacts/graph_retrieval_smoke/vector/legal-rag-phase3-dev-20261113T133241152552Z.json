@@ -1,0 +1,1578 @@
+{
+  "dataset_id": "legal-rag-phase3-dev",
+  "dataset_version": "1.0.0",
+  "synthetic_dataset": true,
+  "annotation_source": null,
+  "corpus_snapshot": {},
+  "timestamp": "2026-11-13T13:32:41.152552+00:00",
+  "configuration": {
+    "k": 5,
+    "rrf": {},
+    "abstention_score_threshold": 0.01,
+    "abstention_scoring": {
+      "score_field": "vector_relevance_score",
+      "abstain_when": "top_score <= threshold or no results"
+    },
+    "answer_correctness_enabled": false,
+    "strategy": "vector",
+    "retrieval": {
+      "strategy": "vector",
+      "embedding_provider": "openai",
+      "embedding_model": "text-embedding-3-small",
+      "embedding_dimensions": 1024,
+      "embedding_space_id": "204393822463970a5520cae61c341acd0b2ec947607e5ef7395ea3b928e7adad",
+      "vector_index": "chunk_embedding_204393822463970a",
+      "candidate_multiplier": 5,
+      "abstention_score_policy": "vector_relevance_score"
+    }
+  },
+  "metrics": {
+    "recall_at_5": 0.0,
+    "mrr": 0.0,
+    "retrieved_document_precision": 0.0,
+    "document_recall_at_5": 0.0,
+    "citation_accuracy": null,
+    "citation_grounding_rate": null,
+    "citation_evaluation_coverage": null,
+    "unanswerable_query_abstention": 0.0,
+    "answer_correctness": null,
+    "answerable_queries_with_answer_evaluation": null,
+    "answerable_answer_evaluation_coverage": null
+  },
+  "per_query": [
+    {
+      "query_id": "habeas-corpus-purpose",
+      "query": "What does habeas corpus require when a person is detained?",
+      "unanswerable": false,
+      "relevant_chunk_ids": [
+        "e5572d4b0681bb3376829394b13439bbb26f016cc6270395d458aca30fc90794"
+      ],
+      "expected_document_ids": [
+        "a9f5c03dcfc0962d0cfef3e2dcab9416f2c2839e78884b2ea32b9e326d05867a"
+      ],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+        "5353f32434f03ca994ed268f82d481e6e9c1cfe3378888080eb23471cf3e6578",
+        "fdcaa57c07eded4aa4161f1457eb86b560d45af087ac8856b2fcecc3f962718d",
+        "d04721ca98b75ec5a8ab5e146e6654bc5381c8cc663f181a36e597a12e66a7cf",
+        "5c8af2919bd9fd07e638e1d9071ddfd77a22c776291901d4b3d683d40c011f6b"
+      ],
+      "retrieved_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "retrieved_document_precision": 0.0,
+      "document_recall_at_k": 0.0,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 0.673439621925354,
+      "abstention_score_type": "vector_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "(8) The Board or its officers shall not prevent access to any premises or take into custody any \nequipment or any item that may adversely affect the day-to-day functioning of a person. \n\n (9) The Board may require the services of any police officer or any officer of the Central \nGovernment or a State Government to assist it for the purposes of this section and it shall be the duty \nof every such officer to comply with such requisition. \n\n (10) During the course of the inquiry, if the Board considers it necessary, it may for reasons to be \nrecorded in writing, issue interim orders after giving the person concerned an opportunity of being \nheard. \n\n (11) On completion of the inquiry and after giving the person concerned an opportunity of being \nheard, the Board may for reasons to be recorded in writing, either close the proceedings or proceed in \naccordance with section 33.  \n\n(12) At any stage after receipt of a complaint, if the Board is of the opinion that the complaint is \nfalse or frivolous, it may issue a warning or impose costs on the complainant.  ",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 185,
+              "start_offset": 0,
+              "end_offset": 185
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 253,
+              "start_offset": 0,
+              "end_offset": 253
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 211,
+              "start_offset": 0,
+              "end_offset": 211
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 231,
+              "start_offset": 0,
+              "end_offset": 231
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 182,
+              "start_offset": 0,
+              "end_offset": 182
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.673439621925354,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "5353f32434f03ca994ed268f82d481e6e9c1cfe3378888080eb23471cf3e6578",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "14 \n \n\n(b) to ensure not to impersonate another person while providing her personal data for a specified \npurpose;  \n\n(c) to ensure not to suppress any material information while providing her personal data for any \ndocument, unique identifier, proof of identity or proof of address issued by the State or any of its \ninstrumentalities;  \n\n(d) to ensure not to register a false or frivolous grievance or complaint with a Data Fiduciary or \nthe Board; and  \n\n(e) to furnish only such information as is verifiably authentic, while exercising the right to \ncorrection or erasure under the provisions of this Act or the rules made thereunder. ",
+          "sources": [
+            {
+              "page_number": 14,
+              "block_id": "page-14-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 5,
+              "start_offset": 0,
+              "end_offset": 5
+            },
+            {
+              "page_number": 14,
+              "block_id": "page-14-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 109,
+              "start_offset": 0,
+              "end_offset": 109
+            },
+            {
+              "page_number": 14,
+              "block_id": "page-14-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 220,
+              "start_offset": 0,
+              "end_offset": 220
+            },
+            {
+              "page_number": 14,
+              "block_id": "page-14-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 116,
+              "start_offset": 0,
+              "end_offset": 116
+            },
+            {
+              "page_number": 14,
+              "block_id": "page-14-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 181,
+              "start_offset": 0,
+              "end_offset": 181
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.649451732635498,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "fdcaa57c07eded4aa4161f1457eb86b560d45af087ac8856b2fcecc3f962718d",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "35.\nIn Ajithkumar P. (Supra), this Court was considering a\n\nfactual situation wherein the reserved category candidate had\n\navailed relaxation in the preliminary examination, however, found\n\nthat the said Preliminary Examination was not having any statutory\n\n31",
+          "sources": [
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 58,
+              "start_offset": 0,
+              "end_offset": 58
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 61,
+              "start_offset": 0,
+              "end_offset": 61
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 65,
+              "start_offset": 0,
+              "end_offset": 65
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-17",
+              "block_reading_order": 17,
+              "block_type": "TEXT",
+              "source_text_length": 66,
+              "start_offset": 0,
+              "end_offset": 66
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-18",
+              "block_reading_order": 18,
+              "block_type": "TEXT",
+              "source_text_length": 2,
+              "start_offset": 0,
+              "end_offset": 2
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6420905590057373,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "d04721ca98b75ec5a8ab5e146e6654bc5381c8cc663f181a36e597a12e66a7cf",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "not in a position to participate in the Main examination and to set forth his claim of cadre allocation.\n\n33. Very recently in Sajib Roy (Supra), this court had the occasion to deal with a similar factual matrix as observed hereunder–\n\n\"32. On an analysis of the aforecited cases, we summarise as follows: Whether a reserved candidate who has availed relaxation in fees/upper age limit to participate in open competition with general candidates may be recruited against unreserved seats would depend on the facts of each case. That is to say, in the event there is no embargo in the recruitment rules/employment notification, such reserved candidates who have scored higher than the last selected unreserved candidate shall be entitled to migrate and be recruited against unreserved seats. However, if an embargo is imposed under relevant recruitment rules, such reserved candidates shall not be permitted to migrate to general category seats.\n\nxxx xxx xxx",
+          "sources": [
+            {
+              "page_number": 30,
+              "block_id": "page-30-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 104,
+              "start_offset": 0,
+              "end_offset": 104
+            },
+            {
+              "page_number": 30,
+              "block_id": "page-30-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 128,
+              "start_offset": 0,
+              "end_offset": 128
+            },
+            {
+              "page_number": 30,
+              "block_id": "page-30-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 707,
+              "start_offset": 0,
+              "end_offset": 707
+            },
+            {
+              "page_number": 30,
+              "block_id": "page-30-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 11,
+              "start_offset": 0,
+              "end_offset": 11
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6408745646476746,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "5c8af2919bd9fd07e638e1d9071ddfd77a22c776291901d4b3d683d40c011f6b",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "18 \n \n\n (2) The Board may, on receipt of an intimation or complaint or reference or directions as referred \nto in sub-section (1) of section 27, take action in accordance with the provisions of this Act and the \nrules made thereunder. \n\n(3) The Board shall determine whether there are sufficient grounds to proceed with an inquiry.  \n\n(4) In case the Board determines that there are insufficient grounds, it may, for reasons to be recorded \nin writing, close the proceedings.  \n\n(5) In case the Board determines that there are sufficient grounds to proceed with inquiry, it may, \nfor reasons to be recorded in writing, inquire into the affairs of any person for ascertaining whether such \nperson is complying with or has complied with the provisions of this Act.  \n\n(6) The Board shall conduct such inquiry following the principles of natural justice and shall record \nreasons for its actions during the course of such inquiry.  \n\n(7) For the purposes of discharging its functions under this Act, the Board shall have the same powers \nas are vested in a civil court under the Code of Civil Procedure, 1908 (5 of 1908), in respect of matters \nrelating to— \n\n (a) summoning and enforcing the attendance of any person and examining her on oath;  \n\n(b) receiving evidence of affidavit requiring the discovery and production of documents; \n\n (c) inspecting any data, book, document, register, books of account or any other document; and \n\n (d) such other matters as may be prescribed.  ",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 5,
+              "start_offset": 0,
+              "end_offset": 5
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 228,
+              "start_offset": 0,
+              "end_offset": 228
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 96,
+              "start_offset": 0,
+              "end_offset": 96
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 142,
+              "start_offset": 0,
+              "end_offset": 142
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 285,
+              "start_offset": 0,
+              "end_offset": 285
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 163,
+              "start_offset": 0,
+              "end_offset": 163
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 224,
+              "start_offset": 0,
+              "end_offset": 224
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 86,
+              "start_offset": 0,
+              "end_offset": 86
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 89,
+              "start_offset": 0,
+              "end_offset": 89
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 96,
+              "start_offset": 0,
+              "end_offset": 96
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 47,
+              "start_offset": 0,
+              "end_offset": 47
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6404517889022827,
+          "fulltext_score": null,
+          "rrf_score": null
+        }
+      ]
+    },
+    {
+      "query_id": "interim-injunction",
+      "query": "When may a court issue an injunction before the dispute is resolved?",
+      "unanswerable": false,
+      "relevant_chunk_ids": [
+        "44275171fa8bba40245b6c72f195feeb74e5f7bfd8f1009ecd47a25f61ff5fd4"
+      ],
+      "expected_document_ids": [
+        "a9f5c03dcfc0962d0cfef3e2dcab9416f2c2839e78884b2ea32b9e326d05867a"
+      ],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "973dc0f49bd378a9d24c40def7051b14c2baee07908f19fab5fcdd37f6b7f0a9",
+        "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+        "9da8087535658e4fbd85d91e2d6d3868a6c1bca4fc08d03e85906a31ef3140ba",
+        "1a8187a860793149278a3c974011f5ab4eced3de56fff2655095d3824f347cd5",
+        "cf397c40d554dbd37e9f309d7335e5927854dcdbd40ed777c7bd931f88bcc44a"
+      ],
+      "retrieved_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "retrieved_document_precision": 0.0,
+      "document_recall_at_k": 0.0,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 0.7243531942367554,
+      "abstention_score_type": "vector_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "973dc0f49bd378a9d24c40def7051b14c2baee07908f19fab5fcdd37f6b7f0a9",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "31. Alternate dispute resolution.—If the Board is of the opinion that any complaint may be \nresolved by mediation, it may direct the parties concerned to attempt resolution of the dispute through \nsuch mediation by such mediator as the parties may mutually agree upon, or as provided for under any \nlaw for the time being in force in India. \n\n 32. Voluntary undertaking.—(1) The Board may accept a voluntary undertaking in respect of any \nmatter related to observance of the provisions of this Act from any person at any stage of a proceeding \nunder section 28.  \n\n(2) The voluntary undertaking referred to in sub-section (1) may include an undertaking to take such \naction within such time as may be determined by the Board, or refrain from taking such action, and or \npublicising such undertaking. \n\n (3) The Board may, after accepting the voluntary undertaking and with the consent of the person \nwho gave the voluntary undertaking vary the terms included in the voluntary undertaking.  \n\n(4) The acceptance of the voluntary undertaking by the Board shall constitute a bar on proceedings \nunder the provisions of this Act as regards the contents of the voluntary undertaking, except in cases \ncovered by sub-section (5).  ",
+          "sources": [
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 341,
+              "start_offset": 0,
+              "end_offset": 341
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 220,
+              "start_offset": 0,
+              "end_offset": 220
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 235,
+              "start_offset": 0,
+              "end_offset": 235
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 188,
+              "start_offset": 0,
+              "end_offset": 188
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 233,
+              "start_offset": 0,
+              "end_offset": 233
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.7243531942367554,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "CHAPTER VII \n\nAPPEAL AND ALTERNATE DISPUTE RESOLUTION \n\n29. Appeal to Appellate Tribunal.— (1) Any person aggrieved by an order or direction made by \nthe Board under this Act may prefer an appeal before the Appellate Tribunal. \n\n (2) Every appeal under sub-section (1) shall be filed within a period of sixty days from the date of \nreceipt of the order or direction appealed against and it shall be in such form and manner and shall be \naccompanied by such fee as may be prescribed.  \n\n(3) The Appellate Tribunal may entertain an appeal after the expiry of the period specified in sub-\nsection (2), if it is satisfied that there was sufficient cause for not preferring the appeal within that \nperiod. \n\nIndiaCode",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-17",
+              "block_reading_order": 17,
+              "block_type": "TEXT",
+              "source_text_length": 40,
+              "start_offset": 0,
+              "end_offset": 40
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-18",
+              "block_reading_order": 18,
+              "block_type": "TEXT",
+              "source_text_length": 171,
+              "start_offset": 0,
+              "end_offset": 171
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-19",
+              "block_reading_order": 19,
+              "block_type": "TEXT",
+              "source_text_length": 255,
+              "start_offset": 0,
+              "end_offset": 255
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-20",
+              "block_reading_order": 20,
+              "block_type": "TEXT",
+              "source_text_length": 215,
+              "start_offset": 0,
+              "end_offset": 215
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-21",
+              "block_reading_order": 21,
+              "block_type": "TEXT",
+              "source_text_length": 9,
+              "start_offset": 0,
+              "end_offset": 9
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6977769136428833,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "9da8087535658e4fbd85d91e2d6d3868a6c1bca4fc08d03e85906a31ef3140ba",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "41.\nPending application(s), if any, shall stand disposed of. There\n\nshall be no order as to costs.\n\n…….…………….…………J.\n  (J.K. MAHESHWARI)\n\n…….…………….…………J.\n    (VIJAY BISHNOI)\nNew Delhi;\nJanuary 6, 2026.\n\n37",
+          "sources": [
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 66,
+              "start_offset": 0,
+              "end_offset": 66
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 30,
+              "start_offset": 0,
+              "end_offset": 30
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 35,
+              "start_offset": 0,
+              "end_offset": 35
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 63,
+              "start_offset": 0,
+              "end_offset": 63
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 2,
+              "start_offset": 0,
+              "end_offset": 2
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6944644451141357,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "1a8187a860793149278a3c974011f5ab4eced3de56fff2655095d3824f347cd5",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "18. In order to adjudicate upon the issue, it is pertinent to refer to the relevant provisions of Rules, 1, 13, 14 and 17 of the Exam Rules, 2013 which are reproduced as hereunder -\n\n5 (2010) 3 SCC 119\n\n6 (2015) 16 SCC 778\n\n7 (2017) 1 SCC 350\n\n11",
+          "sources": [
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 181,
+              "start_offset": 0,
+              "end_offset": 181
+            },
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 18,
+              "start_offset": 0,
+              "end_offset": 18
+            },
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 19,
+              "start_offset": 0,
+              "end_offset": 19
+            },
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 18,
+              "start_offset": 0,
+              "end_offset": 18
+            },
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 2,
+              "start_offset": 0,
+              "end_offset": 2
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6776993274688721,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "cf397c40d554dbd37e9f309d7335e5927854dcdbd40ed777c7bd931f88bcc44a",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "(5) Where a person fails to adhere to any term of the voluntary undertaking accepted by the Board, \nsuch breach shall be deemed to be breach of the provisions of this Act and the Board may, after giving \nsuch person an opportunity of being heard, proceed in accordance with the provisions of section 33.  \n \n \n\nIndiaCode",
+          "sources": [
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 309,
+              "start_offset": 0,
+              "end_offset": 309
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 9,
+              "start_offset": 0,
+              "end_offset": 9
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6749860644340515,
+          "fulltext_score": null,
+          "rrf_score": null
+        }
+      ]
+    },
+    {
+      "query_id": "appeal-interim-order",
+      "query": "Which court may hear an appeal from an interim order?",
+      "unanswerable": false,
+      "relevant_chunk_ids": [
+        "572bb224057983e734a488c23e1c305c0821c5d36b34a5404d2608f02eb4ac72"
+      ],
+      "expected_document_ids": [
+        "ea598f56fa96ebbc37682c641699cce061e116bb132ec346dd1520333521bbed"
+      ],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+        "20a7d27a6507926f15d854761fa52fe2f6f5398c023c9f27c59d63f2457e1388",
+        "38ee91acf28b45bcc512fd0e8d1883c73dc33e30c919f27bb93af1db6fd1df73",
+        "0736ab611d75be4627a6b56892304f53bcae4b6c048d02d75b46b87f25c1e13f",
+        "9da8087535658e4fbd85d91e2d6d3868a6c1bca4fc08d03e85906a31ef3140ba"
+      ],
+      "retrieved_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "retrieved_document_precision": 0.0,
+      "document_recall_at_k": 0.0,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 0.7626990675926208,
+      "abstention_score_type": "vector_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "CHAPTER VII \n\nAPPEAL AND ALTERNATE DISPUTE RESOLUTION \n\n29. Appeal to Appellate Tribunal.— (1) Any person aggrieved by an order or direction made by \nthe Board under this Act may prefer an appeal before the Appellate Tribunal. \n\n (2) Every appeal under sub-section (1) shall be filed within a period of sixty days from the date of \nreceipt of the order or direction appealed against and it shall be in such form and manner and shall be \naccompanied by such fee as may be prescribed.  \n\n(3) The Appellate Tribunal may entertain an appeal after the expiry of the period specified in sub-\nsection (2), if it is satisfied that there was sufficient cause for not preferring the appeal within that \nperiod. \n\nIndiaCode",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-17",
+              "block_reading_order": 17,
+              "block_type": "TEXT",
+              "source_text_length": 40,
+              "start_offset": 0,
+              "end_offset": 40
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-18",
+              "block_reading_order": 18,
+              "block_type": "TEXT",
+              "source_text_length": 171,
+              "start_offset": 0,
+              "end_offset": 171
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-19",
+              "block_reading_order": 19,
+              "block_type": "TEXT",
+              "source_text_length": 255,
+              "start_offset": 0,
+              "end_offset": 255
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-20",
+              "block_reading_order": 20,
+              "block_type": "TEXT",
+              "source_text_length": 215,
+              "start_offset": 0,
+              "end_offset": 215
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-21",
+              "block_reading_order": 21,
+              "block_type": "TEXT",
+              "source_text_length": 9,
+              "start_offset": 0,
+              "end_offset": 9
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.7626990675926208,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "20a7d27a6507926f15d854761fa52fe2f6f5398c023c9f27c59d63f2457e1388",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "19 \n \n\n (4) On receipt of an appeal under sub-section (1), the Appellate Tribunal may, after giving the \nparties to the appeal, an opportunity of being heard, pass such orders thereon as it thinks fit, confirming, \nmodifying or setting aside the order appealed against. \n\n(5) The Appellate Tribunal shall send a copy of every order made by it to the Board and to the parties \nto the appeal. \n\n (6) The appeal filed before the Appellate Tribunal under sub-section (1) shall be dealt with by it as \nexpeditiously as possible and endeavour shall be made by it to dispose of the appeal finally within six \nmonths from the date on which the appeal is presented to it. \n\n (7) Where any appeal under sub-section (6) could not be disposed of within the period of six months, \nthe Appellate Tribunal shall record its reasons in writing for not disposing of the appeal within that \nperiod.  \n\n(8) Without prejudice to the provisions of section 14A and section 16 of the Telecom Regulatory \nAuthority of India Act, 1997 (24 of 1997), the Appellate Tribunal shall deal with an appeal under this \nsection in accordance with such procedure as may be prescribed.  \n\n(9) Where an appeal is filed against the orders of the Appellate Tribunal under this Act, the \nprovisions of section 18 of the Telecom Regulatory Authority of India Act, 1997 (24 of 1997) shall \napply. ",
+          "sources": [
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 5,
+              "start_offset": 0,
+              "end_offset": 5
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 263,
+              "start_offset": 0,
+              "end_offset": 263
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 119,
+              "start_offset": 0,
+              "end_offset": 119
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 270,
+              "start_offset": 0,
+              "end_offset": 270
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 216,
+              "start_offset": 0,
+              "end_offset": 216
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 266,
+              "start_offset": 0,
+              "end_offset": 266
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 202,
+              "start_offset": 0,
+              "end_offset": 202
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.7269470691680908,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "38ee91acf28b45bcc512fd0e8d1883c73dc33e30c919f27bb93af1db6fd1df73",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": " (10) In respect of appeals filed under the provisions of this Act, the Appellate Tribunal shall, as far \nas practicable, function as a digital office, with the receipt of appeal, hearing and pronouncement of \ndecisions in respect of the same being digital by design.  \n\n30. Orders passed by Appellate Tribunal to be executable as decree.—(1) An order passed by \nthe Appellate Tribunal under this Act shall be executable by it as a decree of civil court, and for this \npurpose, the Appellate Tribunal shall have all the powers of a civil court. \n\n (2) Notwithstanding anything contained in sub-section (1), the Appellate Tribunal may transmit any \norder made by it to a civil court having local jurisdiction and such civil court shall execute the order as \nif it were a decree made by that court.  ",
+          "sources": [
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 269,
+              "start_offset": 0,
+              "end_offset": 269
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 274,
+              "start_offset": 0,
+              "end_offset": 274
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 251,
+              "start_offset": 0,
+              "end_offset": 251
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.7237333059310913,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "0736ab611d75be4627a6b56892304f53bcae4b6c048d02d75b46b87f25c1e13f",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "IN THE SUPREME COURT OF INDIA CIVIL APPELLATE JURISDICTION\n\nCIVIL APPEAL NO.\n\nOF 2026\n\n(Arising out of Special Leave Petition (C) No. 4743 of 2020)\n\nUNION OF INDIA\n\n... APPELLANT\n\nKIRAN & ORS.\n\n… RESPONDENTS\n\nversus\n\nwith\n\nCIVIL APPEAL NO.\n\nOF 2026\n\n(Arising out of Special Leave Petition (C) No. 4067 of 2022)\n\nANTONY S MARIYAPPA\n\n…..APPELLANT\n\nversus\n\nJ U D G M E N T\n\nKIRAN & ORS.\n\n…..RESPONDENTS\n\nJ.K. Maheshwari J.\n\nLeave granted.\n\nAssailing the final judgment and order dated 06.08.2019 passed in Writ Petition No. 18947 of 2016 (S-CAT) connected with\n\nREPORTABLE\n\n2026 INSC 15",
+          "sources": [
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 58,
+              "start_offset": 0,
+              "end_offset": 58
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 16,
+              "start_offset": 0,
+              "end_offset": 16
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 7,
+              "start_offset": 0,
+              "end_offset": 7
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 60,
+              "start_offset": 0,
+              "end_offset": 60
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 14,
+              "start_offset": 0,
+              "end_offset": 14
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 13,
+              "start_offset": 0,
+              "end_offset": 13
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-7",
+              "block_reading_order": 7,
+              "block_type": "OTHER",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 13,
+              "start_offset": 0,
+              "end_offset": 13
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 6,
+              "start_offset": 0,
+              "end_offset": 6
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 4,
+              "start_offset": 0,
+              "end_offset": 4
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 16,
+              "start_offset": 0,
+              "end_offset": 16
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 7,
+              "start_offset": 0,
+              "end_offset": 7
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 60,
+              "start_offset": 0,
+              "end_offset": 60
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 18,
+              "start_offset": 0,
+              "end_offset": 18
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 6,
+              "start_offset": 0,
+              "end_offset": 6
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-17",
+              "block_reading_order": 17,
+              "block_type": "TEXT",
+              "source_text_length": 15,
+              "start_offset": 0,
+              "end_offset": 15
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-18",
+              "block_reading_order": 18,
+              "block_type": "OTHER",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-19",
+              "block_reading_order": 19,
+              "block_type": "TEXT",
+              "source_text_length": 14,
+              "start_offset": 0,
+              "end_offset": 14
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-20",
+              "block_reading_order": 20,
+              "block_type": "OTHER",
+              "source_text_length": 18,
+              "start_offset": 0,
+              "end_offset": 18
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-21",
+              "block_reading_order": 21,
+              "block_type": "OTHER",
+              "source_text_length": 14,
+              "start_offset": 0,
+              "end_offset": 14
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-22",
+              "block_reading_order": 22,
+              "block_type": "OTHER",
+              "source_text_length": 120,
+              "start_offset": 0,
+              "end_offset": 120
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-23",
+              "block_reading_order": 23,
+              "block_type": "TEXT",
+              "source_text_length": 10,
+              "start_offset": 0,
+              "end_offset": 10
+            },
+            {
+              "page_number": 1,
+              "block_id": "page-1-block-24",
+              "block_reading_order": 24,
+              "block_type": "TEXT",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.7088345885276794,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "9da8087535658e4fbd85d91e2d6d3868a6c1bca4fc08d03e85906a31ef3140ba",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "41.\nPending application(s), if any, shall stand disposed of. There\n\nshall be no order as to costs.\n\n…….…………….…………J.\n  (J.K. MAHESHWARI)\n\n…….…………….…………J.\n    (VIJAY BISHNOI)\nNew Delhi;\nJanuary 6, 2026.\n\n37",
+          "sources": [
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 66,
+              "start_offset": 0,
+              "end_offset": 66
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 30,
+              "start_offset": 0,
+              "end_offset": 30
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 35,
+              "start_offset": 0,
+              "end_offset": 35
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 63,
+              "start_offset": 0,
+              "end_offset": 63
+            },
+            {
+              "page_number": 37,
+              "block_id": "page-37-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 2,
+              "start_offset": 0,
+              "end_offset": 2
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.7072164416313171,
+          "fulltext_score": null,
+          "rrf_score": null
+        }
+      ]
+    },
+    {
+      "query_id": "unanswerable-tax-extension",
+      "query": "What extension was granted for filing the annual tax return?",
+      "unanswerable": true,
+      "relevant_chunk_ids": [],
+      "expected_document_ids": [],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "e6bc6bbf2fa975f7e8e991f067841d284a45350e2659656ad3afc7271631f9aa",
+        "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5",
+        "cc7852b80efdef5bf075bdd9e75e15b80e72f1dd385b3aa3c9d1c60ed0742e02",
+        "4c1e99f0458855ab20700b41f55b4f2bd436c694d24c5ed727b1901efc50baff",
+        "87d418d191383c3df692d711e4c2118535d5e72619804f51da849a70bcf2631f"
+      ],
+      "retrieved_document_ids": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "recall_at_k": null,
+      "reciprocal_rank": null,
+      "retrieved_document_precision": null,
+      "document_recall_at_k": null,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 0.6472225189208984,
+      "abstention_score_type": "vector_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "e6bc6bbf2fa975f7e8e991f067841d284a45350e2659656ad3afc7271631f9aa",
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "raw_text": "Government stated (November 2024) that the matter had been brought to the notice of the firm and steps in connection with availing the refund is in progress .\n\nRecommendation No. 46\n\nGovernment may expedite follow-ups with the firm and promptly recover the amounts due by enforcing contractual obligations.\n\nThiruvananthapuram, (VISHNUKANTH P B) The 10 June 2025 Accountant General (Audit II), Kerala\n\nCountersigned\n\nNew Delhi, The 01 July 2025\n\n(K. SANJAY MURTHY) Comptroller and Auditor General of India",
+          "sources": [
+            {
+              "page_number": 13,
+              "block_id": "page-13-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 158,
+              "start_offset": 0,
+              "end_offset": 158
+            },
+            {
+              "page_number": 13,
+              "block_id": "page-13-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 21,
+              "start_offset": 0,
+              "end_offset": 21
+            },
+            {
+              "page_number": 13,
+              "block_id": "page-13-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 123,
+              "start_offset": 0,
+              "end_offset": 123
+            },
+            {
+              "page_number": 13,
+              "block_id": "page-13-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 92,
+              "start_offset": 0,
+              "end_offset": 92
+            },
+            {
+              "page_number": 13,
+              "block_id": "page-13-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 13,
+              "start_offset": 0,
+              "end_offset": 13
+            },
+            {
+              "page_number": 13,
+              "block_id": "page-13-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 27,
+              "start_offset": 0,
+              "end_offset": 27
+            },
+            {
+              "page_number": 13,
+              "block_id": "page-13-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 59,
+              "start_offset": 0,
+              "end_offset": 59
+            }
+          ],
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6472225189208984,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5",
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "raw_text": "8.12 Non - levy of liquidated damage charges from Database Administrator service provider\n\nGovernment granted (January 2019) permission to hire the service of Database Administrator provided by M/s RP Techsoft International Pvt. Ltd. (at the rate of ₹85,000 + GST per month). The period of contract was for one year from 24 October 2018 to 23 October 2019. Clause 9.1 of Agreement with M/s RP Techsoft International Pvt. Ltd. stipulates that, the contractor should invariably provide a suitable substitute in the event of the incumbent DBA leaving the job due to his personal reasons. Any delay in providing a suitable substitute beyond three working days would attract liquidated damages at the rate of ₹10,000 per day on the contracting agency.\n\nAudit observed that even though the service of DBA was discontinued from 16 August 2019, Treasury department did not take any steps to levy liquidated damages from the contracting agency. The failure of the Treasury department in levying liquidated damages for the delay of 66 days 52 from the firm had resulted in loss of ₹6.60 lakh to Government.\n\n52 16 August 2019 to 23 October 2019 .",
+          "sources": [
+            {
+              "page_number": 12,
+              "block_id": "page-12-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 89,
+              "start_offset": 0,
+              "end_offset": 89
+            },
+            {
+              "page_number": 12,
+              "block_id": "page-12-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 655,
+              "start_offset": 0,
+              "end_offset": 655
+            },
+            {
+              "page_number": 12,
+              "block_id": "page-12-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 348,
+              "start_offset": 0,
+              "end_offset": 348
+            },
+            {
+              "page_number": 12,
+              "block_id": "page-12-block-6",
+              "block_reading_order": 6,
+              "block_type": "OTHER",
+              "source_text_length": 38,
+              "start_offset": 0,
+              "end_offset": 38
+            }
+          ],
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6469097137451172,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "cc7852b80efdef5bf075bdd9e75e15b80e72f1dd385b3aa3c9d1c60ed0742e02",
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "raw_text": "8.3 Non - reception of Safe to Host Certificate\n\nGovernment direction (October 2015) stipulates that 'Safe to Host' security audit certificate is mandatory for any websites to be hosted at State Data Centre. Government further reiterated (April 2019) the requirement of 'Safe to Host' security audit certificate for all e-governance application, from CERT-In 44 empaneled security auditing agency.\n\nAudit observed that Safe to Host certificates were not received for any of the IFMS - K applications. Further, though the applications maintained by Department of Treasuries have been security audited , those maintained by Department of Finance have not been security audited.\n\nGovernment stated (March 2023) that the treasury applications are security audited and subsequent versions are being audited by STQC. ' Safe to Host ' certificate would be furnished by Treasury Department. Further, in case of other IFMS - K applications security auditing status and ' Safe to Host ' certificate would also be furnished.\n\nWhile noting the reply, the fact remains that the Safe to Host Certificate has not been arranged for the last eight years.",
+          "sources": [
+            {
+              "page_number": 4,
+              "block_id": "page-4-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 47,
+              "start_offset": 0,
+              "end_offset": 47
+            },
+            {
+              "page_number": 4,
+              "block_id": "page-4-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 348,
+              "start_offset": 0,
+              "end_offset": 348
+            },
+            {
+              "page_number": 4,
+              "block_id": "page-4-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 276,
+              "start_offset": 0,
+              "end_offset": 276
+            },
+            {
+              "page_number": 4,
+              "block_id": "page-4-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 336,
+              "start_offset": 0,
+              "end_offset": 336
+            },
+            {
+              "page_number": 4,
+              "block_id": "page-4-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 122,
+              "start_offset": 0,
+              "end_offset": 122
+            }
+          ],
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.643385112285614,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "4c1e99f0458855ab20700b41f55b4f2bd436c694d24c5ed727b1901efc50baff",
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "raw_text": "Access Protocol (LDAP) 45 and SSO in all applications of treasury within two weeks.\n\nAudit observed that even after a lapse of eight years, SSO is not completed.\n\nGovernment stated (December 2022 and March 2023) that LDAP for intratreasury was started implementing during the beginning of year 2018 and was later disabled during 2020-21 due to server issues. Later, after installation of new servers during 2021-22, AEBAS 46 based OTP for multi - factor authentication was enabled in the Intra - treasury applications and implemented SSO using Parichay for internet-based applications during the current financial year and hence there was no undue delay in the implementation of SSO for IFMS - K applications.\n\nThe reply is not tenable, as this does not fulfill the purpose of Single Sign-On. Audit verified various intra - treasury applications (eg: CoreTIS, CoreTSB, CRA, PIMS etc.) during July 2024 and noticed that the users had to still login to these modules separately each time. For the internet-based applications (BIMS, BAMS, WAMS etc.) of IFMS-K, even though NIC's SSO is implemented, it was optional. For certain other applications such as SPARK, BDS etc., the NIC's SSO was not implemented.",
+          "sources": [
+            {
+              "page_number": 6,
+              "block_id": "page-6-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 83,
+              "start_offset": 0,
+              "end_offset": 83
+            },
+            {
+              "page_number": 6,
+              "block_id": "page-6-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 76,
+              "start_offset": 0,
+              "end_offset": 76
+            },
+            {
+              "page_number": 6,
+              "block_id": "page-6-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 546,
+              "start_offset": 0,
+              "end_offset": 546
+            },
+            {
+              "page_number": 6,
+              "block_id": "page-6-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 492,
+              "start_offset": 0,
+              "end_offset": 492
+            }
+          ],
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6395573019981384,
+          "fulltext_score": null,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "87d418d191383c3df692d711e4c2118535d5e72619804f51da849a70bcf2631f",
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "raw_text": "Government stated (March 2023) that all software issues reporting from treasuries are classified as Red, Yellow and White according to their importance. A register is set up for this purpose. Also, the issues reported are recorded through the e-office file system and necessary steps were taken for resolution.\n\nThe reply is not tenable. Audit scrutinised the register maintained at Directorate of Treasuries and found that only one entry has been recorded. Further, no efile has been opened exclusively for error reporting. Moreover, the e-office file system is used for movement of online files. As such, through the e-office system, the ISMC would not be able to trace the pendency of tasks and details of all issues raised. Further, recording and monitoring the software changes could not be achieved through e-office.\n\nRecommendation No. 45\n\nA ticket based online issue reporting mechanism should be designed for entire suite of applications in IFMS-K, categorising issues based on nature and urgency and fixing timeline for resolution.",
+          "sources": [
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 310,
+              "start_offset": 0,
+              "end_offset": 310
+            },
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 510,
+              "start_offset": 0,
+              "end_offset": 510
+            },
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 21,
+              "start_offset": 0,
+              "end_offset": 21
+            },
+            {
+              "page_number": 11,
+              "block_id": "page-11-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 194,
+              "start_offset": 0,
+              "end_offset": 194
+            }
+          ],
+          "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+          "retrieval_channels": [
+            "vector"
+          ],
+          "vector_score": 0.6342596411705017,
+          "fulltext_score": null,
+          "rrf_score": null
+        }
+      ]
+    }
+  ]
+}

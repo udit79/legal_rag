@@ -87,6 +87,26 @@ class _Db:
         return _Session(self)
 
 
+class _IndexFilteredSession(_Session):
+    async def run(self, query, **params):
+        if "SHOW INDEXES" in query:
+            self.tx.calls.append((query, params))
+            return _Result([
+                {"name": name, "type": self.tx.indexes[name], "state": "ONLINE"}
+                for name in params["names"] if name in self.tx.indexes
+            ])
+        return await super().run(query, **params)
+
+
+class _IndexFilteredDb(_Db):
+    def __init__(self, indexes):
+        super().__init__()
+        self.indexes = indexes
+
+    def get_session(self):
+        return _IndexFilteredSession(self)
+
+
 class _NotReadyDb(_Db):
     def __init__(self):
         super().__init__()
@@ -205,6 +225,7 @@ def test_embedding_space_requires_provider_model_dimensions_and_checks_output():
 
 
 def test_embedding_configuration_has_no_implicit_provider_or_model(monkeypatch):
+    monkeypatch.setattr("src.graph.embeddings.load_dotenv", lambda *args, **kwargs: None)
     for key in ("EMBEDDING_PROVIDER", "EMBEDDING_MODEL", "EMBEDDING_DIMENSIONS"):
         monkeypatch.delenv(key, raising=False)
     with pytest.raises(ValueError, match="Set EMBEDDING_PROVIDER"):
@@ -396,10 +417,21 @@ def test_fulltext_and_vector_retrievers_are_independent_and_return_raw_provenanc
         db = _Db()
         config = EmbeddingConfig("openai", _Provider.model, _Provider.dimensions)
         provider = _Provider()
-        fulltext = await FullTextRetriever(db, candidate_multiplier=4).search("retrieval terms", limit=3)
-        vector = await VectorRetriever(db, provider, config).search("semantic question", limit=3)
-        assert [item.channel for item in fulltext] == ["fulltext"]
-        assert [item.channel for item in vector] == ["vector"]
+        fulltext_retriever = FullTextRetriever(db, candidate_multiplier=4)
+        vector_retriever = VectorRetriever(db, provider, config)
+        fulltext = await fulltext_retriever.search("retrieval terms", limit=3)
+        vector = await vector_retriever.search("semantic question", limit=3)
+        assert fulltext_retriever.configuration == {
+            "strategy": "fulltext", "fulltext_index": "chunk_retrieval_text_fulltext",
+            "candidate_multiplier": 4,
+            "abstention_score_policy": "fulltext_relevance_score",
+        }
+        assert vector_retriever.configuration["strategy"] == "vector"
+        assert vector_retriever.configuration["embedding_space_id"] == config.space_id
+        assert [item.retrieval_channels for item in fulltext] == [("fulltext",)]
+        assert [item.retrieval_channels for item in vector] == [("vector",)]
+        assert fulltext[0].fulltext_score == 2.2 and fulltext[0].rrf_score is None
+        assert vector[0].vector_score == 0.91 and vector[0].rrf_score is None
         assert vector[0].raw_text == "Raw source quote"
         assert vector[0].sources[0].block_id == "page-2-block-4"
         assert provider.input_type == "query"
@@ -423,6 +455,26 @@ def test_fulltext_and_vector_retrievers_are_independent_and_return_raw_provenanc
         assert "WHERE c.is_current = true" in vector_query
         assert "c.embedding_space_id = $embedding_space_id" in vector_query
         assert vector_params["embedding_space_id"] == config.space_id
+    asyncio.run(run())
+
+
+def test_standalone_retrievers_require_only_their_own_index():
+    async def run():
+        config = EmbeddingConfig("openai", _Provider.model, _Provider.dimensions)
+        ft_db = _IndexFilteredDb({"chunk_retrieval_text_fulltext": "FULLTEXT"})
+        fulltext = await FullTextRetriever(ft_db).search("retrieval terms", limit=1)
+        assert fulltext[0].abstention_score_type == "fulltext_relevance_score"
+        with pytest.raises(SearchIndexUnavailable, match=config.vector_index_name):
+            await VectorRetriever(ft_db, _Provider(), config).search("semantic", limit=1)
+        assert not any("VECTOR INDEX" in query for query, _ in ft_db.calls)
+
+        vector_db = _IndexFilteredDb({config.vector_index_name: "VECTOR"})
+        vector = await VectorRetriever(vector_db, _Provider(), config).search("semantic", limit=1)
+        assert vector[0].abstention_score_type == "vector_relevance_score"
+        with pytest.raises(SearchIndexUnavailable, match="chunk_retrieval_text_fulltext"):
+            await FullTextRetriever(vector_db).search("retrieval terms", limit=1)
+        assert not any("FULLTEXT INDEX" in query for query, _ in vector_db.calls)
+
     asyncio.run(run())
 
 
@@ -479,6 +531,31 @@ def test_rrf_rejects_retrievers_that_disagree_about_source_evidence():
             [_hit("same", "vector", raw="A")],
             [_hit("same", "fulltext", raw="B")],
         )
+
+
+@pytest.mark.parametrize(
+    "config, expected_ids, expected_channels",
+    [
+        (RRFConfig(vector_weight=0, fulltext_weight=1), ["ft-only"], ("fulltext",)),
+        (RRFConfig(vector_weight=1, fulltext_weight=0), ["vec-only"], ("vector",)),
+    ],
+)
+def test_rrf_skips_candidates_from_zero_weight_channels(config, expected_ids, expected_channels):
+    fused = reciprocal_rank_fusion(
+        [_hit("vec-only", "vector"), _hit("shared", "vector")],
+        [_hit("ft-only", "fulltext"), _hit("shared", "fulltext")],
+        config=config,
+    )
+    assert expected_ids[0] in {item.chunk_id for item in fused}
+    disabled_id = "vec-only" if config.vector_weight == 0 else "ft-only"
+    assert disabled_id not in {item.chunk_id for item in fused}
+    assert all(item.retrieval_channels == expected_channels for item in fused)
+    assert all(item.rrf_score is not None for item in fused)
+
+
+def test_rrf_rejects_both_channel_weights_zero():
+    with pytest.raises(ValueError, match="not both zero"):
+        RRFConfig(vector_weight=0, fulltext_weight=0)
 
 
 def test_frozen_dev_evaluation_dataset_and_metrics_are_saved():
@@ -794,8 +871,8 @@ def test_evaluation_requires_explicit_abstention_threshold_and_scores_abstention
                 rrf_score=self.score,
             )]
 
-    with pytest.raises(TypeError, match="abstention_rrf_threshold"):
-        run_evaluation(dataset, _Retriever(None))
+    with pytest.raises(ValueError, match="abstention_score_threshold"):
+        asyncio.run(run_evaluation(dataset, _Retriever(None)))
 
     async def run():
         empty = await run_evaluation(dataset, _Retriever(None), abstention_rrf_threshold=0.4)
@@ -804,7 +881,7 @@ def test_evaluation_requires_explicit_abstention_threshold_and_scores_abstention
         assert empty["per_query"][0]["abstained"] is True
         assert below["per_query"][0]["abstained"] is True
         assert above["per_query"][0]["abstained"] is False
-        assert above["configuration"]["abstention_rrf_threshold"] == 0.4
+        assert above["configuration"]["abstention_score_threshold"] == 0.4
     asyncio.run(run())
 
 

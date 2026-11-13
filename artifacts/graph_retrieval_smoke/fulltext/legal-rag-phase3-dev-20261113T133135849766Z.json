@@ -1,0 +1,1493 @@
+{
+  "dataset_id": "legal-rag-phase3-dev",
+  "dataset_version": "1.0.0",
+  "synthetic_dataset": true,
+  "annotation_source": null,
+  "corpus_snapshot": {},
+  "timestamp": "2026-11-13T13:31:35.849766+00:00",
+  "configuration": {
+    "k": 5,
+    "rrf": {},
+    "abstention_score_threshold": 0.01,
+    "abstention_scoring": {
+      "score_field": "fulltext_relevance_score",
+      "abstain_when": "top_score <= threshold or no results"
+    },
+    "answer_correctness_enabled": false,
+    "strategy": "fulltext",
+    "retrieval": {
+      "strategy": "fulltext",
+      "fulltext_index": "chunk_retrieval_text_fulltext",
+      "candidate_multiplier": 5,
+      "abstention_score_policy": "fulltext_relevance_score"
+    }
+  },
+  "metrics": {
+    "recall_at_5": 0.0,
+    "mrr": 0.0,
+    "retrieved_document_precision": 0.0,
+    "document_recall_at_5": 0.0,
+    "citation_accuracy": null,
+    "citation_grounding_rate": null,
+    "citation_evaluation_coverage": null,
+    "unanswerable_query_abstention": 0.0,
+    "answer_correctness": null,
+    "answerable_queries_with_answer_evaluation": null,
+    "answerable_answer_evaluation_coverage": null
+  },
+  "per_query": [
+    {
+      "query_id": "habeas-corpus-purpose",
+      "query": "What does habeas corpus require when a person is detained?",
+      "unanswerable": false,
+      "relevant_chunk_ids": [
+        "e5572d4b0681bb3376829394b13439bbb26f016cc6270395d458aca30fc90794"
+      ],
+      "expected_document_ids": [
+        "a9f5c03dcfc0962d0cfef3e2dcab9416f2c2839e78884b2ea32b9e326d05867a"
+      ],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "22d931963c9cc539c50fa5b5d9cdce98b05230b85b755c34d5df90dbd82d2742",
+        "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+        "3f1fa4a7d83f7f35a2146c7c98781fd62c79af1bd821901a024d84a925e494aa",
+        "ace18cb92c261cbd5cf6f7e95e658054d3ab14078e212ccc94c77b83136d1b81",
+        "3fcb54c8797aa06e10e097faa6fc0660c523a654157c973955e9c2c5b8159a3f"
+      ],
+      "retrieved_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "retrieved_document_precision": 0.0,
+      "document_recall_at_k": 0.0,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 4.238009452819824,
+      "abstention_score_type": "fulltext_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "22d931963c9cc539c50fa5b5d9cdce98b05230b85b755c34d5df90dbd82d2742",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "23. Proceedings of Board.—(1) The Board shall observe such procedure in regard to the holding of \nand transaction of business at its meetings, including by digital means, and authenticate its orders, \ndirections and instruments in such manner as may be prescribed.  \n\n(2) No act or proceeding of the Board shall be invalid merely by reason of— \n\n (a) any vacancy in or any defect in the constitution of the Board; \n\n (b) any defect in the appointment of a person acting as the Chairperson or other Member of \nthe Board; or \n\n (c) any irregularity in the procedure of the Board, which does not affect the merits of the case.  \n\n(3) When the Chairperson is unable to discharge her functions owing to absence, illness or any other \ncause, the senior-most Member shall discharge the functions of the Chairperson until the date on which \nthe Chairperson resumes her duties.  ",
+          "sources": [
+            {
+              "page_number": 16,
+              "block_id": "page-16-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 266,
+              "start_offset": 0,
+              "end_offset": 266
+            },
+            {
+              "page_number": 16,
+              "block_id": "page-16-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 76,
+              "start_offset": 0,
+              "end_offset": 76
+            },
+            {
+              "page_number": 16,
+              "block_id": "page-16-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 68,
+              "start_offset": 0,
+              "end_offset": 68
+            },
+            {
+              "page_number": 16,
+              "block_id": "page-16-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 107,
+              "start_offset": 0,
+              "end_offset": 107
+            },
+            {
+              "page_number": 16,
+              "block_id": "page-16-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 100,
+              "start_offset": 0,
+              "end_offset": 100
+            },
+            {
+              "page_number": 16,
+              "block_id": "page-16-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 243,
+              "start_offset": 0,
+              "end_offset": 243
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 4.238009452819824,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "(8) The Board or its officers shall not prevent access to any premises or take into custody any \nequipment or any item that may adversely affect the day-to-day functioning of a person. \n\n (9) The Board may require the services of any police officer or any officer of the Central \nGovernment or a State Government to assist it for the purposes of this section and it shall be the duty \nof every such officer to comply with such requisition. \n\n (10) During the course of the inquiry, if the Board considers it necessary, it may for reasons to be \nrecorded in writing, issue interim orders after giving the person concerned an opportunity of being \nheard. \n\n (11) On completion of the inquiry and after giving the person concerned an opportunity of being \nheard, the Board may for reasons to be recorded in writing, either close the proceedings or proceed in \naccordance with section 33.  \n\n(12) At any stage after receipt of a complaint, if the Board is of the opinion that the complaint is \nfalse or frivolous, it may issue a warning or impose costs on the complainant.  ",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 185,
+              "start_offset": 0,
+              "end_offset": 185
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 253,
+              "start_offset": 0,
+              "end_offset": 253
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 211,
+              "start_offset": 0,
+              "end_offset": 211
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 231,
+              "start_offset": 0,
+              "end_offset": 231
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 182,
+              "start_offset": 0,
+              "end_offset": 182
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 3.9522995948791504,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "3f1fa4a7d83f7f35a2146c7c98781fd62c79af1bd821901a024d84a925e494aa",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "42. Power to amend Schedule.—(1) The Central Government may, by notification, amend the \nSchedule, subject to the restriction that no such notification shall have the effect of increasing any \npenalty specified therein to more than twice of what was specified in it when this Act was originally \nenacted. \n\n(2) Any amendment notified under sub-section (1) shall have effect as if enacted in this Act and shall \ncome into force on the date of the notification. ",
+          "sources": [
+            {
+              "page_number": 22,
+              "block_id": "page-22-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 305,
+              "start_offset": 0,
+              "end_offset": 305
+            },
+            {
+              "page_number": 22,
+              "block_id": "page-22-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 153,
+              "start_offset": 0,
+              "end_offset": 153
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 3.470258951187134,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "ace18cb92c261cbd5cf6f7e95e658054d3ab14078e212ccc94c77b83136d1b81",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "37. The judgment of this Court in Deepa E.V. [Deepa E.V. v. Union of India, (2017) 12 SCC 680 : (2018) 1 SCC (L&S) 100] fully supports the case of the appellants. In Deepa E.V. case [Deepa E.V. v. Union of India, (2017) 12 SCC 680 : (2018) 1 SCC (L&S) 100] also the Circular of the Central Government dated 1-7-1998/2-71997 provided the relevant provision which is to the following effect: (SCC pp. 682-83, para 6)\n\n\" 6. … '… In other words, when a relaxed standard is applied in selecting SC/ST/OBC candidates, for example in the age-limit, experience, qualification, permitted number of chances in written examination, extended zone of consideration larger than what is provided for general category candidates, etc., the SC/ST/OBC candidates are to be counted against reserved vacancies. Such candidates would be deemed as unavailable for consideration against unreserved vacancies.' \" (emphasis in original)\n\nxxx\n\nxxx\n\nxxx",
+          "sources": [
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 414,
+              "start_offset": 0,
+              "end_offset": 414
+            },
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 495,
+              "start_offset": 0,
+              "end_offset": 495
+            },
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 3,
+              "start_offset": 0,
+              "end_offset": 3
+            },
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 3,
+              "start_offset": 0,
+              "end_offset": 3
+            },
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 3,
+              "start_offset": 0,
+              "end_offset": 3
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 3.315744400024414,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "3fcb54c8797aa06e10e097faa6fc0660c523a654157c973955e9c2c5b8159a3f",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "relaxation in TET pass marks would amount to concession in the recruitment process. The High Court has held to be so on the premise that Para 9(a) dealing with such relaxation in TET marks forms part of the document which relates to the recruitment procedure. It is difficult to accept this rationale or analogy. Passing of TET examination is a condition of eligibility for appointment as a teacher. It is a necessary qualification without which a candidate is not eligible to be considered for appointment. This was clearly mentioned in the Guidelines/Notification dated 11-2-2011. These Guidelines pertain to conducting of TET; basic features whereof have already been pointed out above. Even Para 9 which provides for concessions that can be given to certain reserved categories deals with \"qualifying marks\" that is to be obtained in TET examination. Thus, a person who passes TET examination becomes eligible to participate in the selection process as and when such selection process for filling up of the posts of primary teachers is to be undertaken by the State. On the other hand, when it comes to recruitment of teachers, the method for appointment of teachers is altogether different. Here, merit list of successful candidates is to be prepared on the basis of marks obtained under different heads. One of the heads is \"marks in TET\". So far as this head is concerned, 20% of the marks obtained in TET are to be assigned to each candidate. ",
+          "sources": [
+            {
+              "page_number": 33,
+              "block_id": "page-33-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 2196,
+              "start_offset": 0,
+              "end_offset": 1451
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 3.2283082008361816,
+          "rrf_score": null
+        }
+      ]
+    },
+    {
+      "query_id": "interim-injunction",
+      "query": "When may a court issue an injunction before the dispute is resolved?",
+      "unanswerable": false,
+      "relevant_chunk_ids": [
+        "44275171fa8bba40245b6c72f195feeb74e5f7bfd8f1009ecd47a25f61ff5fd4"
+      ],
+      "expected_document_ids": [
+        "a9f5c03dcfc0962d0cfef3e2dcab9416f2c2839e78884b2ea32b9e326d05867a"
+      ],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+        "e86165a775442f7099921b64222eccd83c54fcd955d071ab0eb89e40087c427f",
+        "803c78bb28aa6f77e33a8290553073db96812433aeddc39820db4ef91b193531",
+        "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+        "973dc0f49bd378a9d24c40def7051b14c2baee07908f19fab5fcdd37f6b7f0a9"
+      ],
+      "retrieved_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "retrieved_document_precision": 0.0,
+      "document_recall_at_k": 0.0,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 5.279109001159668,
+      "abstention_score_type": "fulltext_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "CHAPTER VII \n\nAPPEAL AND ALTERNATE DISPUTE RESOLUTION \n\n29. Appeal to Appellate Tribunal.— (1) Any person aggrieved by an order or direction made by \nthe Board under this Act may prefer an appeal before the Appellate Tribunal. \n\n (2) Every appeal under sub-section (1) shall be filed within a period of sixty days from the date of \nreceipt of the order or direction appealed against and it shall be in such form and manner and shall be \naccompanied by such fee as may be prescribed.  \n\n(3) The Appellate Tribunal may entertain an appeal after the expiry of the period specified in sub-\nsection (2), if it is satisfied that there was sufficient cause for not preferring the appeal within that \nperiod. \n\nIndiaCode",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-17",
+              "block_reading_order": 17,
+              "block_type": "TEXT",
+              "source_text_length": 40,
+              "start_offset": 0,
+              "end_offset": 40
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-18",
+              "block_reading_order": 18,
+              "block_type": "TEXT",
+              "source_text_length": 171,
+              "start_offset": 0,
+              "end_offset": 171
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-19",
+              "block_reading_order": 19,
+              "block_type": "TEXT",
+              "source_text_length": 255,
+              "start_offset": 0,
+              "end_offset": 255
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-20",
+              "block_reading_order": 20,
+              "block_type": "TEXT",
+              "source_text_length": 215,
+              "start_offset": 0,
+              "end_offset": 215
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-21",
+              "block_reading_order": 21,
+              "block_type": "TEXT",
+              "source_text_length": 9,
+              "start_offset": 0,
+              "end_offset": 9
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 5.279109001159668,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "e86165a775442f7099921b64222eccd83c54fcd955d071ab0eb89e40087c427f",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "39. Bar of jurisdiction.—No civil court shall have the jurisdiction to entertain any suit or \nproceeding in respect of any matter for which the Board is empowered under the provisions of this Act \nand no injunction shall be granted by any court or other authority in respect of any action taken or to be \ntaken in pursuance of any power under the provisions of this Act. \n\n40. Power to make rules.—(1) The Central Government may, by notification, and subject to the \ncondition of previous publication, make rules not inconsistent with the provisions of this Act, to carry \nout the purposes of this Act.  \n\n(2) In particular and without prejudice to the generality of the foregoing power, such rules may \nprovide for all or any of the following matters, namely:—  \n\n(a) the manner in which the notice given by the Data Fiduciary to a Data Principal shall inform \nher, under sub-section (1) of section 5;  \n\n(b) the manner in which the notice given by the Data Fiduciary to a Data Principal shall inform \nher, under sub-section (2) of section 5; \n\n (c) the manner of accountability and the obligations of Consent Manager under sub-section (8) \nof section 6;  \n\n(d) the manner of registration of Consent Manager and the conditions relating thereto, under           \nsub-section (9) of section 6;  \n\n(e) the subsidy, benefit, service, certificate, licence or permit for the provision or issuance of \nwhich, personal data may be processed under clause (b) of section 7; ",
+          "sources": [
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 371,
+              "start_offset": 0,
+              "end_offset": 371
+            },
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 231,
+              "start_offset": 0,
+              "end_offset": 231
+            },
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 157,
+              "start_offset": 0,
+              "end_offset": 157
+            },
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 139,
+              "start_offset": 0,
+              "end_offset": 139
+            },
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 138,
+              "start_offset": 0,
+              "end_offset": 138
+            },
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 111,
+              "start_offset": 0,
+              "end_offset": 111
+            },
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 135,
+              "start_offset": 0,
+              "end_offset": 135
+            },
+            {
+              "page_number": 21,
+              "block_id": "page-21-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 169,
+              "start_offset": 0,
+              "end_offset": 169
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 4.2086381912231445,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "803c78bb28aa6f77e33a8290553073db96812433aeddc39820db4ef91b193531",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "34.\nAt this stage, pertinently the judgements relied upon by the\n\nlearned senior counsel for Respondent No. 1 in their support are\n\nnecessarily required to be appreciated. In Jitendra Kumar Singh\n\n(Supra), this court while considering whether an OBC candidate\n\nwho applied exercising his option as a reserved category candidate,\n\nwould be eligible to be considered against an unreserved vacancy, if\n\nhe secures more marks than the last candidate in general category.\n\nNonetheless, in the said case, this court was considering the issue\n\nin reference to instructions issued by the State of Uttar Pradesh\n\ndated 25.03.1994 which specifically provided for migration of\n\nreserved category candidates to unreserved vacancies despite they\n\nhaving availed any facility or relaxation (like relaxation in age limit)\n\navailable to reserved category. Therefore, it is distinguishable on\n\nfacts of the present appeals. ",
+          "sources": [
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 64,
+              "start_offset": 0,
+              "end_offset": 64
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 64,
+              "start_offset": 0,
+              "end_offset": 64
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 63,
+              "start_offset": 0,
+              "end_offset": 63
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 62,
+              "start_offset": 0,
+              "end_offset": 62
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 67,
+              "start_offset": 0,
+              "end_offset": 67
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 68,
+              "start_offset": 0,
+              "end_offset": 68
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 66,
+              "start_offset": 0,
+              "end_offset": 66
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 67,
+              "start_offset": 0,
+              "end_offset": 67
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 65,
+              "start_offset": 0,
+              "end_offset": 65
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 61,
+              "start_offset": 0,
+              "end_offset": 61
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 65,
+              "start_offset": 0,
+              "end_offset": 65
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 72,
+              "start_offset": 0,
+              "end_offset": 72
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 67,
+              "start_offset": 0,
+              "end_offset": 67
+            },
+            {
+              "page_number": 31,
+              "block_id": "page-31-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 30,
+              "start_offset": 0,
+              "end_offset": 30
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 4.092292308807373,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "(8) The Board or its officers shall not prevent access to any premises or take into custody any \nequipment or any item that may adversely affect the day-to-day functioning of a person. \n\n (9) The Board may require the services of any police officer or any officer of the Central \nGovernment or a State Government to assist it for the purposes of this section and it shall be the duty \nof every such officer to comply with such requisition. \n\n (10) During the course of the inquiry, if the Board considers it necessary, it may for reasons to be \nrecorded in writing, issue interim orders after giving the person concerned an opportunity of being \nheard. \n\n (11) On completion of the inquiry and after giving the person concerned an opportunity of being \nheard, the Board may for reasons to be recorded in writing, either close the proceedings or proceed in \naccordance with section 33.  \n\n(12) At any stage after receipt of a complaint, if the Board is of the opinion that the complaint is \nfalse or frivolous, it may issue a warning or impose costs on the complainant.  ",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 185,
+              "start_offset": 0,
+              "end_offset": 185
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 253,
+              "start_offset": 0,
+              "end_offset": 253
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 211,
+              "start_offset": 0,
+              "end_offset": 211
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 231,
+              "start_offset": 0,
+              "end_offset": 231
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 182,
+              "start_offset": 0,
+              "end_offset": 182
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 4.071356296539307,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "973dc0f49bd378a9d24c40def7051b14c2baee07908f19fab5fcdd37f6b7f0a9",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "31. Alternate dispute resolution.—If the Board is of the opinion that any complaint may be \nresolved by mediation, it may direct the parties concerned to attempt resolution of the dispute through \nsuch mediation by such mediator as the parties may mutually agree upon, or as provided for under any \nlaw for the time being in force in India. \n\n 32. Voluntary undertaking.—(1) The Board may accept a voluntary undertaking in respect of any \nmatter related to observance of the provisions of this Act from any person at any stage of a proceeding \nunder section 28.  \n\n(2) The voluntary undertaking referred to in sub-section (1) may include an undertaking to take such \naction within such time as may be determined by the Board, or refrain from taking such action, and or \npublicising such undertaking. \n\n (3) The Board may, after accepting the voluntary undertaking and with the consent of the person \nwho gave the voluntary undertaking vary the terms included in the voluntary undertaking.  \n\n(4) The acceptance of the voluntary undertaking by the Board shall constitute a bar on proceedings \nunder the provisions of this Act as regards the contents of the voluntary undertaking, except in cases \ncovered by sub-section (5).  ",
+          "sources": [
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 341,
+              "start_offset": 0,
+              "end_offset": 341
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 220,
+              "start_offset": 0,
+              "end_offset": 220
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 235,
+              "start_offset": 0,
+              "end_offset": 235
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 188,
+              "start_offset": 0,
+              "end_offset": 188
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 233,
+              "start_offset": 0,
+              "end_offset": 233
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 4.069648742675781,
+          "rrf_score": null
+        }
+      ]
+    },
+    {
+      "query_id": "appeal-interim-order",
+      "query": "Which court may hear an appeal from an interim order?",
+      "unanswerable": false,
+      "relevant_chunk_ids": [
+        "572bb224057983e734a488c23e1c305c0821c5d36b34a5404d2608f02eb4ac72"
+      ],
+      "expected_document_ids": [
+        "ea598f56fa96ebbc37682c641699cce061e116bb132ec346dd1520333521bbed"
+      ],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "20a7d27a6507926f15d854761fa52fe2f6f5398c023c9f27c59d63f2457e1388",
+        "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+        "38ee91acf28b45bcc512fd0e8d1883c73dc33e30c919f27bb93af1db6fd1df73",
+        "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+        "1c729afd14bfb608360c7b6beeef35a92d26fc8a05b1077019731bd4ec3ee792"
+      ],
+      "retrieved_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "recall_at_k": 0.0,
+      "reciprocal_rank": 0.0,
+      "retrieved_document_precision": 0.0,
+      "document_recall_at_k": 0.0,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 6.870078086853027,
+      "abstention_score_type": "fulltext_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "20a7d27a6507926f15d854761fa52fe2f6f5398c023c9f27c59d63f2457e1388",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "19 \n \n\n (4) On receipt of an appeal under sub-section (1), the Appellate Tribunal may, after giving the \nparties to the appeal, an opportunity of being heard, pass such orders thereon as it thinks fit, confirming, \nmodifying or setting aside the order appealed against. \n\n(5) The Appellate Tribunal shall send a copy of every order made by it to the Board and to the parties \nto the appeal. \n\n (6) The appeal filed before the Appellate Tribunal under sub-section (1) shall be dealt with by it as \nexpeditiously as possible and endeavour shall be made by it to dispose of the appeal finally within six \nmonths from the date on which the appeal is presented to it. \n\n (7) Where any appeal under sub-section (6) could not be disposed of within the period of six months, \nthe Appellate Tribunal shall record its reasons in writing for not disposing of the appeal within that \nperiod.  \n\n(8) Without prejudice to the provisions of section 14A and section 16 of the Telecom Regulatory \nAuthority of India Act, 1997 (24 of 1997), the Appellate Tribunal shall deal with an appeal under this \nsection in accordance with such procedure as may be prescribed.  \n\n(9) Where an appeal is filed against the orders of the Appellate Tribunal under this Act, the \nprovisions of section 18 of the Telecom Regulatory Authority of India Act, 1997 (24 of 1997) shall \napply. ",
+          "sources": [
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 5,
+              "start_offset": 0,
+              "end_offset": 5
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 263,
+              "start_offset": 0,
+              "end_offset": 263
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 119,
+              "start_offset": 0,
+              "end_offset": 119
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 270,
+              "start_offset": 0,
+              "end_offset": 270
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 216,
+              "start_offset": 0,
+              "end_offset": 216
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 266,
+              "start_offset": 0,
+              "end_offset": 266
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 202,
+              "start_offset": 0,
+              "end_offset": 202
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 6.870078086853027,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "CHAPTER VII \n\nAPPEAL AND ALTERNATE DISPUTE RESOLUTION \n\n29. Appeal to Appellate Tribunal.— (1) Any person aggrieved by an order or direction made by \nthe Board under this Act may prefer an appeal before the Appellate Tribunal. \n\n (2) Every appeal under sub-section (1) shall be filed within a period of sixty days from the date of \nreceipt of the order or direction appealed against and it shall be in such form and manner and shall be \naccompanied by such fee as may be prescribed.  \n\n(3) The Appellate Tribunal may entertain an appeal after the expiry of the period specified in sub-\nsection (2), if it is satisfied that there was sufficient cause for not preferring the appeal within that \nperiod. \n\nIndiaCode",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 12,
+              "start_offset": 0,
+              "end_offset": 12
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-17",
+              "block_reading_order": 17,
+              "block_type": "TEXT",
+              "source_text_length": 40,
+              "start_offset": 0,
+              "end_offset": 40
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-18",
+              "block_reading_order": 18,
+              "block_type": "TEXT",
+              "source_text_length": 171,
+              "start_offset": 0,
+              "end_offset": 171
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-19",
+              "block_reading_order": 19,
+              "block_type": "TEXT",
+              "source_text_length": 255,
+              "start_offset": 0,
+              "end_offset": 255
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-20",
+              "block_reading_order": 20,
+              "block_type": "TEXT",
+              "source_text_length": 215,
+              "start_offset": 0,
+              "end_offset": 215
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-21",
+              "block_reading_order": 21,
+              "block_type": "TEXT",
+              "source_text_length": 9,
+              "start_offset": 0,
+              "end_offset": 9
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 5.925014019012451,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "38ee91acf28b45bcc512fd0e8d1883c73dc33e30c919f27bb93af1db6fd1df73",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": " (10) In respect of appeals filed under the provisions of this Act, the Appellate Tribunal shall, as far \nas practicable, function as a digital office, with the receipt of appeal, hearing and pronouncement of \ndecisions in respect of the same being digital by design.  \n\n30. Orders passed by Appellate Tribunal to be executable as decree.—(1) An order passed by \nthe Appellate Tribunal under this Act shall be executable by it as a decree of civil court, and for this \npurpose, the Appellate Tribunal shall have all the powers of a civil court. \n\n (2) Notwithstanding anything contained in sub-section (1), the Appellate Tribunal may transmit any \norder made by it to a civil court having local jurisdiction and such civil court shall execute the order as \nif it were a decree made by that court.  ",
+          "sources": [
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 269,
+              "start_offset": 0,
+              "end_offset": 269
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 274,
+              "start_offset": 0,
+              "end_offset": 274
+            },
+            {
+              "page_number": 19,
+              "block_id": "page-19-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 251,
+              "start_offset": 0,
+              "end_offset": 251
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 5.834043979644775,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "5d0155ebb88eba13f228f3df94814db504a0923c8c5b884a2140bedc783900ad",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "(8) The Board or its officers shall not prevent access to any premises or take into custody any \nequipment or any item that may adversely affect the day-to-day functioning of a person. \n\n (9) The Board may require the services of any police officer or any officer of the Central \nGovernment or a State Government to assist it for the purposes of this section and it shall be the duty \nof every such officer to comply with such requisition. \n\n (10) During the course of the inquiry, if the Board considers it necessary, it may for reasons to be \nrecorded in writing, issue interim orders after giving the person concerned an opportunity of being \nheard. \n\n (11) On completion of the inquiry and after giving the person concerned an opportunity of being \nheard, the Board may for reasons to be recorded in writing, either close the proceedings or proceed in \naccordance with section 33.  \n\n(12) At any stage after receipt of a complaint, if the Board is of the opinion that the complaint is \nfalse or frivolous, it may issue a warning or impose costs on the complainant.  ",
+          "sources": [
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 185,
+              "start_offset": 0,
+              "end_offset": 185
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 253,
+              "start_offset": 0,
+              "end_offset": 253
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 211,
+              "start_offset": 0,
+              "end_offset": 211
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 231,
+              "start_offset": 0,
+              "end_offset": 231
+            },
+            {
+              "page_number": 18,
+              "block_id": "page-18-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 182,
+              "start_offset": 0,
+              "end_offset": 182
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 5.224536895751953,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "1c729afd14bfb608360c7b6beeef35a92d26fc8a05b1077019731bd4ec3ee792",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "In the said case, this Court while affirming the view taken in Deepa E.V. (Supra), held that reserved category candidates who had availed corresponding relaxations, could not be considered on general/unreserved vacancies.\n\n32. Similarly, this court in Niravkumar Dilipbhai (Supra) while considering an identical factual situation involving a circular barring consideration of reserved category candidates on unreserved posts observed as under –\n\n\"22. Article 16(4) of the Constitution is an enabling provision empowering the State to make any provision or reservation of appointments or posts in favour of any backward class of citizens which in the opinion of the State is not adequately represented in the service under the State. It is purely a matter of discretion of the State Government to formulate a policy for concession, exemption, preference or relaxation either conditionally or unconditionally in favour of the backward classes of citizens. The reservation being the enabling provision, the manner and the extent to which reservation is provided has to be spelled out from the orders issued by the Government from time to time.\n\nxxx xxx xxx",
+          "sources": [
+            {
+              "page_number": 28,
+              "block_id": "page-28-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 221,
+              "start_offset": 0,
+              "end_offset": 221
+            },
+            {
+              "page_number": 28,
+              "block_id": "page-28-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 221,
+              "start_offset": 0,
+              "end_offset": 221
+            },
+            {
+              "page_number": 28,
+              "block_id": "page-28-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 694,
+              "start_offset": 0,
+              "end_offset": 694
+            },
+            {
+              "page_number": 28,
+              "block_id": "page-28-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 11,
+              "start_offset": 0,
+              "end_offset": 11
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 5.182376384735107,
+          "rrf_score": null
+        }
+      ]
+    },
+    {
+      "query_id": "unanswerable-tax-extension",
+      "query": "What extension was granted for filing the annual tax return?",
+      "unanswerable": true,
+      "relevant_chunk_ids": [],
+      "expected_document_ids": [],
+      "evidence_references": [],
+      "retrieved_chunk_ids": [
+        "9827d84da2ebb770826b2f084fe492f19ef7aff5f235d825ad35c313f1447b46",
+        "3f1fa4a7d83f7f35a2146c7c98781fd62c79af1bd821901a024d84a925e494aa",
+        "d3aa4cff21ea6dc324e7e552d4c1123d3cc1cf40b821e8e805308a8fef37cabb",
+        "42eabe4b6685ebf89ff6aca253b2ec1f018a115409b5f71868c70077637a1828",
+        "f0c4c1f36e771206bd3dff6cb21bcef503978821220da773af404adee339d5b7"
+      ],
+      "retrieved_document_ids": [
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "recall_at_k": null,
+      "reciprocal_rank": null,
+      "retrieved_document_precision": null,
+      "document_recall_at_k": null,
+      "citation_grounding_rate": null,
+      "citation_accuracy": null,
+      "citation_evaluation_status": null,
+      "answer_evaluation_status": null,
+      "abstained": false,
+      "abstention_score": 3.764186143875122,
+      "abstention_score_type": "fulltext_relevance_score",
+      "answer_correctness": null,
+      "evidence": [
+        {
+          "chunk_id": "9827d84da2ebb770826b2f084fe492f19ef7aff5f235d825ad35c313f1447b46",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "xxx\n\nCommerce and Industry, Government of India. The appellant belongs to Dheevara community which is one of the \"Other Backward Class\". Since the appellant was aged 26 years, she got age relaxation, as was granted to OBC category candidates. The appellant was one of the eleven candidates from OBC who were called for interview. The appellant secured 82 marks (in the list of candidates from OBC category). One Ms Serena Joseph (OBC), who secured 93 marks was selected and appointed.\"\n\nxxx\n\nxxx",
+          "sources": [
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 3,
+              "start_offset": 0,
+              "end_offset": 3
+            },
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 480,
+              "start_offset": 0,
+              "end_offset": 480
+            },
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 3,
+              "start_offset": 0,
+              "end_offset": 3
+            },
+            {
+              "page_number": 26,
+              "block_id": "page-26-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 3,
+              "start_offset": 0,
+              "end_offset": 3
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 3.764186143875122,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "3f1fa4a7d83f7f35a2146c7c98781fd62c79af1bd821901a024d84a925e494aa",
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "raw_text": "42. Power to amend Schedule.—(1) The Central Government may, by notification, amend the \nSchedule, subject to the restriction that no such notification shall have the effect of increasing any \npenalty specified therein to more than twice of what was specified in it when this Act was originally \nenacted. \n\n(2) Any amendment notified under sub-section (1) shall have effect as if enacted in this Act and shall \ncome into force on the date of the notification. ",
+          "sources": [
+            {
+              "page_number": 22,
+              "block_id": "page-22-block-15",
+              "block_reading_order": 15,
+              "block_type": "TEXT",
+              "source_text_length": 305,
+              "start_offset": 0,
+              "end_offset": 305
+            },
+            {
+              "page_number": 22,
+              "block_id": "page-22-block-16",
+              "block_reading_order": 16,
+              "block_type": "TEXT",
+              "source_text_length": 153,
+              "start_offset": 0,
+              "end_offset": 153
+            }
+          ],
+          "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 3.1409425735473633,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "d3aa4cff21ea6dc324e7e552d4c1123d3cc1cf40b821e8e805308a8fef37cabb",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "aforementioned categories shall be counted against unreserved category vacancies and not reserved vacancies. On filing writ petitions before High Court by various general category candidates, the learned Single Judge dismissed the same which came to be confirmed with certain modifications by the Division Bench. While allowing the appeals, this Court observed thus:",
+          "sources": [
+            {
+              "page_number": 25,
+              "block_id": "page-25-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 366,
+              "start_offset": 0,
+              "end_offset": 366
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 2.996941566467285,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "42eabe4b6685ebf89ff6aca253b2ec1f018a115409b5f71868c70077637a1828",
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "raw_text": "relaxation availed by any candidate even at the stage of Preliminary\n\nExamination cannot escape the phraseology of proviso to Rule 14(ii)\n\ni.e., ‘relaxed standard’ granted at ‘any stage of examination’.\n\n30.\nAt this juncture, we can profitably refer to the judgment of this\n\nCourt in Deepa E.V. (Supra). In the said case, the appellant, who\n\nwas an OBC category candidate, sought appointment on general\n\nunreserved vacancy on the ground that the marks obtained by her\n\nwas over and above the minimum cut-off marks prescribed for\n\ngeneral category candidates. While considering a similar provisions\n\nas per O.M. of Department of Personnel and Training dated\n\n01.07.1998, it was held that when a candidate avails age relaxation,\n\nhe is not entitled to be adjusted against the unreserved category.\n\nThe relevant paragraph is reproduced as thus – \n\n“7. On a combined reading of Rule 9 of the Export Inspection\nAgency (Recruitment) Rules, 1980 and also the proceedings dated\n1-7-1998, we find that there is an express bar for the candidates\nbelonging to SC/ST/OBC who have availed relaxation for being\nconsidered for general category candidates.”\n\n23",
+          "sources": [
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-0",
+              "block_reading_order": 0,
+              "block_type": "TEXT",
+              "source_text_length": 68,
+              "start_offset": 0,
+              "end_offset": 68
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-1",
+              "block_reading_order": 1,
+              "block_type": "TEXT",
+              "source_text_length": 67,
+              "start_offset": 0,
+              "end_offset": 67
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-2",
+              "block_reading_order": 2,
+              "block_type": "TEXT",
+              "source_text_length": 63,
+              "start_offset": 0,
+              "end_offset": 63
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-3",
+              "block_reading_order": 3,
+              "block_type": "TEXT",
+              "source_text_length": 69,
+              "start_offset": 0,
+              "end_offset": 69
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-4",
+              "block_reading_order": 4,
+              "block_type": "TEXT",
+              "source_text_length": 65,
+              "start_offset": 0,
+              "end_offset": 65
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-5",
+              "block_reading_order": 5,
+              "block_type": "TEXT",
+              "source_text_length": 60,
+              "start_offset": 0,
+              "end_offset": 60
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-6",
+              "block_reading_order": 6,
+              "block_type": "TEXT",
+              "source_text_length": 63,
+              "start_offset": 0,
+              "end_offset": 63
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-7",
+              "block_reading_order": 7,
+              "block_type": "TEXT",
+              "source_text_length": 59,
+              "start_offset": 0,
+              "end_offset": 59
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-8",
+              "block_reading_order": 8,
+              "block_type": "TEXT",
+              "source_text_length": 67,
+              "start_offset": 0,
+              "end_offset": 67
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-9",
+              "block_reading_order": 9,
+              "block_type": "TEXT",
+              "source_text_length": 57,
+              "start_offset": 0,
+              "end_offset": 57
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-10",
+              "block_reading_order": 10,
+              "block_type": "TEXT",
+              "source_text_length": 68,
+              "start_offset": 0,
+              "end_offset": 68
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-11",
+              "block_reading_order": 11,
+              "block_type": "TEXT",
+              "source_text_length": 66,
+              "start_offset": 0,
+              "end_offset": 66
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-12",
+              "block_reading_order": 12,
+              "block_type": "TEXT",
+              "source_text_length": 47,
+              "start_offset": 0,
+              "end_offset": 47
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-13",
+              "block_reading_order": 13,
+              "block_type": "TEXT",
+              "source_text_length": 296,
+              "start_offset": 0,
+              "end_offset": 296
+            },
+            {
+              "page_number": 23,
+              "block_id": "page-23-block-14",
+              "block_reading_order": 14,
+              "block_type": "TEXT",
+              "source_text_length": 2,
+              "start_offset": 0,
+              "end_offset": 2
+            }
+          ],
+          "ingestion_run_id": "e391994767e943d8a5584cdc3dc387b0",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 2.9548168182373047,
+          "rrf_score": null
+        },
+        {
+          "chunk_id": "f0c4c1f36e771206bd3dff6cb21bcef503978821220da773af404adee339d5b7",
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "raw_text": "(i) Ensure that the RE has put an effective IT strategic planning process in place;\n\n(ii) Guide in preparation of IT Strategy and ensure that the IT Strategy aligns with the overall strategy of the RE towards accomplishment of its business objectives;\n\n(iii) Satisfy itself that the IT Governance and Information Security Governance structure fosters accountability, is effective and efficient , has adequate skilled resources, well defined objectives and unambiguous responsibilities for each level in the organisation;\n\n(iv) Ensure that the RE has put in place processes for assessing and managing IT and cybersecurity risks;\n\n(v) Ensure that the budgetary allocations for the IT function (including for IT security), cyber security are commensurate with the RE's IT maturity, digital depth, threat environment and industry standards and are utilised in a manner intended for meeting the stated objectives; and\n\n(vi) Review, at least on annual basis, the adequacy and effectiveness of the \r\nw Business Continuity Planning and Disaster Recovery Management\r\nra 11 of the RE . 7. Senior Management and IT Steering Committee annual basis, the ad\r\n Planning and Disa\r\n Steering Committe\r\nWithdrawn\n\n(a) The Senior Management of the RE shall , inter alia , ensure:\n\n(i) Execution of the IT Strategy approved by the Board;\n\n(ii) IT/ IS and their support infrastructure are functioning effectively and efficiently;",
+          "sources": [
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-0",
+              "block_reading_order": 0,
+              "block_type": "OTHER",
+              "source_text_length": 83,
+              "start_offset": 0,
+              "end_offset": 83
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-1",
+              "block_reading_order": 1,
+              "block_type": "OTHER",
+              "source_text_length": 166,
+              "start_offset": 0,
+              "end_offset": 166
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-2",
+              "block_reading_order": 2,
+              "block_type": "OTHER",
+              "source_text_length": 267,
+              "start_offset": 0,
+              "end_offset": 267
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-3",
+              "block_reading_order": 3,
+              "block_type": "OTHER",
+              "source_text_length": 105,
+              "start_offset": 0,
+              "end_offset": 105
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-4",
+              "block_reading_order": 4,
+              "block_type": "OTHER",
+              "source_text_length": 283,
+              "start_offset": 0,
+              "end_offset": 283
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-5",
+              "block_reading_order": 5,
+              "block_type": "OTHER",
+              "source_text_length": 280,
+              "start_offset": 0,
+              "end_offset": 280
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-6",
+              "block_reading_order": 6,
+              "block_type": "OTHER",
+              "source_text_length": 64,
+              "start_offset": 0,
+              "end_offset": 64
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-7",
+              "block_reading_order": 7,
+              "block_type": "OTHER",
+              "source_text_length": 55,
+              "start_offset": 0,
+              "end_offset": 55
+            },
+            {
+              "page_number": 9,
+              "block_id": "page-9-block-8",
+              "block_reading_order": 8,
+              "block_type": "OTHER",
+              "source_text_length": 89,
+              "start_offset": 0,
+              "end_offset": 89
+            }
+          ],
+          "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+          "retrieval_channels": [
+            "fulltext"
+          ],
+          "vector_score": null,
+          "fulltext_score": 2.813659191131592,
+          "rrf_score": null
+        }
+      ]
+    }
+  ]
+}

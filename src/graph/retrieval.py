@@ -80,10 +80,19 @@ class SearchIndexUnavailable(RuntimeError):
     pass
 
 
-async def _require_search_indexes_online(db_connection, vector_index: str | None = None) -> None:
-    expected = {"chunk_retrieval_text_fulltext": "FULLTEXT"}
+async def _require_search_indexes_online(
+    db_connection,
+    vector_index: str | None = None,
+    *,
+    require_fulltext: bool = True,
+) -> None:
+    expected = {}
+    if require_fulltext:
+        expected["chunk_retrieval_text_fulltext"] = "FULLTEXT"
     if vector_index is not None:
         expected[vector_index] = "VECTOR"
+    if not expected:
+        raise ValueError("At least one Neo4j search index must be required")
     async with db_connection.get_session() as session:
         result = await session.run(_INDEX_STATES_QUERY, names=list(expected))
         rows = await result.data()
@@ -97,7 +106,13 @@ async def _require_search_indexes_online(db_connection, vector_index: str | None
 
 
 class EvidenceBundle(BaseModel):
-    """Source-grounded evidence. Quoted text is always the original raw text."""
+    """Normalized source evidence for every retrieval strategy.
+
+    Standalone retrieval stores its native channel score and leaves ``rrf_score``
+    unset. Hybrid retrieval stores both native scores when present and its RRF
+    score. Abstention uses RRF for hybrid evidence and the sole native score for
+    standalone evidence.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -109,7 +124,41 @@ class EvidenceBundle(BaseModel):
     retrieval_channels: tuple[RetrievalChannel, ...] = Field(min_length=1)
     vector_score: float | None = None
     fulltext_score: float | None = None
-    rrf_score: float = Field(ge=0)
+    rrf_score: float | None = Field(default=None, ge=0)
+
+    @property
+    def abstention_score(self) -> float:
+        if self.rrf_score is not None:
+            return self.rrf_score
+        if self.retrieval_channels == ("vector",) and self.vector_score is not None:
+            return self.vector_score
+        if self.retrieval_channels == ("fulltext",) and self.fulltext_score is not None:
+            return self.fulltext_score
+        raise ValueError("Evidence does not have an unambiguous abstention score")
+
+    @property
+    def abstention_score_type(self) -> str:
+        if self.rrf_score is not None:
+            return "rrf_score"
+        if self.retrieval_channels == ("vector",) and self.vector_score is not None:
+            return "vector_relevance_score"
+        if self.retrieval_channels == ("fulltext",) and self.fulltext_score is not None:
+            return "fulltext_relevance_score"
+        raise ValueError("Evidence does not have an unambiguous abstention score")
+
+
+def _as_evidence_bundle(hit: RetrievalHit) -> EvidenceBundle:
+    return EvidenceBundle(
+        chunk_id=hit.chunk_id,
+        document_sha256=hit.document_sha256,
+        raw_text=hit.raw_text,
+        sources=hit.sources,
+        ingestion_run_id=hit.ingestion_run_id,
+        retrieval_channels=(hit.channel,),
+        vector_score=hit.score if hit.channel == "vector" else None,
+        fulltext_score=hit.score if hit.channel == "fulltext" else None,
+        rrf_score=None,
+    )
 
 
 @dataclass(frozen=True)
@@ -150,11 +199,20 @@ class FullTextRetriever:
         self._index_name = "chunk_retrieval_text_fulltext"
         self._candidate_multiplier = candidate_multiplier
 
-    async def search(self, query: str, limit: int = 10) -> list[RetrievalHit]:
+    @property
+    def configuration(self) -> dict[str, Any]:
+        return {
+            "strategy": "fulltext",
+            "fulltext_index": self._index_name,
+            "candidate_multiplier": self._candidate_multiplier,
+            "abstention_score_policy": "fulltext_relevance_score",
+        }
+
+    async def search(self, query: str, limit: int = 10) -> list[EvidenceBundle]:
         if not query.strip() or type(limit) is not int or limit < 1:
             raise ValueError("Search requires a non-empty query and positive limit")
         await _require_search_indexes_online(self._db)
-        return await self._search(query, limit)
+        return [_as_evidence_bundle(hit) for hit in await self._search(query, limit)]
 
     async def _search(self, query: str, limit: int) -> list[RetrievalHit]:
         with _TRACER.start_as_current_span("graph.neo4j.fulltext_retrieval") as span:
@@ -193,11 +251,26 @@ class VectorRetriever:
         self._candidate_multiplier = candidate_multiplier
         self._query = _VECTOR_QUERY_TEMPLATE.format(index_name=index_name)
 
-    async def search(self, query: str, limit: int = 10) -> list[RetrievalHit]:
+    @property
+    def configuration(self) -> dict[str, Any]:
+        return {
+            "strategy": "vector",
+            "embedding_provider": self._config.provider,
+            "embedding_model": self._config.model,
+            "embedding_dimensions": self._config.dimensions,
+            "embedding_space_id": self._config.space_id,
+            "vector_index": self._index_name,
+            "candidate_multiplier": self._candidate_multiplier,
+            "abstention_score_policy": "vector_relevance_score",
+        }
+
+    async def search(self, query: str, limit: int = 10) -> list[EvidenceBundle]:
         if not query.strip() or type(limit) is not int or limit < 1:
             raise ValueError("Search requires a non-empty query and positive limit")
-        await _require_search_indexes_online(self._db, self._index_name)
-        return await self._search(query, limit)
+        await _require_search_indexes_online(
+            self._db, self._index_name, require_fulltext=False
+        )
+        return [_as_evidence_bundle(hit) for hit in await self._search(query, limit)]
 
     async def _search(self, query: str, limit: int) -> list[RetrievalHit]:
         with _TRACER.start_as_current_span("graph.neo4j.vector_retrieval") as span:
@@ -257,6 +330,8 @@ def reciprocal_rank_fusion(
         ("vector", vector_hits, config.vector_weight),
         ("fulltext", fulltext_hits, config.fulltext_weight),
     ):
+        if weight == 0:
+            continue
         seen_channel: set[str] = set()
         for rank, hit in enumerate(hits, start=1):
             if hit.channel != channel:
@@ -305,6 +380,7 @@ class HybridRetriever:
     @property
     def configuration(self) -> dict[str, Any]:
         return {
+            "strategy": "hybrid",
             "embedding_provider": self._vector._config.provider,
             "embedding_model": self._vector._config.model,
             "embedding_dimensions": self._vector._config.dimensions,
@@ -318,6 +394,7 @@ class HybridRetriever:
                 "vector_weight": self._fusion.vector_weight,
                 "fulltext_weight": self._fusion.fulltext_weight,
             },
+            "abstention_score_policy": "rrf_score",
         }
 
     async def search(self, query: str, limit: int = 10) -> list[EvidenceBundle]:

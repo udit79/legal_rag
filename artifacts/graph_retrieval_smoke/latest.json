@@ -1,0 +1,607 @@
+{
+  "database": "rag",
+  "embedding": {
+    "dimensions": 1024,
+    "embedding_space_id": "204393822463970a5520cae61c341acd0b2ec947607e5ef7395ea3b928e7adad",
+    "model": "text-embedding-3-small",
+    "provider": "openai",
+    "vector_index": "chunk_embedding_204393822463970a"
+  },
+  "queries": [
+    "What security safeguards should an organization use to protect personal data?",
+    "What duties apply when a data principal withdraws consent?",
+    "What controls support business continuity and disaster recovery?",
+    "What is the role of the appellate tribunal in personal data protection?",
+    "How should an organization manage backup restoration and data retention?"
+  ],
+  "retrieval": {
+    "fulltext": {
+      "configuration": {
+        "abstention_score_policy": "fulltext_relevance_score",
+        "candidate_multiplier": 5,
+        "fulltext_index": "chunk_retrieval_text_fulltext",
+        "strategy": "fulltext"
+      },
+      "queries": [
+        {
+          "evidence": [
+            {
+              "abstention_score": 5.641271114349365,
+              "abstention_score_type": "fulltext_relevance_score",
+              "chunk_id": "83d655c9f4a336b49c610737edaec974982dccf91f616514aefa25eda330fab3",
+              "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+              "fulltext_score": 5.641271114349365,
+              "ingestion_run_id": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+              "raw_text_length": 1490,
+              "retrieval_channels": [
+                "fulltext"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-31-block-0",
+                  "page-31-block-1",
+                  "page-31-block-2",
+                  "page-31-block-3"
+                ],
+                "count": 10,
+                "page_numbers": [
+                  31
+                ]
+              },
+              "vector_score": null
+            }
+          ],
+          "query": "What security safeguards should an organization use to protect personal data?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 6.2242231369018555,
+              "abstention_score_type": "fulltext_relevance_score",
+              "chunk_id": "660a65be2bd03c6790bf1952f6fffba3c31ee3b09c75a8b4990ea90535fe4c33",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": 6.2242231369018555,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1495,
+              "retrieval_channels": [
+                "fulltext"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-9-block-0",
+                  "page-9-block-1",
+                  "page-9-block-2",
+                  "page-9-block-3"
+                ],
+                "count": 7,
+                "page_numbers": [
+                  9
+                ]
+              },
+              "vector_score": null
+            }
+          ],
+          "query": "What duties apply when a data principal withdraws consent?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 7.498000144958496,
+              "abstention_score_type": "fulltext_relevance_score",
+              "chunk_id": "86efab02082790065b2ff916affdc35dfc4f9621f0e19db6d643dd17b666e366",
+              "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+              "fulltext_score": 7.498000144958496,
+              "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+              "raw_text_length": 777,
+              "retrieval_channels": [
+                "fulltext"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-20-block-4",
+                  "page-20-block-5",
+                  "page-20-block-6",
+                  "page-20-block-7"
+                ],
+                "count": 6,
+                "page_numbers": [
+                  20
+                ]
+              },
+              "vector_score": null
+            }
+          ],
+          "query": "What controls support business continuity and disaster recovery?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 6.929516315460205,
+              "abstention_score_type": "fulltext_relevance_score",
+              "chunk_id": "f9a9d237e15bfc6561fdf19ebfe8ad1c502cbd776fb79cf105486cf541d2c0a6",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": 6.929516315460205,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1303,
+              "retrieval_channels": [
+                "fulltext"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-23-block-0",
+                  "page-23-block-1",
+                  "page-23-block-2",
+                  "page-23-block-3"
+                ],
+                "count": 13,
+                "page_numbers": [
+                  23
+                ]
+              },
+              "vector_score": null
+            }
+          ],
+          "query": "What is the role of the appellate tribunal in personal data protection?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 6.0569376945495605,
+              "abstention_score_type": "fulltext_relevance_score",
+              "chunk_id": "92394f90c5d1ace85a4d6aeb2eb2af2da9a08117e47da7e3bc52623dd782a95a",
+              "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+              "fulltext_score": 6.0569376945495605,
+              "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+              "raw_text_length": 1362,
+              "retrieval_channels": [
+                "fulltext"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-7-block-0",
+                  "page-7-block-1",
+                  "page-7-block-2",
+                  "page-7-block-3"
+                ],
+                "count": 4,
+                "page_numbers": [
+                  7
+                ]
+              },
+              "vector_score": null
+            }
+          ],
+          "query": "How should an organization manage backup restoration and data retention?",
+          "result_count": 10
+        }
+      ]
+    },
+    "hybrid": {
+      "configuration": {
+        "abstention_score_policy": "rrf_score",
+        "embedding_dimensions": 1024,
+        "embedding_model": "text-embedding-3-small",
+        "embedding_provider": "openai",
+        "embedding_space_id": "204393822463970a5520cae61c341acd0b2ec947607e5ef7395ea3b928e7adad",
+        "fulltext_candidate_multiplier": 5,
+        "fulltext_index": "chunk_retrieval_text_fulltext",
+        "rrf": {
+          "fulltext_weight": 1.0,
+          "rank_constant": 60,
+          "vector_weight": 1.0
+        },
+        "strategy": "hybrid",
+        "vector_candidate_multiplier": 5,
+        "vector_index": "chunk_embedding_204393822463970a"
+      },
+      "queries": [
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.032266458495966696,
+              "abstention_score_type": "rrf_score",
+              "chunk_id": "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": 4.760234355926514,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1279,
+              "retrieval_channels": [
+                "vector",
+                "fulltext"
+              ],
+              "rrf_score": 0.032266458495966696,
+              "sources": {
+                "block_ids": [
+                  "page-11-block-0",
+                  "page-11-block-1",
+                  "page-11-block-2",
+                  "page-11-block-3"
+                ],
+                "count": 10,
+                "page_numbers": [
+                  11
+                ]
+              },
+              "vector_score": 0.7744641900062561
+            }
+          ],
+          "query": "What security safeguards should an organization use to protect personal data?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.03278688524590164,
+              "abstention_score_type": "rrf_score",
+              "chunk_id": "660a65be2bd03c6790bf1952f6fffba3c31ee3b09c75a8b4990ea90535fe4c33",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": 6.2242231369018555,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1495,
+              "retrieval_channels": [
+                "vector",
+                "fulltext"
+              ],
+              "rrf_score": 0.03278688524590164,
+              "sources": {
+                "block_ids": [
+                  "page-9-block-0",
+                  "page-9-block-1",
+                  "page-9-block-2",
+                  "page-9-block-3"
+                ],
+                "count": 7,
+                "page_numbers": [
+                  9
+                ]
+              },
+              "vector_score": 0.8536084890365601
+            }
+          ],
+          "query": "What duties apply when a data principal withdraws consent?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.032266458495966696,
+              "abstention_score_type": "rrf_score",
+              "chunk_id": "86efab02082790065b2ff916affdc35dfc4f9621f0e19db6d643dd17b666e366",
+              "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+              "fulltext_score": 7.498000144958496,
+              "ingestion_run_id": "864eef9576a8461da85bf3361df4e099",
+              "raw_text_length": 777,
+              "retrieval_channels": [
+                "vector",
+                "fulltext"
+              ],
+              "rrf_score": 0.032266458495966696,
+              "sources": {
+                "block_ids": [
+                  "page-20-block-4",
+                  "page-20-block-5",
+                  "page-20-block-6",
+                  "page-20-block-7"
+                ],
+                "count": 6,
+                "page_numbers": [
+                  20
+                ]
+              },
+              "vector_score": 0.7955974340438843
+            }
+          ],
+          "query": "What controls support business continuity and disaster recovery?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.031754032258064516,
+              "abstention_score_type": "rrf_score",
+              "chunk_id": "85f3748704aa8a4c13c37aa3eb8d03b13090a9603efade708a11f0e6f9fae01c",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": 5.746577739715576,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1406,
+              "retrieval_channels": [
+                "vector",
+                "fulltext"
+              ],
+              "rrf_score": 0.031754032258064516,
+              "sources": {
+                "block_ids": [
+                  "page-5-block-10",
+                  "page-5-block-11",
+                  "page-5-block-12",
+                  "page-5-block-13"
+                ],
+                "count": 7,
+                "page_numbers": [
+                  5
+                ]
+              },
+              "vector_score": 0.7490038275718689
+            }
+          ],
+          "query": "What is the role of the appellate tribunal in personal data protection?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.03278688524590164,
+              "abstention_score_type": "rrf_score",
+              "chunk_id": "92394f90c5d1ace85a4d6aeb2eb2af2da9a08117e47da7e3bc52623dd782a95a",
+              "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+              "fulltext_score": 6.0569376945495605,
+              "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+              "raw_text_length": 1362,
+              "retrieval_channels": [
+                "vector",
+                "fulltext"
+              ],
+              "rrf_score": 0.03278688524590164,
+              "sources": {
+                "block_ids": [
+                  "page-7-block-0",
+                  "page-7-block-1",
+                  "page-7-block-2",
+                  "page-7-block-3"
+                ],
+                "count": 4,
+                "page_numbers": [
+                  7
+                ]
+              },
+              "vector_score": 0.8110116124153137
+            }
+          ],
+          "query": "How should an organization manage backup restoration and data retention?",
+          "result_count": 10
+        }
+      ]
+    },
+    "vector": {
+      "configuration": {
+        "abstention_score_policy": "vector_relevance_score",
+        "candidate_multiplier": 5,
+        "embedding_dimensions": 1024,
+        "embedding_model": "text-embedding-3-small",
+        "embedding_provider": "openai",
+        "embedding_space_id": "204393822463970a5520cae61c341acd0b2ec947607e5ef7395ea3b928e7adad",
+        "strategy": "vector",
+        "vector_index": "chunk_embedding_204393822463970a"
+      },
+      "queries": [
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.7744641900062561,
+              "abstention_score_type": "vector_relevance_score",
+              "chunk_id": "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": null,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1279,
+              "retrieval_channels": [
+                "vector"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-11-block-0",
+                  "page-11-block-1",
+                  "page-11-block-2",
+                  "page-11-block-3"
+                ],
+                "count": 10,
+                "page_numbers": [
+                  11
+                ]
+              },
+              "vector_score": 0.7744641900062561
+            }
+          ],
+          "query": "What security safeguards should an organization use to protect personal data?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.8536084890365601,
+              "abstention_score_type": "vector_relevance_score",
+              "chunk_id": "660a65be2bd03c6790bf1952f6fffba3c31ee3b09c75a8b4990ea90535fe4c33",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": null,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1495,
+              "retrieval_channels": [
+                "vector"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-9-block-0",
+                  "page-9-block-1",
+                  "page-9-block-2",
+                  "page-9-block-3"
+                ],
+                "count": 7,
+                "page_numbers": [
+                  9
+                ]
+              },
+              "vector_score": 0.8536084890365601
+            }
+          ],
+          "query": "What duties apply when a data principal withdraws consent?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.799674391746521,
+              "abstention_score_type": "vector_relevance_score",
+              "chunk_id": "7891b70adfc678d4ca66e6163b0e49b8040a346aab49ecb9f93867f78aeec9ff",
+              "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+              "fulltext_score": null,
+              "ingestion_run_id": "b4e8767410ab4888a574570b9d8a00c9",
+              "raw_text_length": 765,
+              "retrieval_channels": [
+                "vector"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-7-block-9",
+                  "page-7-block-10",
+                  "page-7-block-11",
+                  "page-7-block-12"
+                ],
+                "count": 4,
+                "page_numbers": [
+                  7
+                ]
+              },
+              "vector_score": 0.799674391746521
+            }
+          ],
+          "query": "What controls support business continuity and disaster recovery?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.7580983638763428,
+              "abstention_score_type": "vector_relevance_score",
+              "chunk_id": "60db70d88580dd1ca89dd732b9a0da420bacfc64dd1da4e48e09b5bb129f86ee",
+              "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+              "fulltext_score": null,
+              "ingestion_run_id": "9bed2588d3e4494f8cac83fc4febba3e",
+              "raw_text_length": 1331,
+              "retrieval_channels": [
+                "vector"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-17-block-6",
+                  "page-17-block-7",
+                  "page-17-block-8",
+                  "page-17-block-9"
+                ],
+                "count": 7,
+                "page_numbers": [
+                  17
+                ]
+              },
+              "vector_score": 0.7580983638763428
+            }
+          ],
+          "query": "What is the role of the appellate tribunal in personal data protection?",
+          "result_count": 10
+        },
+        {
+          "evidence": [
+            {
+              "abstention_score": 0.8110116124153137,
+              "abstention_score_type": "vector_relevance_score",
+              "chunk_id": "92394f90c5d1ace85a4d6aeb2eb2af2da9a08117e47da7e3bc52623dd782a95a",
+              "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+              "fulltext_score": null,
+              "ingestion_run_id": "9ecbccf37f7f4f4f9cd238f9a6479c1f",
+              "raw_text_length": 1362,
+              "retrieval_channels": [
+                "vector"
+              ],
+              "rrf_score": null,
+              "sources": {
+                "block_ids": [
+                  "page-7-block-0",
+                  "page-7-block-1",
+                  "page-7-block-2",
+                  "page-7-block-3"
+                ],
+                "count": 4,
+                "page_numbers": [
+                  7
+                ]
+              },
+              "vector_score": 0.8110116124153137
+            }
+          ],
+          "query": "How should an organization manage backup restoration and data retention?",
+          "result_count": 10
+        }
+      ]
+    }
+  },
+  "strategies_run": [
+    "fulltext",
+    "vector",
+    "hybrid"
+  ],
+  "synthetic_evaluation": {
+    "fulltext": {
+      "artifact": "artifacts\\graph_retrieval_smoke\\fulltext\\phase3-ai-silver-development-evaluation-20261113T160001099329Z.json",
+      "metrics": {
+        "answer_correctness": null,
+        "answerable_answer_evaluation_coverage": null,
+        "answerable_queries_with_answer_evaluation": null,
+        "citation_accuracy": null,
+        "citation_evaluation_coverage": null,
+        "citation_grounding_rate": null,
+        "document_recall_at_10": 1.0,
+        "mrr": 0.7166666666666667,
+        "recall_at_10": 0.8715277777777778,
+        "retrieved_document_precision": 0.5604166666666667,
+        "unanswerable_query_abstention": 0.0
+      },
+      "synthetic_smoke_only": true
+    },
+    "hybrid": {
+      "artifact": "artifacts\\graph_retrieval_smoke\\hybrid\\phase3-ai-silver-development-evaluation-20261113T160028203330Z.json",
+      "metrics": {
+        "answer_correctness": null,
+        "answerable_answer_evaluation_coverage": null,
+        "answerable_queries_with_answer_evaluation": null,
+        "citation_accuracy": null,
+        "citation_evaluation_coverage": null,
+        "citation_grounding_rate": null,
+        "document_recall_at_10": 1.0,
+        "mrr": 0.8680555555555555,
+        "recall_at_10": 0.9305555555555555,
+        "retrieved_document_precision": 0.6354166666666666,
+        "unanswerable_query_abstention": 0.0
+      },
+      "synthetic_smoke_only": true
+    },
+    "vector": {
+      "artifact": "artifacts\\graph_retrieval_smoke\\vector\\phase3-ai-silver-development-evaluation-20261113T160027773387Z.json",
+      "metrics": {
+        "answer_correctness": null,
+        "answerable_answer_evaluation_coverage": null,
+        "answerable_queries_with_answer_evaluation": null,
+        "citation_accuracy": null,
+        "citation_evaluation_coverage": null,
+        "citation_grounding_rate": null,
+        "document_recall_at_10": 1.0,
+        "mrr": 0.8854166666666666,
+        "recall_at_10": 0.8923611111111112,
+        "retrieved_document_precision": 0.7048611111111112,
+        "unanswerable_query_abstention": 0.0
+      },
+      "synthetic_smoke_only": true
+    }
+  }
+}

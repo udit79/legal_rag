@@ -451,7 +451,8 @@ class StructuralGraphWriter:
         next_rows = []
         for document in documents:
             for left, right in zip(document.chunks, document.chunks[1:]):
-                if left.original_chunk_indices[-1] + 1 == right.original_chunk_indices[0]:
+                next_original_index = left.original_chunk_indices[-1] + 1
+                if next_original_index in right.original_chunk_indices:
                     next_rows.append({
                         "id": hashlib.sha256(
                             f"{document.source_sha256}\0{left.id}\0{right.id}\0{document.ingestion_run_id}".encode("utf-8")
