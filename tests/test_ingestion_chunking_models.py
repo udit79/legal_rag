@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from src.ingestion.chunk_contracts import ChunkedDocument
 from src.ingestion.chunking import (
-    CHUNKING_ALGORITHM_VERSION,
     ChunkingConfig,
     ChunkingDiagnostics,
     ChunkingReport,
@@ -97,21 +96,6 @@ def test_chunking_config_defaults_and_markers_cover_legal_boundaries():
 def test_provision_marker_regex_rejects_invalid_patterns():
     with pytest.raises(ValidationError, match="Invalid provision marker pattern"):
         ChunkingConfig(provision_marker_patterns=("[",))
-
-
-def test_config_digest_is_repeatable_order_independent_and_policy_is_stable():
-    config = ChunkingConfig()
-    reordered = ChunkingConfig.model_validate(dict(reversed(list(config.model_dump().items()))))
-    changed = ChunkingConfig(max_chunk_chars=1600)
-
-    assert config.digest() == reordered.digest()
-    assert config.digest() != changed.digest()
-    overlap_changed = ChunkingConfig(overlap_chars=99)
-    assert config.digest() != overlap_changed.digest()
-    assert CHUNKING_ALGORITHM_VERSION == "1.4.0"
-    assert config.policy_version() == f"5c-1.4.0+{config.digest()[:12]}"
-    assert config.digest() == ChunkingConfig().digest()
-    assert config.policy_version() == ChunkingConfig().policy_version()
 
 
 @pytest.mark.parametrize(

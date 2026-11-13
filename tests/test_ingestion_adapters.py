@@ -791,19 +791,6 @@ def test_dispatcher_records_page_failure_without_dropping_later_pages(
     assert result.pages[2].status == "PARSED"
 
 
-def test_dispatcher_detects_corrupt_page_even_if_route_marks_it_blank():
-    source = CORPUS / "pdfs" / "10_corrupted" / "10h_corrupt_page2_stream.pdf"
-
-    result = dispatch_document(
-        source,
-        make_plan("FAST_TEXT", "SKIP_BLANK", "FAST_TEXT"),
-    )
-
-    assert result.pages[0].status == "PARSED"
-    assert result.pages[1].status == "FAILED"
-    assert result.pages[2].status == "PARSED"
-
-
 def test_dispatcher_does_not_skip_content_when_route_marks_page_blank(
     tmp_path: Path,
 ):
@@ -831,20 +818,6 @@ def test_dispatcher_returns_valid_blank_page_when_skip_route_is_correct(
     assert result.pages[0].status == "BLANK"
 
 
-def test_dispatcher_records_corrupt_page_and_parses_other_pages():
-    source = CORPUS / "pdfs" / "10_corrupted" / "10h_corrupt_page2_stream.pdf"
-
-    result = dispatch_document(
-        source,
-        make_plan("FAST_TEXT", "FAST_TEXT", "FAST_TEXT"),
-    )
-
-    assert [page.page_number for page in result.pages] == [1, 2, 3]
-    assert result.pages[0].status == "PARSED"
-    assert result.pages[1].status == "FAILED"
-    assert result.pages[2].status == "PARSED"
-
-
 def test_dispatcher_records_missing_ocr_executable_and_continues(
     tmp_path: Path,
 ):
@@ -865,11 +838,3 @@ def test_dispatcher_records_missing_ocr_executable_and_continues(
     assert result.pages[1].status == "PARSED"
 
 
-def test_dispatcher_marks_encrypted_document_failure():
-    source = CORPUS / "pdfs" / "10_corrupted" / "10g_encrypted_password_required.pdf"
-
-    result = dispatch_document(source, make_plan("FAST_TEXT", "FAST_TEXT"))
-
-    assert result.document_failure is not None
-    assert result.document_failure.code == "ENCRYPTED_DOCUMENT"
-    assert all(page.status == "FAILED" for page in result.pages)

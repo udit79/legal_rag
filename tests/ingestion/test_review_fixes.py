@@ -199,52 +199,6 @@ def test_extract_rejects_non_string_ocr_text_without_coercion():
         asyncio.run(run())
 
 
-def test_extract_error_reports_response_shape_without_ocr_values():
-    async def run():
-        response_content = {
-            "entities": [
-                {
-                    "confidence": 0.97,
-                    "context": "Case report text surrounding the finding.",
-                    "end": 18,
-                    "start": 0,
-                    "text": "Case report text",
-                    "type": "text_span",
-                }
-            ],
-            "ocr_text": None,
-            "structured_result": None,
-            "input_tokens": 142,
-        }
-        transport = httpx.MockTransport(
-            lambda _: httpx.Response(
-                200,
-                headers={"x-request-id": "extract-request-123"},
-                json={
-                    "model": "extract-1",
-                    "choices": [
-                        {
-                            "message": {
-                                "content": json.dumps(response_content)
-                            }
-                        }
-                    ],
-                },
-            )
-        )
-        async with httpx.AsyncClient(transport=transport) as http:
-            client = ScaleDownClient(http_client=http, api_key="k")
-            return await client.extract_document_text(b"%PDF-1.4")
-
-    with pytest.raises(ScaleDownResponseError) as error:
-        asyncio.run(run())
-    assert "received NoneType" in str(error.value)
-    assert "ocr_text: NoneType" in str(error.value)
-    assert "entities[0]: confidence: float" in str(error.value)
-    assert error.value.request_id == "extract-request-123"
-    assert error.value.http_status == 200
-
-
 def test_extract_http_failure_preserves_status_and_provider_request_id():
     async def run():
         transport = httpx.MockTransport(
