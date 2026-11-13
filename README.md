@@ -61,3 +61,29 @@ structure and data contracts. See [docs/code_map.md](docs/code_map.md) for
 the file tree and a file-by-file index of implemented classes and functions.
 The implemented BLP-1 chunking strategy is described in
 [docs/blp1_chunking.md](docs/blp1_chunking.md).
+
+## Phase 3 hybrid retrieval baseline
+
+Set `EMBEDDING_PROVIDER` to `openai` or `voyage`, and set the matching
+`EMBEDDING_MODEL` and integer `EMBEDDING_DIMENSIONS` in the environment or
+local `.env`. The matching `OPENAI_API_KEY` or `VOYAGE_API_KEY` must also be
+present. The vector path fails closed if provider, model, or dimensions differ
+from the configured embedding space. Full-text retrieval does not require an
+embedding configuration.
+
+Vector index creation is explicit through
+`src.graph.embeddings.create_vector_index`; it is never run by graph schema
+bootstrap or retrieval. After provisioning the matching index, call
+`index_current_chunks` with the selected provider adapter. Full-text and vector
+retrievers return source-grounded evidence from raw chunk text and feed the
+configurable RRF hybrid retriever. Evaluation utilities and the synthetic,
+versioned development set are in `src/graph/evaluation.py` and
+`src/graph/evaluation/dev_v1.json`. The human-adjudicated corpus-backed dev set
+is `src/graph/evaluation/legal_corpus_dev_v1.json`; its labels are pinned to the
+latest ingestion-run IDs recorded in the fixture. Retrieval uses Cypher 25
+`SEARCH` and requires Neo4j 2026.09 or later for full-text `SEARCH` support.
+Use a dedicated `NEO4J_TEST_DATABASE` for
+the opt-in Neo4j integration test. `run_and_save_evaluation` writes a timestamped
+JSON artifact with settings, aggregate metrics, and per-query results. Supply a
+calibrated `abstention_rrf_threshold` explicitly to each evaluation run; the
+harness does not assume that zero is a useful abstention threshold.

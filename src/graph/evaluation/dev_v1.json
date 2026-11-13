@@ -1,0 +1,39 @@
+{
+  "dataset_id": "legal-rag-phase3-dev",
+  "version": "1.0.0",
+  "synthetic": true,
+  "queries": [
+    {
+      "query_id": "habeas-corpus-purpose",
+      "query": "What does habeas corpus require when a person is detained?",
+      "relevant_chunk_ids": ["e5572d4b0681bb3376829394b13439bbb26f016cc6270395d458aca30fc90794"],
+      "expected_document_ids": ["a9f5c03dcfc0962d0cfef3e2dcab9416f2c2839e78884b2ea32b9e326d05867a"],
+      "reference_answer": "Habeas corpus requires the state to justify a person's detention before a court.",
+      "unanswerable": false
+    },
+    {
+      "query_id": "interim-injunction",
+      "query": "When may a court issue an injunction before the dispute is resolved?",
+      "relevant_chunk_ids": ["44275171fa8bba40245b6c72f195feeb74e5f7bfd8f1009ecd47a25f61ff5fd4"],
+      "expected_document_ids": ["a9f5c03dcfc0962d0cfef3e2dcab9416f2c2839e78884b2ea32b9e326d05867a"],
+      "reference_answer": "A court may issue an injunction to prevent irreparable harm while a dispute is heard.",
+      "unanswerable": false
+    },
+    {
+      "query_id": "appeal-interim-order",
+      "query": "Which court may hear an appeal from an interim order?",
+      "relevant_chunk_ids": ["572bb224057983e734a488c23e1c305c0821c5d36b34a5404d2608f02eb4ac72"],
+      "expected_document_ids": ["ea598f56fa96ebbc37682c641699cce061e116bb132ec346dd1520333521bbed"],
+      "reference_answer": "An appeal from an interim order may be heard by the appellate court with jurisdiction.",
+      "unanswerable": false
+    },
+    {
+      "query_id": "unanswerable-tax-extension",
+      "query": "What extension was granted for filing the annual tax return?",
+      "relevant_chunk_ids": [],
+      "expected_document_ids": [],
+      "reference_answer": null,
+      "unanswerable": true
+    }
+  ]
+}

@@ -1,0 +1,1209 @@
+{
+  "dataset_id": "legal-corpus-dev",
+  "version": "1.0.0",
+  "synthetic": false,
+  "annotation_source": "test_data/evaluation.jsonl (human-adjudicated dev split)",
+  "corpus_snapshot": {
+    "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c": "d5bc2bd4f66f4889aeeea0fb7ec5d40b",
+    "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24": "9bed2588d3e4494f8cac83fc4febba3e",
+    "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3": "b4e8767410ab4888a574570b9d8a00c9",
+    "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81": "864eef9576a8461da85bf3361df4e099",
+    "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43": "e391994767e943d8a5584cdc3dc387b0",
+    "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980": "9ecbccf37f7f4f4f9cd238f9a6479c1f"
+  },
+  "queries": [
+    {
+      "query_id": "Q01",
+      "query": "Which statutory body is designated as the Appellate Tribunal under the Digital Personal Data Protection Act, 2023?",
+      "relevant_chunk_ids": [
+        "85f3748704aa8a4c13c37aa3eb8d03b13090a9603efade708a11f0e6f9fae01c"
+      ],
+      "expected_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "unanswerable": false,
+      "reference_answer": "The Telecom Disputes Settlement and Appellate Tribunal established under section 14 of the Telecom Regulatory Authority of India Act, 1997.",
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 5,
+          "quote": "\"Appellate Tribunal\" means the Telecom Disputes Settlement and Appellate Tribunal established under section 14 of the Telecom Regulatory Authority of India Act, 1997",
+          "chunk_ids": [
+            "85f3748704aa8a4c13c37aa3eb8d03b13090a9603efade708a11f0e6f9fae01c"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        }
+      ]
+    },
+    {
+      "query_id": "Q03",
+      "query": "When an individual voluntarily gives personal data to a real estate broker to find rented accommodation and later says she no longer needs help, what must the broker do under the Digital Personal Data Protection Act, 2023, and what is the maximum penalty if the broker fails to take reasonable security safeguards to protect that data?",
+      "relevant_chunk_ids": [
+        "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9",
+        "c865c0d8ddff0549aa7ad35737fc2ea4955422b9880aec858b84009cd5892a6d",
+        "e5e2b439f39293802de2cf6a31a78add118deeaa3b0b9c2c762f3990d82a4f08"
+      ],
+      "expected_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "unanswerable": false,
+      "reference_answer": "The broker must cease processing her personal data. Failing to take reasonable security safeguards under section 8(5) attracts a penalty extending up to two hundred and fifty crore rupees.",
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 9,
+          "quote": "Subsequently, X informs Y that X no longer needs help from Y. Y shall cease to process the personal data of X",
+          "chunk_ids": [
+            "e5e2b439f39293802de2cf6a31a78add118deeaa3b0b9c2c762f3990d82a4f08"
+          ],
+          "source_page_numbers": [
+            9
+          ],
+          "annotated_page": 9
+        },
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 11,
+          "quote": "by taking reasonable security safeguards to prevent personal data breach.",
+          "chunk_ids": [
+            "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9"
+          ],
+          "source_page_numbers": [
+            11
+          ],
+          "annotated_page": 11
+        },
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 24,
+          "quote": "Breach in observing the obligation of Data Fiduciary to take reasonable security safeguards to prevent personal data breach under sub-section (5) of section 8. May extend to two hundred and fifty crore rupees",
+          "chunk_ids": [
+            "c865c0d8ddff0549aa7ad35737fc2ea4955422b9880aec858b84009cd5892a6d"
+          ],
+          "source_page_numbers": [
+            24
+          ],
+          "annotated_page": 24
+        }
+      ]
+    },
+    {
+      "query_id": "Q05",
+      "query": "Which provisions of Chapter II of the Digital Personal Data Protection Act, 2023 remain applicable when personal data is processed by a court or tribunal in India necessary for performing its judicial function?",
+      "relevant_chunk_ids": [
+        "0a9efff69de9b5e8fbba844b254e86a2b2a1b4b80d5122042b0474b70db11993",
+        "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9",
+        "9f309fab6c740fca5fef4f47889b745acab21218fbe291261f25b670197e7869"
+      ],
+      "expected_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "unanswerable": false,
+      "reference_answer": "Only sub-sections (1) and (5) of section 8 remain applicable: general responsibility for compliance regarding processing by itself or a Data Processor, and protecting personal data with reasonable security safeguards to prevent a breach.",
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 14,
+          "quote": "The provisions of Chapter II, except sub-sections (1) and (5) of section 8, and those of Chapter III and section 16 shall not apply",
+          "chunk_ids": [
+            "0a9efff69de9b5e8fbba844b254e86a2b2a1b4b80d5122042b0474b70db11993"
+          ],
+          "source_page_numbers": [
+            14
+          ],
+          "annotated_page": 14
+        },
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 10,
+          "quote": "be responsible for complying with the provisions of this Act and the rules made thereunder in respect of any processing undertaken by it",
+          "chunk_ids": [
+            "9f309fab6c740fca5fef4f47889b745acab21218fbe291261f25b670197e7869"
+          ],
+          "source_page_numbers": [
+            10
+          ],
+          "annotated_page": 10
+        },
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 11,
+          "quote": "protect personal data in its possession or under its control, including in respect of any processing undertaken by it or on its behalf",
+          "chunk_ids": [
+            "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9"
+          ],
+          "source_page_numbers": [
+            11
+          ],
+          "annotated_page": 11
+        }
+      ]
+    },
+    {
+      "query_id": "Q06",
+      "query": "What is the prescribed statutory fee in rupees and mandatory minimum encryption key length in bits for registering a Consent Manager under the Digital Personal Data Protection Act, 2023?",
+      "relevant_chunk_ids": [],
+      "expected_document_ids": [],
+      "unanswerable": true,
+      "reference_answer": null,
+      "evidence_references": []
+    },
+    {
+      "query_id": "Q07",
+      "query": "Under Section 29(2) of the Digital Personal Data Protection Act, 2023, why must an aggrieved person wait until the ninety-day appeal window closes before filing an appeal with the High Court against an order of the Board?",
+      "relevant_chunk_ids": [
+        "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac"
+      ],
+      "expected_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24"
+      ],
+      "unanswerable": false,
+      "reference_answer": "The premise is incorrect: under Section 29(1) and 29(2), an appeal lies before the Appellate Tribunal (not the High Court) and must be filed within sixty days (not after ninety days) from receiving the order.",
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 18,
+          "quote": "Every appeal under sub-section (1) shall be filed within a period of sixty days from the date of receipt of the order",
+          "chunk_ids": [
+            "257655a71313206d22bc14249416f2253c7b938c8389603dfc97256c935cc5ac"
+          ],
+          "source_page_numbers": [
+            18
+          ],
+          "annotated_page": 18
+        }
+      ]
+    },
+    {
+      "query_id": "Q08",
+      "query": "On what date did the Reserve Bank of India (Information Technology Governance, Risk, Controls and Assurance Practices) Directions, 2023 come into effect?",
+      "relevant_chunk_ids": [
+        "347e3fa8f373e207039212bf4edfaea21958e8c1a69f218a8703ec49ed17f9e9"
+      ],
+      "expected_document_ids": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "unanswerable": false,
+      "reference_answer": "April 1, 2024.",
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 4,
+          "quote": "These Directions shall come into effect from April 1, 2024.",
+          "chunk_ids": [
+            "347e3fa8f373e207039212bf4edfaea21958e8c1a69f218a8703ec49ed17f9e9"
+          ],
+          "source_page_numbers": [
+            4
+          ],
+          "annotated_page": 4
+        }
+      ]
+    },
+    {
+      "query_id": "Q09",
+      "query": "Which two categories of financial institutions are explicitly excluded from the applicability of the Reserve Bank of India (Information Technology Governance, Risk, Controls and Assurance Practices) Directions, 2023 under Section 2(b)?",
+      "relevant_chunk_ids": [
+        "b9e18285b0b75c43fc50e13759a207f7e4b4e32b06999c933c8d01102e7562db"
+      ],
+      "expected_document_ids": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "unanswerable": false,
+      "reference_answer": "Local Area Banks and NBFC-Core Investment Companies.",
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 5,
+          "quote": "These Directions shall not be applicable to: (i) Local Area Banks (ii) NBFC-Core Investment Companies",
+          "chunk_ids": [
+            "b9e18285b0b75c43fc50e13759a207f7e4b4e32b06999c933c8d01102e7562db"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        }
+      ]
+    },
+    {
+      "query_id": "Q10",
+      "query": "Under the RBI IT Directions, 2023, can the executive who serves as the first line of defence for assessing IT controls also be the direct reporting manager of the official whose office manages the Security Operations Centre (SOC)?",
+      "relevant_chunk_ids": [
+        "5dc89623d91b1a6c527f3ef6e41a6c374ab27993abf407c9a6f864c3ebd5dcf1",
+        "c25fdf55aebc9e5c0da33aaef703413c6348772ed4a6c517315f92647dfb3ae6",
+        "fc715ef01c88b9e620fdc2a67dbb0ea66c01082972d25dba2de10eeb9a1fcb35"
+      ],
+      "expected_document_ids": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "unanswerable": false,
+      "reference_answer": "No. The first line of defence for assessing IT controls is the Head of IT Function, while the CISO's Office manages the SOC, and the CISO cannot have any direct reporting relationship with the Head of IT Function.",
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 10,
+          "quote": "As a first line of defence, the Head of IT Function shall ensure effective assessment, evaluation and management of IT controls",
+          "chunk_ids": [
+            "5dc89623d91b1a6c527f3ef6e41a6c374ab27993abf407c9a6f864c3ebd5dcf1"
+          ],
+          "source_page_numbers": [
+            10
+          ],
+          "annotated_page": 10
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 17,
+          "quote": "The CISO shall not have any direct reporting relationship with the Head of IT Function and shall not be given any business targets.",
+          "chunk_ids": [
+            "fc715ef01c88b9e620fdc2a67dbb0ea66c01082972d25dba2de10eeb9a1fcb35"
+          ],
+          "source_page_numbers": [
+            17
+          ],
+          "annotated_page": 17
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 18,
+          "quote": "The CISO's Office shall manage and monitor Security Operations Centre (SOC) and drive cyber security related projects.",
+          "chunk_ids": [
+            "c25fdf55aebc9e5c0da33aaef703413c6348772ed4a6c517315f92647dfb3ae6"
+          ],
+          "source_page_numbers": [
+            18
+          ],
+          "annotated_page": 18
+        }
+      ]
+    },
+    {
+      "query_id": "Q11",
+      "query": "List all five All India Financial Institutions (AIFIs) to which the Reserve Bank of India (Information Technology Governance, Risk, Controls and Assurance Practices) Directions, 2023 apply, along with the four board or management committees mentioned in Chapters II, IV, and VI that must meet or review items at least quarterly or annually.",
+      "relevant_chunk_ids": [
+        "02a9adc044c63a510c699a07e3fe0831dfbacae1db1c559f277163db83f182bf",
+        "15dfa996d1df4c467f12e5e86b5c9f8c1a962c4849d724381ea6f2b944656878",
+        "1dc8281ec5e72f7fad3d7d9663940f3043e680632a1ed29bd7bf62c80cbc2dbb",
+        "559f091851aa7693537599c68c2aa8e4101fcee771153233019b7a2a760c605a",
+        "eb9a8a53357fdde4d2c6810c44752ebb37365cbc54192dc815ebdd973f726680"
+      ],
+      "expected_document_ids": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "unanswerable": false,
+      "reference_answer": "AIFIs: EXIM Bank, NABARD, NaBFID, NHB, and SIDBI. Committees: IT Strategy Committee (ITSC), IT Steering Committee, Risk Management Committee of the Board (RMCB), and Audit Committee of the Board (ACB).",
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 5,
+          "quote": "EXIM Bank, National Bank for Agriculture and Rural Development ('NABARD'), National Bank for Financing Infrastructure and Development ('NaBFID')",
+          "chunk_ids": [
+            "559f091851aa7693537599c68c2aa8e4101fcee771153233019b7a2a760c605a"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 8,
+          "quote": "The ITSC shall meet at least on a quarterly basis.",
+          "chunk_ids": [
+            "15dfa996d1df4c467f12e5e86b5c9f8c1a962c4849d724381ea6f2b944656878"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 8
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 10,
+          "quote": "The IT Steering Committee shall meet at least on a quarterly basis.",
+          "chunk_ids": [
+            "eb9a8a53357fdde4d2c6810c44752ebb37365cbc54192dc815ebdd973f726680"
+          ],
+          "source_page_numbers": [
+            10
+          ],
+          "annotated_page": 10
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 16,
+          "quote": "Risk Management Committee of the Board (RMCB) in consultation with the ITSC shall periodically review and update the same at least on a yearly basis.",
+          "chunk_ids": [
+            "02a9adc044c63a510c699a07e3fe0831dfbacae1db1c559f277163db83f182bf"
+          ],
+          "source_page_numbers": [
+            16
+          ],
+          "annotated_page": 16
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 22,
+          "quote": "The policy shall be approved by the ACB and reviewed at least annually.",
+          "chunk_ids": [
+            "1dc8281ec5e72f7fad3d7d9663940f3043e680632a1ed29bd7bf62c80cbc2dbb"
+          ],
+          "source_page_numbers": [
+            22
+          ],
+          "annotated_page": 22
+        }
+      ]
+    },
+    {
+      "query_id": "Q13",
+      "query": "Since Section 6(b) of the RBI IT Directions, 2023 requires the Chairperson of the IT Strategy Committee to have at least ten years of IT experience and mandates monthly committee meetings, can an independent director with eight years of experience chair it?",
+      "relevant_chunk_ids": [
+        "15dfa996d1df4c467f12e5e86b5c9f8c1a962c4849d724381ea6f2b944656878",
+        "d2a682c40b0da0ab1c12e5391a25119005964c09535f38e160f901acdad808a1"
+      ],
+      "expected_document_ids": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81"
+      ],
+      "unanswerable": false,
+      "reference_answer": "Yes, an independent director with eight years of experience can chair it. The premise is false: Footnote 9 to Section 6(b) requires a minimum of seven years (not ten) of experience, and Section 6(c) requires quarterly (not monthly) meetings.",
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 8,
+          "quote": "\"Substantial IT expertise\" means the person has a minimum of seven years of experience in managing information systems",
+          "chunk_ids": [
+            "d2a682c40b0da0ab1c12e5391a25119005964c09535f38e160f901acdad808a1"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 8
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 8,
+          "quote": "The ITSC shall meet at least on a quarterly basis.",
+          "chunk_ids": [
+            "15dfa996d1df4c467f12e5e86b5c9f8c1a962c4849d724381ea6f2b944656878"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 8
+        }
+      ]
+    },
+    {
+      "query_id": "Q14",
+      "query": "What title was used for the NIST Cybersecurity Framework prior to version 2.0?",
+      "relevant_chunk_ids": [
+        "dce5603bc9bf23ae531a03717320b1726f3e1f3fffd8ec5d4a0bb71dc5b7f504"
+      ],
+      "expected_document_ids": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "unanswerable": false,
+      "reference_answer": "Framework for Improving Critical Infrastructure Cybersecurity.",
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 2,
+          "quote": "Before version 2.0, the Cybersecurity Framework was called the \"Framework for Improving Critical Infrastructure Cybersecurity.\"",
+          "chunk_ids": [
+            "dce5603bc9bf23ae531a03717320b1726f3e1f3fffd8ec5d4a0bb71dc5b7f504"
+          ],
+          "source_page_numbers": [
+            2
+          ],
+          "annotated_page": 2
+        }
+      ]
+    },
+    {
+      "query_id": "Q16",
+      "query": "According to NIST CSF 2.0, which Core Functions have actions that should happen continuously rather than only when incidents occur, and how many Categories belong to the Function at the center of the CSF wheel?",
+      "relevant_chunk_ids": [
+        "3a98a0a3a47100a9590bce2f1d98161c50c261f7982ed3bd37f4619375023d1c",
+        "a8727c73ad030b6ba9817aeb51dc069d5d78a1448bcfc417fb94f7a4a3248f21",
+        "d1a5a3d681dbb428778b790c361fb58587ba9a2ad34789d69212c7a961b99eac"
+      ],
+      "expected_document_ids": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "unanswerable": false,
+      "reference_answer": "GOVERN, IDENTIFY, PROTECT, and DETECT actions should happen continuously. GOVERN is at the center of the wheel and has 6 Categories (GV.OC, GV.RM, GV.RR, GV.PO, GV.OV, GV.SC).",
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 9,
+          "quote": "GOVERN is in the center of the wheel because it informs how an organization will implement the other five Functions.",
+          "chunk_ids": [
+            "3a98a0a3a47100a9590bce2f1d98161c50c261f7982ed3bd37f4619375023d1c"
+          ],
+          "source_page_numbers": [
+            9
+          ],
+          "annotated_page": 4
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 10,
+          "quote": "Actions that support GOVERN, IDENTIFY, PROTECT, and DETECT should all happen continuously",
+          "chunk_ids": [
+            "a8727c73ad030b6ba9817aeb51dc069d5d78a1448bcfc417fb94f7a4a3248f21"
+          ],
+          "source_page_numbers": [
+            10
+          ],
+          "annotated_page": 5
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 8,
+          "quote": "Govern (GV) Organizational Context GV.OC Risk Management Strategy GV.RM Roles, Responsibilities, and Authorities GV.RR Policy GV.PO Oversight GV.OV Cybersecurity Supply Chain Risk Management GV.SC",
+          "chunk_ids": [
+            "d1a5a3d681dbb428778b790c361fb58587ba9a2ad34789d69212c7a961b99eac"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 15
+        }
+      ]
+    },
+    {
+      "query_id": "Q17",
+      "query": "In Appendix A of NIST CSF 2.0, which Subcategories under the Data Security (PR.DS) Category are listed, and why is there a gap between PR.DS-02 and PR.DS-10?",
+      "relevant_chunk_ids": [
+        "3b790f0013fc79e4473df01906bf8093edc786b649eabe984ac6f4ff6ab21b57",
+        "f7ba84b7b933d6d8545ee08d0b100e618ea7e6ca48b275b321c0fa3e7cabd3a9"
+      ],
+      "expected_document_ids": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "unanswerable": false,
+      "reference_answer": "The Subcategories are PR.DS-01 (data-at-rest), PR.DS-02 (data-in-transit), PR.DS-10 (data-in-use), and PR.DS-11 (backups of data). Gaps in numbering indicate CSF 1.1 Subcategories that were relocated in CSF 2.0.",
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 20,
+          "quote": "The numbering of the Subcategories is intentionally not sequential; gaps in numbering indicate CSF 1.1 Subcategories that were relocated in CSF 2.0.",
+          "chunk_ids": [
+            "3b790f0013fc79e4473df01906bf8093edc786b649eabe984ac6f4ff6ab21b57"
+          ],
+          "source_page_numbers": [
+            20
+          ],
+          "annotated_page": 15
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 25,
+          "quote": "PR.DS-01: The confidentiality, integrity, and availability of data-at-rest are protected PR.DS-02: The confidentiality, integrity, and availability of data-in-transit are protected PR.DS-10: The confidentiality, integrity, and availability of data-in-use are protected",
+          "chunk_ids": [
+            "f7ba84b7b933d6d8545ee08d0b100e618ea7e6ca48b275b321c0fa3e7cabd3a9"
+          ],
+          "source_page_numbers": [
+            25
+          ],
+          "annotated_page": 20
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 25,
+          "quote": "PR.DS-11: Backups of data are created, protected, maintained, and tested",
+          "chunk_ids": [
+            "f7ba84b7b933d6d8545ee08d0b100e618ea7e6ca48b275b321c0fa3e7cabd3a9"
+          ],
+          "source_page_numbers": [
+            25
+          ],
+          "annotated_page": 20
+        }
+      ]
+    },
+    {
+      "query_id": "Q18",
+      "query": "Summarise the five sequential steps for creating and using a CSF Organizational Profile as set out in Section 3.1 of NIST CSF 2.0.",
+      "relevant_chunk_ids": [
+        "7d56e2776d06cd5da5bfa005b5ace51347bc5947b961dcad4689d0cfb3e7d4e9",
+        "9b82ae36c1bfe865e173efece876760abe643e29642785f885c60f23480832ed",
+        "b558c2bbcfeddb86a33586165bf80ccbbbe48b9e124953da9694d60d34a7aad0",
+        "b5bd1dae4df38028b49ef5db095259c2595ca82d983956b63f6f99eb5a6adf78"
+      ],
+      "expected_document_ids": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c"
+      ],
+      "unanswerable": false,
+      "reference_answer": "1. Scope the Organizational Profile; 2. Gather needed information (policies, BIA, standards, roles); 3. Create the Organizational Profile (Current/Target); 4. Analyze gaps and create an action plan (e.g., POA&M); 5. Implement the action plan and update the Profile.",
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 12,
+          "quote": "1 Scope the Organizational Profile 2 Gather needed information 3 Create the Organizational Profile 4 Analyze gaps and create an action plan 5 Implement action plan and update Profile",
+          "chunk_ids": [
+            "b5bd1dae4df38028b49ef5db095259c2595ca82d983956b63f6f99eb5a6adf78",
+            "9b82ae36c1bfe865e173efece876760abe643e29642785f885c60f23480832ed",
+            "7d56e2776d06cd5da5bfa005b5ace51347bc5947b961dcad4689d0cfb3e7d4e9",
+            "b558c2bbcfeddb86a33586165bf80ccbbbe48b9e124953da9694d60d34a7aad0"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 6
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 12,
+          "quote": "1. Scope the Organizational Profile. Document the high-level facts and assumptions on which the Profile will be based to define its scope.",
+          "chunk_ids": [
+            "b5bd1dae4df38028b49ef5db095259c2595ca82d983956b63f6f99eb5a6adf78"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 7
+        },
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 12,
+          "quote": "4. Analyze the gaps between the Current and Target Profiles, and create an action plan.",
+          "chunk_ids": [
+            "7d56e2776d06cd5da5bfa005b5ace51347bc5947b961dcad4689d0cfb3e7d4e9"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 7
+        }
+      ]
+    },
+    {
+      "query_id": "Q21",
+      "query": "In the Kerala IFMS performance audit, how many certified Database Administrators were working in the Treasury Department after August 2019, and what financial loss resulted from the contractor's failure to provide a substitute DBA during the contract period?",
+      "relevant_chunk_ids": [
+        "aea6c79b3f5688118f612219c12aeb57f05cc6681e5404fb03539db106141373",
+        "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5"
+      ],
+      "expected_document_ids": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "unanswerable": false,
+      "reference_answer": "None (zero certified DBAs, as the department nominated no one for training and the post was vacant since August 2019). The failure to levy liquidated damages of ₹10,000 per day for 66 days caused a loss of ₹6.60 lakh.",
+      "evidence_references": [
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 12,
+          "quote": "Audit observed that Treasury department did not nominate anyone for the training and hence there is no certified DBA in the department.",
+          "chunk_ids": [
+            "aea6c79b3f5688118f612219c12aeb57f05cc6681e5404fb03539db106141373"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 12
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 12,
+          "quote": "Any delay in providing a suitable substitute beyond three working days would attract liquidated damages at the rate of ₹10,000 per day",
+          "chunk_ids": [
+            "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 12
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 12,
+          "quote": "The failure of the Treasury department in levying liquidated damages for the delay of 66 days from the firm had resulted in loss of ₹6.60 lakh to Government.",
+          "chunk_ids": [
+            "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 12
+        }
+      ]
+    },
+    {
+      "query_id": "Q23",
+      "query": "Across the Kerala IFMS performance audit, which specific intra-treasury and internet-based applications were checked by Audit in relation to multiple login or Single Sign-On (SSO), and how was SSO implemented for each group?",
+      "relevant_chunk_ids": [
+        "4c1e99f0458855ab20700b41f55b4f2bd436c694d24c5ed727b1901efc50baff",
+        "a82d8297149c38c2a463228b1060161f40b53f7bbd00a4ccce4b9437cc43e6be",
+        "b3f468bbf39bf0c05740f68bb9dd9cd5fe8c96fea2ec4f82f07c24bd0dc8975e"
+      ],
+      "expected_document_ids": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "unanswerable": false,
+      "reference_answer": "Intra-treasury: CoreTIS, CoreTSB, CRA, PIMS (users still logged into each module separately). Internet-based: BIMS, BAMS, WAMS (NIC's Parichay SSO was optional; BIMS and BAMS also permitted multiple logins), and SPARK, BDS (NIC's SSO not implemented).",
+      "evidence_references": [
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 4,
+          "quote": "Test check (BIMS, BAMS) also revealed that internet-based applications permitted multiple user sign in.",
+          "chunk_ids": [
+            "a82d8297149c38c2a463228b1060161f40b53f7bbd00a4ccce4b9437cc43e6be",
+            "b3f468bbf39bf0c05740f68bb9dd9cd5fe8c96fea2ec4f82f07c24bd0dc8975e"
+          ],
+          "source_page_numbers": [
+            4,
+            5
+          ],
+          "annotated_page": 4
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 6,
+          "quote": "Audit verified various intra-treasury applications (eg: CoreTIS, CoreTSB, CRA, PIMS etc.) during July 2024 and noticed that the users had to still login to these modules separately each time.",
+          "chunk_ids": [
+            "4c1e99f0458855ab20700b41f55b4f2bd436c694d24c5ed727b1901efc50baff"
+          ],
+          "source_page_numbers": [
+            6
+          ],
+          "annotated_page": 6
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 6,
+          "quote": "For the internet-based applications (BIMS, BAMS, WAMS etc.) of IFMS-K, even though NIC's SSO is implemented, it was optional. For certain other applications such as SPARK, BDS etc., the NIC's SSO was not implemented.",
+          "chunk_ids": [
+            "4c1e99f0458855ab20700b41f55b4f2bd436c694d24c5ed727b1901efc50baff"
+          ],
+          "source_page_numbers": [
+            6
+          ],
+          "annotated_page": 6
+        }
+      ]
+    },
+    {
+      "query_id": "Q25",
+      "query": "In the Kerala IFMS performance audit, what was the total contract value paid to CDAC for operating the Security Operations Centre (SOC) and conducting quarterly phishing simulations for treasury staff?",
+      "relevant_chunk_ids": [],
+      "expected_document_ids": [],
+      "unanswerable": true,
+      "reference_answer": null,
+      "evidence_references": []
+    },
+    {
+      "query_id": "Q26",
+      "query": "In the Uttarakhand IFMS performance audit, how many Drawing and Disbursing Officers (DDOs) were registered with personal email IDs out of the total DDOs?",
+      "relevant_chunk_ids": [
+        "448b6bdf2f9bdbc2e7112d4252e840260a6f649177e76db10c7fbca69d98c51f"
+      ],
+      "expected_document_ids": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "unanswerable": false,
+      "reference_answer": "2,912 (63%) out of 4,586 DDOs.",
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 4,
+          "quote": "Audit observed that 2912 (63%) out of 4586 DDOs were registered with their personal e-mail IDs",
+          "chunk_ids": [
+            "448b6bdf2f9bdbc2e7112d4252e840260a6f649177e76db10c7fbca69d98c51f"
+          ],
+          "source_page_numbers": [
+            4
+          ],
+          "annotated_page": 4
+        }
+      ]
+    },
+    {
+      "query_id": "Q27",
+      "query": "In the Uttarakhand IFMS performance audit, why was the Government's explanation for postponing the mandatory quality certification rejected by Audit, and what operational symptom reported by users and accepted by DTPE was linked to the absence of this certification?",
+      "relevant_chunk_ids": [
+        "827ed410cbce43381f1233047fe26b3921bb8483e2c7c400e6240709987c01ba",
+        "92359b6a13df7f9364859393ba8553bac1f4ded5627642c93aaa512d0f385d0c"
+      ],
+      "expected_document_ids": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "unanswerable": false,
+      "reference_answer": "The vendor (M/s IWS) had already been paid for the STQC Performance and Quality Audit deliverable and its contract expired on 31 March 2023. Both DTPE and nearly 370 surveyed end-users reported slowness/slow speed of the IFMS site.",
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 4,
+          "quote": "During audit, DTPE also accepted that the users of IFMS were facing slowness issues. Therefore, in absence of necessary STQC certification, risk of quality and performance issues in IFMS could not be ruled out.",
+          "chunk_ids": [
+            "827ed410cbce43381f1233047fe26b3921bb8483e2c7c400e6240709987c01ba"
+          ],
+          "source_page_numbers": [
+            4
+          ],
+          "annotated_page": 4
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 4,
+          "quote": "Reply was not acceptable as the contract with the vendor, who had already been paid for the deliverable 'Performance and Quality Audit from STQC', already expired on 31st March 2023.",
+          "chunk_ids": [
+            "827ed410cbce43381f1233047fe26b3921bb8483e2c7c400e6240709987c01ba"
+          ],
+          "source_page_numbers": [
+            4
+          ],
+          "annotated_page": 4
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 8,
+          "quote": "Nearly 370 responses were received. Issues reported were related to Login, OTP delay, poor and delayed support from helpdesk, slow speed of site",
+          "chunk_ids": [
+            "92359b6a13df7f9364859393ba8553bac1f4ded5627642c93aaa512d0f385d0c"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 8
+        }
+      ]
+    },
+    {
+      "query_id": "Q29",
+      "query": "Summarise the five information system security systemic deficiencies identified during the system review in Section 4.2.2 of the Uttarakhand IFMS performance audit.",
+      "relevant_chunk_ids": [
+        "2c90e7a2e85315b7ccab17d0b4cdc1059a89ae3844b45e10fd48cddba92fa520",
+        "3c5151d67a1851e80c6ab286bc6c22e14415e13660c43b178f23eb76f64c5ed1",
+        "448b6bdf2f9bdbc2e7112d4252e840260a6f649177e76db10c7fbca69d98c51f"
+      ],
+      "expected_document_ids": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "unanswerable": false,
+      "reference_answer": "1. 63% (2,912/4,586) of DDOs used personal email IDs; 2. Audit trails were not visible at the front end for DDOs; 3. Password policy did not enforce lowercase characters; 4. Biometric (fingerprint) authentication at login was not implemented; 5. UKSWAN network security audit certificates were not provided.",
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 4,
+          "quote": "Audit observed that 2912 (63%) out of 4586 DDOs were registered with their personal e-mail IDs",
+          "chunk_ids": [
+            "448b6bdf2f9bdbc2e7112d4252e840260a6f649177e76db10c7fbca69d98c51f"
+          ],
+          "source_page_numbers": [
+            4
+          ],
+          "annotated_page": 4
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 5,
+          "quote": "audit noticed that audit trails were not being incorporated in IFMS due to which details of changes made through IFMS were not traceable through front end.",
+          "chunk_ids": [
+            "3c5151d67a1851e80c6ab286bc6c22e14415e13660c43b178f23eb76f64c5ed1"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 5,
+          "quote": "Audit noticed that the system was not enforcing use of lower case while constructing password.",
+          "chunk_ids": [
+            "3c5151d67a1851e80c6ab286bc6c22e14415e13660c43b178f23eb76f64c5ed1"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 5,
+          "quote": "Biometric authentication (in form of fingerprint capture) of registered users of DDO System and Treasuries was to be implemented in IFMS. However, it remained non-implementable",
+          "chunk_ids": [
+            "2c90e7a2e85315b7ccab17d0b4cdc1059a89ae3844b45e10fd48cddba92fa520"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 5,
+          "quote": "Despite request to DTPE and ITDA to provided network security audit certificates of UKSWAN to Audit, they were not provided.",
+          "chunk_ids": [
+            "2c90e7a2e85315b7ccab17d0b4cdc1059a89ae3844b45e10fd48cddba92fa520"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        }
+      ]
+    },
+    {
+      "query_id": "Q30",
+      "query": "Based on the Uttarakhand IFMS performance audit, issue a binding legal verdict on whether the Directorate of Treasury, Pension and Entitlement (DTPE) committed a criminal offence under the Information Technology Act, 2000 and state the exact prison sentence applicable to the Finance Secretary.",
+      "relevant_chunk_ids": [
+        "57c65f616e8ba74996778f95de0b804555de1e531e681e129ddf3b1d7e312fea",
+        "694575d05e995d14bd94a73488147f50c393cd8730acef420de778a0ad5bb1c9"
+      ],
+      "expected_document_ids": [
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "unanswerable": false,
+      "reference_answer": "The document does not state any criminal verdict, offence under the Information Technology Act, 2000, or prison sentence. It is a performance audit report that records security deficiencies (such as missing STQC certification, BCP, DR site, and IT security policy) and makes administrative recommendations to the Department.",
+      "evidence_references": [
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 8,
+          "quote": "Audit noticed that IFMS went live without required performance and quality certification from STQC.",
+          "chunk_ids": [
+            "57c65f616e8ba74996778f95de0b804555de1e531e681e129ddf3b1d7e312fea"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 8
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 9,
+          "quote": "The Department should formulate Business Continuity Plan and set up Disaster Recovery site",
+          "chunk_ids": [
+            "694575d05e995d14bd94a73488147f50c393cd8730acef420de778a0ad5bb1c9"
+          ],
+          "source_page_numbers": [
+            9
+          ],
+          "annotated_page": 9
+        }
+      ]
+    },
+    {
+      "query_id": "Q31",
+      "query": "In the Supreme Court judgment Union of India v. G. Kiran & Ors. (2026 INSC 15), what were the Preliminary Examination qualifying cut-off marks for the General category and SC category, and what marks did Respondent No. 1 (G. Kiran) and Respondent No. 3 (Antony S Mariyappa) score in the Preliminary Examination?",
+      "relevant_chunk_ids": [
+        "f30d44867a10e86f2543ef57a15ce582db3041ea2119abb0ddbdd7f0c5348489"
+      ],
+      "expected_document_ids": [
+        "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43"
+      ],
+      "unanswerable": false,
+      "reference_answer": "The qualifying cut-off was 267 for General category and 233 for SC category. G. Kiran (Respondent No. 1) scored 247.18 and Antony S Mariyappa (Respondent No. 3) scored 270.68.",
+      "evidence_references": [
+        {
+          "document_sha256": "90e73c9bc6c699a149aa772d09b467bf36e4d9eb90c629ed0eb1d69c51f9bf43",
+          "cited_page": 5,
+          "quote": "G Kiran [Respondent No. 1] SC 233 247.18 Antony S Mariyappa [Respondent No. 3] General/Unreserved 267 270.68",
+          "chunk_ids": [
+            "f30d44867a10e86f2543ef57a15ce582db3041ea2119abb0ddbdd7f0c5348489"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        }
+      ]
+    },
+    {
+      "query_id": "Q34",
+      "query": "Under the Digital Personal Data Protection Act, 2023, when must a Data Fiduciary erase personal data, and what did the Uttarakhand IFMS performance audit observe regarding data retention in the Finance Data Center (FDC)?",
+      "relevant_chunk_ids": [
+        "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9",
+        "92394f90c5d1ace85a4d6aeb2eb2af2da9a08117e47da7e3bc52623dd782a95a",
+        "a1a5164dda5763b126904b9a85b23753a859ed7173e136f07c30f22d81d08aaa"
+      ],
+      "expected_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "unanswerable": false,
+      "reference_answer": "Under Section 8(7)(a) of the 2023 Act (subject to the State exemption in Section 17(4)), a Data Fiduciary must erase personal data upon consent withdrawal or when the specified purpose is no longer served, unless legally required. In the Uttarakhand IFMS audit, the Department had not determined a data retention period, so data kept accumulating.",
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 11,
+          "quote": "erase personal data, upon the Data Principal withdrawing her consent or as soon as it is reasonable to assume that the specified purpose is no longer being served, whichever is earlier",
+          "chunk_ids": [
+            "4aa788cd2b18358352be388f80bed17d0905af9a9a69dbdcb4c5a26dcb65a7d9"
+          ],
+          "source_page_numbers": [
+            11
+          ],
+          "annotated_page": 11
+        },
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 14,
+          "quote": "In respect of processing by the State or any instrumentality of the State, the provisions of sub-section (7) of section 8 and sub-section (3) of section 12",
+          "chunk_ids": [
+            "a1a5164dda5763b126904b9a85b23753a859ed7173e136f07c30f22d81d08aaa"
+          ],
+          "source_page_numbers": [
+            14
+          ],
+          "annotated_page": 15
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 7,
+          "quote": "Also, the Department did not determine the data retention period, in absence of which data kept on accumulating and could impact the performance of system",
+          "chunk_ids": [
+            "92394f90c5d1ace85a4d6aeb2eb2af2da9a08117e47da7e3bc52623dd782a95a"
+          ],
+          "source_page_numbers": [
+            7
+          ],
+          "annotated_page": 7
+        }
+      ]
+    },
+    {
+      "query_id": "Q35",
+      "query": "What condition does Section 8(2) of the Digital Personal Data Protection Act, 2023 impose on a Data Fiduciary engaging a Data Processor, and what contractual lapse did the Kerala IFMS performance audit find regarding the agency engaged to provide a Database Administrator from October 2018 to October 2019?",
+      "relevant_chunk_ids": [
+        "9f309fab6c740fca5fef4f47889b745acab21218fbe291261f25b670197e7869",
+        "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5"
+      ],
+      "expected_document_ids": [
+        "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "unanswerable": false,
+      "reference_answer": "Section 8(2) requires a Data Fiduciary to engage a Data Processor only under a valid contract. In the Kerala IFMS audit, although Clause 9.1 of the contract with M/s RP Techsoft International Pvt. Ltd. mandated ₹10,000/day liquidated damages for delays beyond three working days in replacing a DBA, the Treasury Department failed to enforce it for a 66-day vacancy.",
+      "evidence_references": [
+        {
+          "document_sha256": "dda561b9fd6420e1b99157b60f92bb0470a6154c6d559bbee3482ac255ac2c24",
+          "cited_page": 10,
+          "quote": "A Data Fiduciary may engage, appoint, use or otherwise involve a Data Processor to process personal data on its behalf for any activity related to offering of goods or services to Data Principals only under a valid contract.",
+          "chunk_ids": [
+            "9f309fab6c740fca5fef4f47889b745acab21218fbe291261f25b670197e7869"
+          ],
+          "source_page_numbers": [
+            10
+          ],
+          "annotated_page": 10
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 12,
+          "quote": "Clause 9.1 of Agreement with M/s RP Techsoft International Pvt. Ltd. stipulates that, the contractor should invariably provide a suitable substitute in the event of the incumbent DBA leaving",
+          "chunk_ids": [
+            "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 12
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 12,
+          "quote": "The failure of the Treasury department in levying liquidated damages for the delay of 66 days from the firm had resulted in loss of ₹6.60 lakh to Government.",
+          "chunk_ids": [
+            "e5399d0b2a7008fbcb523d31a12b2fffc5118e42748863616abdc5a44f197df5"
+          ],
+          "source_page_numbers": [
+            12
+          ],
+          "annotated_page": 12
+        }
+      ]
+    },
+    {
+      "query_id": "Q37",
+      "query": "What do the RBI IT Directions, 2023 require regarding geographical separation of Data Centre (DC) and Disaster Recovery (DR) sites and audit trail logging, and what did the Uttarakhand IFMS performance audit find on both counts?",
+      "relevant_chunk_ids": [
+        "3c5151d67a1851e80c6ab286bc6c22e14415e13660c43b178f23eb76f64c5ed1",
+        "79b5dfc07fc95827822bc2270baca7f83a349457dec1573227751052a0b4fc36",
+        "848a663ef2729e36bb9aa11411d6f00657e4c0f7b05ac826e1fde91e78bec8b9",
+        "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477"
+      ],
+      "expected_document_ids": [
+        "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "unanswerable": false,
+      "reference_answer": "RBI Sections 15(a) and 18(b) require critical applications to provide audit trails and DC and DR sites to be geographically well separated from similar location threats. In Uttarakhand IFMS, audit trails were captured only in back-end logs (not visible at the front end for DDOs), and no DR site was set up, with proposed FDC and SDC only 6.5 km apart in Seismic Zone IV.",
+      "evidence_references": [
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 14,
+          "quote": "Every IT application which can access or affect critical or sensitive information, shall have necessary audit and system logging capability and should provide audit trails.",
+          "chunk_ids": [
+            "79b5dfc07fc95827822bc2270baca7f83a349457dec1573227751052a0b4fc36"
+          ],
+          "source_page_numbers": [
+            14
+          ],
+          "annotated_page": 14
+        },
+        {
+          "document_sha256": "8ad6286676b298038b2dda8f6a6bc4014c2a3fe6f0b5c59b1b02fcaf77cb5f81",
+          "cited_page": 15,
+          "quote": "The DC and DR sites should be geographically well separated so that both the sites are not affected by a similar threat associated to their location.",
+          "chunk_ids": [
+            "848a663ef2729e36bb9aa11411d6f00657e4c0f7b05ac826e1fde91e78bec8b9"
+          ],
+          "source_page_numbers": [
+            15
+          ],
+          "annotated_page": 15
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 5,
+          "quote": "Lifecycle of a bill including details of rejections and subsequent actions taken on the bill were captured in the form of logs at back-end but were not available at front end for DDO user.",
+          "chunk_ids": [
+            "3c5151d67a1851e80c6ab286bc6c22e14415e13660c43b178f23eb76f64c5ed1"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 6,
+          "quote": "Moreover, both FDC and SDC were located near to each other, around 6.5 kilometers apart and in a region vulnerable to disasters (Seismic zone IV).",
+          "chunk_ids": [
+            "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477"
+          ],
+          "source_page_numbers": [
+            6
+          ],
+          "annotated_page": 6
+        }
+      ]
+    },
+    {
+      "query_id": "Q38",
+      "query": "How does NIST CSF 2.0 Subcategory PR.PS-02 address software maintenance and replacement, and what did the Kerala IFMS performance audit observe regarding the database software used for preparing the State Budget?",
+      "relevant_chunk_ids": [
+        "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb",
+        "28cc52e18f8cd56714bc182b9f4fb19e27968962613835cb97dcafa4cdfd61fb",
+        "2dcd38ab284c077e24e0258f71228c748619a65ec92a9a83e76cedeec39ec363"
+      ],
+      "expected_document_ids": [
+        "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3"
+      ],
+      "unanswerable": false,
+      "reference_answer": "NIST CSF 2.0 Subcategory PR.PS-02 states that software is maintained, replaced, and removed commensurate with risk. In the Kerala IFMS audit, the Budget 2.0 application used for preparing the State Budget was running on an unlicensed and unsupported IBM DB2 version 8, whose extended support ended on 30 April 2012.",
+      "evidence_references": [
+        {
+          "document_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+          "cited_page": 25,
+          "quote": "PR.PS-02: Software is maintained, replaced, and removed commensurate with risk",
+          "chunk_ids": [
+            "28cc52e18f8cd56714bc182b9f4fb19e27968962613835cb97dcafa4cdfd61fb"
+          ],
+          "source_page_numbers": [
+            25
+          ],
+          "annotated_page": 20
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 3,
+          "quote": "The budget application used for the state budget was running in an unlicensed DB2 version.",
+          "chunk_ids": [
+            "1d81d25cc199274140c1f76e5ac1ae82141a89ecace90ccecb90ab237ed56ebb"
+          ],
+          "source_page_numbers": [
+            3
+          ],
+          "annotated_page": 3
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 5,
+          "quote": "Audit observed that the Budget 2.0 application used for the preparation of State Budget in Department of Finance was running in an unsupported DB2 version 8 of IBM.",
+          "chunk_ids": [
+            "2dcd38ab284c077e24e0258f71228c748619a65ec92a9a83e76cedeec39ec363"
+          ],
+          "source_page_numbers": [
+            5
+          ],
+          "annotated_page": 5
+        }
+      ]
+    },
+    {
+      "query_id": "Q40",
+      "query": "Compare what the Kerala IFMS and Uttarakhand IFMS performance audits found regarding the physical location and operational status of their primary Data Centres, Near DR sites, and Far DR sites.",
+      "relevant_chunk_ids": [
+        "901bed3948b764d264e336bae5266b1fa0ec3ee5d0a02035dfb45b32a7edd6a0",
+        "92f8f75f0040437f1c7bdfbdea45a4ee3a1cdccec6a3a1c3cabda4a5b2f0c72e",
+        "c71dd8940d7a05ecd2286db813c175f726eac0f32b0e3d46af9183f458a15135",
+        "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477"
+      ],
+      "expected_document_ids": [
+        "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+        "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980"
+      ],
+      "unanswerable": false,
+      "reference_answer": "In Kerala, SDC-2 (Technopark, Thiruvananthapuram) became the primary Data Centre in May 2021, SDC-1 (Co-Bank Tower) became the Near DR site in January 2022, and the Far DR at NDC New Delhi was scrapped, with Secunderabad under configuration. In Uttarakhand, IFMS ran from FDC (Dehradun) with real-time replication to SDC (6.5 km away in Seismic Zone IV), and neither a functional DR site nor a Far DR site was set up.",
+      "evidence_references": [
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 8,
+          "quote": "new server and IT equipment were installed at SDC-2 and made operational from May 2021 as primary Data Centre. Four servers and one Network Attached Storage (NAS) were shifted to SDC-1, and database replication started there as near DR site from 09 January 2022.",
+          "chunk_ids": [
+            "901bed3948b764d264e336bae5266b1fa0ec3ee5d0a02035dfb45b32a7edd6a0"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 8
+        },
+        {
+          "document_sha256": "5c46c449018b8af374d140395e59ca67ce217f4d9a51e01b2454cba0a90df2c3",
+          "cited_page": 8,
+          "quote": "Kerala State IT Mission has already allotted space for setting up a Far DR at Secunderabad and the configuration process is underway.",
+          "chunk_ids": [
+            "c71dd8940d7a05ecd2286db813c175f726eac0f32b0e3d46af9183f458a15135"
+          ],
+          "source_page_numbers": [
+            8
+          ],
+          "annotated_page": 8
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 3,
+          "quote": "It is currently being operated through FDC located in the premises of Directorate Treasury, Pension and Entitlement, Dehradun.",
+          "chunk_ids": [
+            "92f8f75f0040437f1c7bdfbdea45a4ee3a1cdccec6a3a1c3cabda4a5b2f0c72e"
+          ],
+          "source_page_numbers": [
+            3
+          ],
+          "annotated_page": 3
+        },
+        {
+          "document_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+          "cited_page": 6,
+          "quote": "both FDC and SDC were located near to each other, around 6.5 kilometers apart and in a region vulnerable to disasters (Seismic zone IV).",
+          "chunk_ids": [
+            "f0b0cdd5b2969b488312d091e87a3dbddfc02ccf0e9529311bdeb53f0b74e477"
+          ],
+          "source_page_numbers": [
+            6
+          ],
+          "annotated_page": 6
+        }
+      ]
+    }
+  ]
+}

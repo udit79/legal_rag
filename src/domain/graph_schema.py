@@ -8,7 +8,7 @@ NODE_PROPERTY_TYPES: Final[dict[str, dict[str, type]]] = {
     "FINDING": {"id": str, "description": str, "status": str},
     "RISK": {"id": str, "name": str, "description": str},
     "EVIDENCE": {"id": str, "text": str, "chunk_id": str},
-    "DOCUMENT": {"id": str, "filename": str, "content_hash": str},
+    "DOCUMENT": {"id": str, "source_sha256": str},
     "CHUNK": {"id": str, "text": str, "document_id": str, "chunk_index": int},
 }
 
