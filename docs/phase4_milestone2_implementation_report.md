@@ -40,24 +40,26 @@
 
 ## Validation results
 
-Focused command:
+Historical focused command from the earlier psql-launcher run (the launcher has
+since been removed and this command is not a current runnable command):
 
 ```powershell
 .venv\Scripts\python.exe -m pytest tests\ingestion\test_image_vlm.py tests\ingestion\test_image_screening.py tests\ingestion\test_image_asset_resolver.py tests\ingestion\test_supabase_provenance.py tests\sql\test_phase4_image_vlm_sql_integration.py -q --basetemp .tmp_phase4_m2_focused -p no:cacheprovider
 ```
 
-Focused result: **46 passed, 1 skipped in 3.64s**. The psql-based SQL test
-skipped because `PHASE4_VLM_SQL_TEST_DSN` and `psql` were unavailable. Its
+Focused result: **46 passed, 1 skipped in 3.64s**. At that time the local
+psql-based SQL launcher skipped because its DSN and `psql` were unavailable. Its
 core online assertions were separately exercised over the configured
 disposable Supabase PostgREST endpoint as `service_role`: the VLM wrapper
 rejected a run mismatch (HTTP 400), rejected a wrong image hash after the base
 write (HTTP 400), and left no document, run or image rows from the failed
 transaction. Direct helper execution was denied (HTTP 403). The successful
 pilot below also verified service-role wrapper execution and owner helper
-execution. The SQL file still needs a psql run for its full database-side
-assertion set.
+execution. The SQL scenario file is retained for Supabase SQL Editor execution;
+the psql-only pytest launcher has since been removed.
 
-Latest focused rerun after the OpenAI SDK response-format typing fix:
+The latest focused rerun at the time, after the OpenAI SDK response-format
+typing fix:
 **38 passed, 1 skipped in 3.67s** (image VLM, asset resolver, provenance and
 opt-in SQL integration tests). The SQL integration still skips because no
 `PHASE4_VLM_SQL_TEST_DSN`/psql setup is configured. `py_compile` passed, and
@@ -134,8 +136,8 @@ a text-heavy cover image, but a suitable screenshot example was not identified.
 
 The one-image pilot and live retrieval path are verified in the disposable
 development environment. The candidate evaluation set is still not
-human-reviewed, and it lacks a sourced screenshot example. Therefore this is
-not Milestone 2 acceptance.
+human-reviewed and it lacks a sourced screenshot example. That limits
+evaluation coverage; human review is not a technical acceptance gate.
 
 Provider-reported input usage is known only after an image call completes, so
 the total-token budget can be exceeded by one call. Image count, crop-byte size
@@ -143,23 +145,23 @@ and output-token limits bound that exposure. Strict pre-call input-token
 enforcement needs provider-specific image-token estimation and remains a
 calibration task.
 
-The tracked `.tmp_phase4_verify` logs were open in another running Python
-process and could not be physically deleted. Their tracked paths were removed
-from the Git index and the directory is ignored; the active process was not
-stopped. The image artifact was removed from the working tree.
-
-Therefore the recommendation remains **HOLD FOR MILESTONE 2 ACCEPTANCE** until
-the psql SQL integration file passes against a disposable project and human
-reviewers complete the evaluation set, including a sourced screenshot case.
+The current overall Phase 4 verdict is **PARTIAL** because the Supabase SQL
+Editor permission and transaction scenarios have not been executed in the
+current verification run. See
+`docs/phase4_closure_phase5_implementation.md` for the current test totals,
+skip explanations and database verification boundary.
 
 ## Remaining steps
 
-1. Run `tests/sql/test_phase4_image_vlm_persistence.sql` through psql against a
-   disposable project to complete the database-native role and rollback checks.
-2. Have a human reviewer finalize expected descriptions and add a real
-   screenshot source example. Measure field accuracy and unsafe-description
-   rejection before enabling the feature beyond staging.
-3. Deploy to staging with VLM disabled, apply the migration, enable VLM for a
+1. Verify remote migration history, then run
+   `tests/sql/test_phase4_image_vlm_persistence.sql` in the disposable Supabase
+   SQL Editor to complete the database-native role and rollback checks.
+2. The host-only OCR reading-order test skips without host Tesseract. The
+   isolated parser worker image installs Tesseract in
+   `docker/parser-worker.Dockerfile`; rebuild that image only when its code,
+   dependencies or Dockerfile change.
+3. Deploy to staging with VLM disabled, apply the migration only if it is not
+   already deployed, enable VLM for a
    small canary, and review logs, token usage, screening outcomes and retrieval.
 4. Production rollout follows staging sign-off; preserve rollback by disabling
    `IMAGE_VLM_PERSISTENCE_ENABLED` without changing existing OCR behavior.

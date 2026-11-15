@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from typing import Annotated, Self
+import hashlib
+import json
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from src.domain.graph_schema import validate_node
-from src.domain.ontology import validate_relation
+from src.domain.ontology import EpistemicMode, RelationType, validate_relation
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
 from src.security.ingestion_screening.contracts import ScreenedChunkedDocument
@@ -37,6 +39,8 @@ class GraphNode(BaseModel):
     node_type: NonEmptyStr
     properties: dict[str, object]
     evidence_spans: tuple[EvidenceSpan, ...] = ()
+    epistemic_mode: EpistemicMode = EpistemicMode.VERBATIM_EXTRACTION
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def validate_properties(self) -> Self:
@@ -47,10 +51,25 @@ class GraphNode(BaseModel):
 class GraphRelationship(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    id: NonEmptyStr | None = None
     source_id: NonEmptyStr
     relation_type: NonEmptyStr
     target_id: NonEmptyStr
     evidence_spans: tuple[EvidenceSpan, ...] = Field(min_length=1)
+    epistemic_mode: EpistemicMode = EpistemicMode.VERBATIM_EXTRACTION
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def assign_stable_id(self) -> Self:
+        if self.id is None:
+            identity = json.dumps(
+                [self.source_id, self.relation_type.upper(), self.target_id],
+                separators=(",", ":"),
+            )
+            object.__setattr__(
+                self, "id", "relation:" + hashlib.sha256(identity.encode()).hexdigest()
+            )
+        return self
 
 
 class GraphWriteBatch(BaseModel):
@@ -60,6 +79,7 @@ class GraphWriteBatch(BaseModel):
 
     document: ChunkedDocument
     screened: ScreenedChunkedDocument
+    ingestion_run_id: NonEmptyStr | None = None
     nodes: tuple[GraphNode, ...]
     relationships: tuple[GraphRelationship, ...]
 
@@ -82,16 +102,28 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
     node_types = {}
     for node in batch.nodes:
         validate_node(node.node_type, node.properties)
+        if node.epistemic_mode is not EpistemicMode.VERBATIM_EXTRACTION:
+            raise ValueError("Inferred or rule-derived nodes are not admitted as graph facts")
+        if node.confidence < 0.75:
+            raise ValueError("Graph entity confidence is below the admission threshold")
         node_id = node.properties.get("id")
         if not isinstance(node_id, str) or not node_id.strip() or node_id in node_types:
             raise ValueError("Graph node IDs must be present and unique")
         node_type = node.node_type.upper()
+        if node_type in {"DOCUMENT", "CHUNK"}:
+            raise ValueError("Structural DOCUMENT/CHUNK nodes are managed by structural ingestion")
         node_types[node_id] = node_type
         if node_type not in {"DOCUMENT", "CHUNK"} and not node.evidence_spans:
             raise ValueError("Extracted graph entities require source evidence")
         for evidence in node.evidence_spans:
             _validate_evidence(evidence, chunks, admitted)
     for edge in batch.relationships:
+        if edge.relation_type.upper() in {"HAS_CHUNK", "NEXT_CHUNK", "EXTRACTED_FROM"}:
+            raise ValueError("Structural provenance relationships are managed by structural ingestion")
+        if edge.epistemic_mode is not EpistemicMode.VERBATIM_EXTRACTION:
+            raise ValueError("Inferred or rule-derived relationships are not admitted as graph facts")
+        if edge.confidence < 0.75:
+            raise ValueError("Graph relationship confidence is below the admission threshold")
         try:
             source_type = node_types[edge.source_id]
             target_type = node_types[edge.target_id]

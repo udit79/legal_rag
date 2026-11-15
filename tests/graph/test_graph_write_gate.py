@@ -144,3 +144,28 @@ def test_graph_write_gate_rejects_extracted_entity_without_evidence():
             ),
             relationships=(),
         )
+
+
+def test_graph_write_gate_reserves_structural_nodes_and_relationships():
+    document, screened = _screened("The Court owns the filing application.")
+    nodes = _nodes(document.chunks[0].text)
+    with pytest.raises(ValueError, match="Structural provenance relationships"):
+        GraphWriteBatch(
+            document=document,
+            screened=screened,
+            nodes=nodes,
+            relationships=(GraphRelationship(
+                source_id="org-1", relation_type="HAS_CHUNK", target_id="app-1",
+                evidence_spans=(EvidenceSpan(chunk_index=0, start_offset=0, end_offset=5, quote="The C"),),
+            ),),
+        )
+    with pytest.raises(ValueError, match="Structural DOCUMENT/CHUNK nodes"):
+        GraphWriteBatch(
+            document=document,
+            screened=screened,
+            nodes=(GraphNode(
+                node_type="DOCUMENT",
+                properties={"id": "document-1", "source_sha256": "a" * 64},
+            ),),
+            relationships=(),
+        )
