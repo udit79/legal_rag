@@ -43,6 +43,7 @@ def _chunk() -> Chunk:
             end_offset=len(text),
             extraction_method="IMAGE_OCR",
             source_image_block_id=BLOCK,
+            source_image_sha256="a" * 64,
             ocr_text_sha256=hashlib.sha256(text.encode()).hexdigest(),
         ),),
     )

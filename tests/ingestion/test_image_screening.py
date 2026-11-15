@@ -158,6 +158,7 @@ def test_admitted_ocr_becomes_deterministic_canonical_text_with_chunk_offsets():
     generated = canonical.pages[1].blocks[4]
     assert generated.extraction_method == "IMAGE_OCR"
     assert generated.source_image_block_id == crop.block_id
+    assert generated.source_image_sha256 == result[0].image_sha256
     assert generated.source_coordinates == crop.source_coordinates
     assert generated.text == result[0].ocr_text
     assert generated.ocr_text_sha256 == result[0].ocr_text_sha256
@@ -172,6 +173,7 @@ def test_admitted_ocr_becomes_deterministic_canonical_text_with_chunk_offsets():
     source = chunk.sources[0]
     assert source.block_id == generated.block_id
     assert source.source_image_block_id == crop.block_id
+    assert source.source_image_sha256 == result[0].image_sha256
     assert source.extraction_method == "IMAGE_OCR"
     assert source.ocr_text_sha256 == result[0].ocr_text_sha256
     assert source.start_offset == 0

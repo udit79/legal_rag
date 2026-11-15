@@ -416,6 +416,7 @@ def add_admitted_visual_descriptions(
             reading_order=source.reading_order, derived_order=2,
             source_coordinates=source.source_coordinates,
             extraction_method="IMAGE_VLM", source_image_block_id=source.block_id,
+            source_image_sha256=item.image_sha256,
             visual_description_sha256=item.description_sha256,
             visual_model_provider=item.provider, visual_model=item.model,
             visual_prompt_version=item.prompt_version,

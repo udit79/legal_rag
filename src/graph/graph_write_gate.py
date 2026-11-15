@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Self
+from typing import Annotated, Mapping, Self
 import hashlib
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from src.domain.graph_schema import validate_node
-from src.domain.ontology import EpistemicMode, RelationType, validate_relation
+from src.domain.ontology import EpistemicMode, NodeType, RelationType, validate_relation
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
 from src.security.ingestion_screening.contracts import ScreenedChunkedDocument
@@ -33,6 +33,72 @@ class EvidenceSpan(BaseModel):
         return self
 
 
+class EvidenceSupportAttestation(BaseModel):
+    """Independent verifier result bound to one claim and exact source quote."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    provider: NonEmptyStr
+    model: NonEmptyStr
+    claim_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    supporting_quote_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    supported: bool
+    directly_stated: bool
+    confidence: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+
+
+VISUAL_FACT_EVIDENCE_POLICY = "DENY_IMAGE_VLM_SOURCE_FACTS"
+
+
+def claim_evidence_digest(
+    kind: str, claim: Mapping[str, object], spans: tuple[EvidenceSpan, ...]
+) -> str:
+    payload = {"kind": kind, "claim": dict(claim),
+               "evidence": [span.model_dump(mode="json") for span in spans]}
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def evidence_context_digest(document: ChunkedDocument, spans: tuple[EvidenceSpan, ...]) -> str:
+    context = [
+        {"chunk_index": span.chunk_index, "raw_text": document.chunks[span.chunk_index].text}
+        for span in spans
+    ]
+    return hashlib.sha256(
+        json.dumps(context, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+_ENTITY_IDENTITY_KEYS = {
+    NodeType.ORGANIZATION: ("name",),
+    NodeType.APPLICATION: ("name",),
+    NodeType.POLICY: ("title", "version"),
+    NodeType.OBLIGATION: ("requirement_text",),
+    NodeType.CONTROL: ("name",),
+    NodeType.FINDING: ("description", "status"),
+    NodeType.RISK: ("name",),
+    NodeType.EVIDENCE: ("chunk_id",),
+}
+
+
+def stable_semantic_node_id(node_type: str | NodeType, properties: Mapping[str, object]) -> str:
+    kind = node_type if isinstance(node_type, NodeType) else NodeType(node_type.upper())
+    keys = _ENTITY_IDENTITY_KEYS.get(kind)
+    if not keys:
+        raise ValueError("Structural node identities are managed by structural ingestion")
+    identity: dict[str, str] = {}
+    for key in keys:
+        value = properties.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"Stable {kind.value} identity requires {key}")
+        identity[key] = " ".join(value.casefold().split())
+    digest = hashlib.sha256(
+        json.dumps([kind.value, identity], sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return f"{kind.value.lower()}:{digest}"
+
+
 class GraphNode(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -41,6 +107,7 @@ class GraphNode(BaseModel):
     evidence_spans: tuple[EvidenceSpan, ...] = ()
     epistemic_mode: EpistemicMode = EpistemicMode.VERBATIM_EXTRACTION
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, allow_inf_nan=False)
+    support_attestation: EvidenceSupportAttestation | None = None
 
     @model_validator(mode="after")
     def validate_properties(self) -> Self:
@@ -58,6 +125,7 @@ class GraphRelationship(BaseModel):
     evidence_spans: tuple[EvidenceSpan, ...] = Field(min_length=1)
     epistemic_mode: EpistemicMode = EpistemicMode.VERBATIM_EXTRACTION
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, allow_inf_nan=False)
+    support_attestation: EvidenceSupportAttestation | None = None
 
     @model_validator(mode="after")
     def assign_stable_id(self) -> Self:
@@ -80,6 +148,8 @@ class GraphWriteBatch(BaseModel):
     document: ChunkedDocument
     screened: ScreenedChunkedDocument
     ingestion_run_id: NonEmptyStr | None = None
+    extraction_provider: NonEmptyStr | None = None
+    extraction_model: NonEmptyStr | None = None
     nodes: tuple[GraphNode, ...]
     relationships: tuple[GraphRelationship, ...]
 
@@ -104,7 +174,7 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
         validate_node(node.node_type, node.properties)
         if node.epistemic_mode is not EpistemicMode.VERBATIM_EXTRACTION:
             raise ValueError("Inferred or rule-derived nodes are not admitted as graph facts")
-        if node.confidence < 0.75:
+        if node.confidence < 0.90:
             raise ValueError("Graph entity confidence is below the admission threshold")
         node_id = node.properties.get("id")
         if not isinstance(node_id, str) or not node_id.strip() or node_id in node_types:
@@ -117,12 +187,30 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
             raise ValueError("Extracted graph entities require source evidence")
         for evidence in node.evidence_spans:
             _validate_evidence(evidence, chunks, admitted)
+        claim = {key: value for key, value in node.properties.items() if key != "id"}
+        _validate_support_attestation(
+            node.support_attestation,
+            claim_evidence_digest(node_type, claim, node.evidence_spans),
+            node.evidence_spans,
+            evidence_context_digest(batch.document, node.evidence_spans),
+        )
+        if (batch.extraction_model is not None and node.support_attestation is not None
+                and node.support_attestation.model == batch.extraction_model):
+            raise ValueError("Evidence verifier must be independent of the extraction model")
     for edge in batch.relationships:
+        expected_relation_id = "relation:" + hashlib.sha256(
+            json.dumps(
+                [edge.source_id, edge.relation_type.upper(), edge.target_id],
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        if edge.id != expected_relation_id:
+            raise ValueError("Relationship ID must match its deterministic endpoint identity")
         if edge.relation_type.upper() in {"HAS_CHUNK", "NEXT_CHUNK", "EXTRACTED_FROM"}:
             raise ValueError("Structural provenance relationships are managed by structural ingestion")
         if edge.epistemic_mode is not EpistemicMode.VERBATIM_EXTRACTION:
             raise ValueError("Inferred or rule-derived relationships are not admitted as graph facts")
-        if edge.confidence < 0.75:
+        if edge.confidence < 0.90:
             raise ValueError("Graph relationship confidence is below the admission threshold")
         try:
             source_type = node_types[edge.source_id]
@@ -133,6 +221,20 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
             raise ValueError("Relationship type or endpoint types violate the ontology")
         for evidence in edge.evidence_spans:
             _validate_evidence(evidence, chunks, admitted)
+        _validate_support_attestation(
+            edge.support_attestation,
+            claim_evidence_digest(
+                "RELATIONSHIP",
+                {"source_id": edge.source_id, "relation_type": edge.relation_type.upper(),
+                 "target_id": edge.target_id},
+                edge.evidence_spans,
+            ),
+            edge.evidence_spans,
+            evidence_context_digest(batch.document, edge.evidence_spans),
+        )
+        if (batch.extraction_model is not None and edge.support_attestation is not None
+                and edge.support_attestation.model == batch.extraction_model):
+            raise ValueError("Evidence verifier must be independent of the extraction model")
 
 
 def _validate_evidence(
@@ -147,6 +249,38 @@ def _validate_evidence(
         raise ValueError("Evidence quote does not match its source span")
     if not chunk.sources or len({source.page_number for source in chunk.sources}) != 1:
         raise ValueError("Evidence chunk must have page-local source provenance")
+    if (VISUAL_FACT_EVIDENCE_POLICY == "DENY_IMAGE_VLM_SOURCE_FACTS"
+            and any(source.extraction_method == "IMAGE_VLM" for source in chunk.sources)):
+        raise ValueError("AI-generated visual descriptions cannot be admitted as original source facts")
+    if any(
+        source.extraction_method == "IMAGE_OCR" and source.source_image_sha256 is None
+        for source in chunk.sources
+    ):
+        raise ValueError("OCR evidence is missing its source image SHA-256 provenance")
+
+
+def _validate_support_attestation(
+    attestation: EvidenceSupportAttestation | None,
+    expected_claim_sha256: str,
+    evidence_spans: tuple[EvidenceSpan, ...],
+    expected_context_sha256: str,
+) -> None:
+    if attestation is None:
+        raise ValueError("Every graph claim requires independent evidence-support verification")
+    if attestation.claim_sha256 != expected_claim_sha256:
+        raise ValueError("Evidence-support attestation does not match the proposed claim")
+    if attestation.context_sha256 != expected_context_sha256:
+        raise ValueError("Evidence-support attestation does not match the source chunk context")
+    if not attestation.supported or not attestation.directly_stated:
+        raise ValueError("Evidence verifier did not confirm direct source support")
+    if attestation.confidence < 0.90:
+        raise ValueError("Evidence verifier confidence is below the admission threshold")
+    valid_quotes = {
+        hashlib.sha256(span.quote.encode("utf-8")).hexdigest()
+        for span in evidence_spans
+    }
+    if attestation.supporting_quote_sha256 not in valid_quotes:
+        raise ValueError("Evidence verifier quote does not match a supplied source span")
 
 
 def validate_graph_write_batch(batch: GraphWriteBatch) -> None:

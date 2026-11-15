@@ -19,6 +19,12 @@ begin
        'public.persist_admitted_image_vlm_description(text,integer,text,text,jsonb)', 'EXECUTE') then
         raise exception 'service_role can bypass the VLM wrapper';
     end if;
+    if has_function_privilege('anon',
+       'public.persist_admitted_image_vlm_description(text,integer,text,text,jsonb)', 'EXECUTE')
+       or has_function_privilege('authenticated',
+       'public.persist_admitted_image_vlm_description(text,integer,text,text,jsonb)', 'EXECUTE') then
+        raise exception 'VLM helper is exposed to an untrusted role';
+    end if;
     select pg_get_userbyid(p.proowner)::name into wrapper_owner
     from pg_proc p where p.oid =
         'public.persist_ingestion_screening_with_admitted_ocr_and_vlm(jsonb,jsonb,jsonb)'::regprocedure;
@@ -123,7 +129,74 @@ select pg_temp.exercise_vlm_rpc(
     'phase4-vlm-rollback-test', repeat('9', 64),
     'Visual description does not match an eligible screened image'
 );
+-- Malformed digest must fail, and the wrapper must roll back base screening writes.
+select pg_temp.exercise_vlm_rpc(
+    'phase4-vlm-invalid-sha-test', repeat('c', 64),
+    'phase4-vlm-invalid-sha-test', 'not-a-sha256',
+    'Visual description failed provenance validation'
+);
+
+-- Exercise the direct-helper denial as the API role, not only via catalog checks.
+do $$
+begin
+    begin
+        perform public.persist_admitted_image_vlm_description(
+            'phase4-vlm-helper-denied', 1, 'page-1-block-7', repeat('d', 64), '{}'::jsonb
+        );
+        raise exception 'service_role unexpectedly executed the internal VLM helper';
+    exception when insufficient_privilege then
+        null;
+    end;
+end;
+$$;
 reset role;
+
+-- Execute role-boundary calls directly; privilege errors are caught so the
+-- transaction can continue and roll back all fixtures at the end.
+set local role anon;
+do $$
+begin
+    begin
+        perform public.persist_ingestion_screening_with_admitted_ocr_and_vlm(
+            null, null, null
+        );
+        raise exception 'anon unexpectedly executed the VLM persistence wrapper';
+    exception when insufficient_privilege then
+        null;
+    end;
+end;
+$$;
+reset role;
+set local role authenticated;
+do $$
+begin
+    begin
+        perform public.persist_ingestion_screening_with_admitted_ocr_and_vlm(
+            null, null, null
+        );
+        raise exception 'authenticated unexpectedly executed the VLM persistence wrapper';
+    exception when insufficient_privilege then
+        null;
+    end;
+end;
+$$;
+reset role;
+
+-- A second update must not change already admitted VLM text or metadata.
+do $$
+begin
+    begin
+        update public.image_screening_results
+        set visual_description = visual_description ||
+            jsonb_build_object('prompt_version', 'mutated')
+        where ingestion_run_id = 'phase4-vlm-success-test'
+          and page_number = 1 and block_id = 'page-1-block-7';
+        raise exception 'Write-once VLM description was mutable';
+    exception when sqlstate '55000' then
+        null;
+    end;
+end;
+$$;
 
 do $$
 declare
@@ -147,7 +220,8 @@ begin
     where source_sha256 = repeat('b', 64);
     if count_rows <> 0 then raise exception 'Failed VLM write did not roll back document'; end if;
     select count(*) into count_rows from public.ingestion_chunks
-    where ingestion_run_id = 'phase4-vlm-rollback-test';
+    where source_sha256 = repeat('b', 64)
+      and chunking_policy_version = '5c-1.6.0+0123456789ab';
     if count_rows <> 0 then raise exception 'Failed VLM write did not roll back chunks'; end if;
     select count(*) into count_rows from public.chunk_screening_results
     where ingestion_run_id = 'phase4-vlm-rollback-test';
@@ -155,6 +229,19 @@ begin
     select count(*) into count_rows from public.image_screening_results
     where ingestion_run_id = 'phase4-vlm-rollback-test';
     if count_rows <> 0 then raise exception 'Failed VLM write did not roll back image metadata'; end if;
+
+    select count(*) into count_rows from public.ingestion_runs
+    where ingestion_run_id = 'phase4-vlm-invalid-sha-test';
+    if count_rows <> 0 then raise exception 'Invalid image digest did not roll back the base write'; end if;
+    select count(*) into count_rows from public.ingestion_documents
+    where source_sha256 = repeat('c', 64);
+    if count_rows <> 0 then raise exception 'Invalid image digest left a document row behind'; end if;
+
+    select count(*) into count_rows from public.image_screening_results
+    where ingestion_run_id = run_id and page_number = 1
+      and block_id = 'page-1-block-7'
+      and visual_description ->> 'prompt_version' = 'visual-description-v1';
+    if count_rows <> 1 then raise exception 'Write-once test modified the admitted description'; end if;
 end;
 $$;
 

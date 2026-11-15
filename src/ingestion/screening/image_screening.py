@@ -187,6 +187,7 @@ def add_admitted_image_ocr(
                 source_coordinates=source.source_coordinates,
                 extraction_method="IMAGE_OCR",
                 source_image_block_id=source.block_id,
+                source_image_sha256=item.image_sha256,
                 ocr_text_sha256=digest,
                 derived_order=1,
             )

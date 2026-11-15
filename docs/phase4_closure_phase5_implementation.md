@@ -1,125 +1,142 @@
 # Phase 4 closure and Phase 5 implementation status
 
-Inspected repository commit: `3887bb22d6ae115b8b62d1387a2d1fea3f5d11e1`.
-No commit was created.
+Repository HEAD inspected: `4cad0201be726cc650cca5edf0dda0f2679ac084`.
+The Phase 5 implementation changes in the working tree are not committed.
 
 ## Phase 4 — automated technical acceptance
 
-**Verdict: PARTIAL.** No human annotation or human review was used as an acceptance
-gate. Existing OCR, VLM, chunking, retrieval, Supabase persistence and Neo4j
-structural components were inspected. The Phase 4 Milestone 2 source and tests
-show separate native/OCR/VLM blocks, strict structured descriptions, screening
-before canonicalization, run/page/block/image hash/model/prompt provenance,
-bounded calls, idempotent replay handling and private asset references. The
-existing milestone report records a successful disposable-project VLM pilot,
-Neo4j idempotency rerun and read-only retrieval of the matching private asset.
-Those reported live results were not repeated during this task.
+**Verdict: PARTIAL.** No human annotation or review was made an acceptance gate.
+The Phase 4 OCR/VLM, canonical-block, provenance, chunking, storage, retrieval,
+and graph-import code was inspected. The existing Milestone 2 report records a
+disposable-project VLM pilot and retrieval of its private image reference; that
+pilot was not repeated during this verification. This session did not execute
+against Supabase or Neo4j.
 
-The complete local suite was rerun after implementation: **582 passed, 7
-skipped in 46.45s**. It exercises Phase 4 contracts
-and regressions with mocked integrations. It does not prove the current remote
-database state.
+The latest complete local regression run after the Phase 5 changes was
+**590 passed, 8 skipped in 37.51s**. Local unit tests use mocked external
+services and do not establish remote database state.
 
-Skip breakdown from the pytest `-rs` rerun:
+Skip details from pytest `-rs`:
 
-- 1 host OCR ordering test in `tests/ingestion/test_review_fixes.py` skipped
-  because host `tesseract` is not installed. That test calls the local parser
-  directly; it does not use Docker. The parser worker image installs
-  `tesseract-ocr` in `docker/parser-worker.Dockerfile`.
-- 1 Neo4j schema integration test and 1 Neo4j structural-writer integration
-  test skipped because `NEO4J_INTEGRATION=1` was not enabled.
-- 2 Neo4j retrieval integration tests skipped because isolated test database
-  settings/credentials were not configured.
+- 1 OCR host test skipped because Tesseract is unavailable on this host. It
+  calls the parser directly; the parser worker Docker image separately installs
+  `tesseract-ocr`.
+- 1 Neo4j schema bootstrap test and 1 structural-writer integration test
+  skipped because Neo4j integration was not enabled.
+- 2 retrieval integration tests skipped because isolated Neo4j test settings
+  and credentials were not configured.
 - 2 live retrieval tests skipped because `GRAPH_RAG_LIVE_RETRIEVAL=1` was not
   enabled.
-
-The OCR skip is a host-test environment limitation, not evidence that the
-Docker worker lacks OCR support.
+- 1 semantic knowledge-writer integration test skipped because
+  `NEO4J_TEST_DATABASE` and isolated Neo4j credentials were not configured.
 
 ### Supabase verification boundary
 
-The previous pytest integration launchers required local `psql` and a
-`PHASE4_*_SQL_TEST_DSN`. Those launchers have been removed. The paired SQL
-scripts remain transaction-wrapped so they can be run in the disposable
-Supabase SQL Editor, where fixture writes roll back.
+The psql-only integration harnesses have been removed. The transaction-wrapped
+SQL scenarios remain in `tests/sql/` for execution in the disposable Supabase
+SQL Editor. They cover wrapper/helper permissions, service-role execution,
+run mismatch, invalid image digest, atomic rollback, replay, and write-once
+behavior. There is no connected Supabase SQL Editor or database tool available
+in this session; these scenarios and remote migration state are **UNVERIFIED**.
+No migration was applied and no fixture writes were performed.
 
-This session had no connected Supabase SQL Editor/API tool, and browser
-automation could not reach the editor. No migration was applied. Therefore
-these database assertions remain **UNVERIFIED in this run**:
+The prior Milestone 2 report describes an application-level PostgREST pilot.
+That evidence does not replace database catalog, role, or transactional checks.
 
-- Remote migration-history registration and deployed schema/permissions.
-- SQL role checks for the `service_role` wrapper owner and denied helper calls.
-- SQL Editor transaction rollback, mismatch/hash rejection, write-once and replay
-  fixture assertions.
+## Phase 5 — implemented local slice
 
-Earlier application-level PostgREST pilot evidence is described in the
-Milestone 2 implementation report, but is not a substitute for these missing
-catalog/transaction checks. No disposable fixtures were created in this run.
+### Reused architecture
 
-## Phase 5 — implemented slice
+- `src/domain/ontology.py` and `src/domain/graph_schema.py` for node types,
+  relation types, directed endpoint rules, and property validation.
+- `src/ingestion/chunk_contracts.py` and screening contracts for immutable
+  chunk source and admission state.
+- `src/infrastructure/neo4j_client.py` for asynchronous Neo4j transactions.
+- `GraphWriteGate` as the required validation boundary before persistence.
 
-### Existing architecture reused
+### Extraction and support verification
 
-- `src/domain/ontology.py`: node/relation enums and directed endpoint allowlist.
-- `src/domain/graph_schema.py`: strict ontology property validation.
-- `src/graph/graph_write_gate.py`: exact admitted chunk quote/offset validation,
-  page-local provenance, allowed endpoints, confidence floor and batch validation.
-- `src/ingestion/chunk_contracts.py`: immutable chunks and source provenance.
-- `src/infrastructure/neo4j_client.py`: configured asynchronous Neo4j sessions.
+`extract_validated_batch()` filters its input to ADMITTED and ADMITTED_FLAGGED
+chunks before the extractor call. Rejected/quarantined chunks never enter the
+LLM payload. `IMAGE_VLM` chunks are excluded from both extraction and source
+fact verification. Their descriptions remain clearly AI-generated and are
+currently denied as source facts by the explicit
+`DENY_IMAGE_VLM_SOURCE_FACTS` policy. OCR evidence must retain the image SHA-256.
 
-### Data path
+The extraction proposal schema does not accept model-supplied confidence or
+epistemic labels. Exact source offsets and quote matches are checked first;
+then a separately configured OpenAI verifier model evaluates each entity and
+relationship claim against the quote and full chunk context. The verifier model
+must differ from the extraction model. A claim is rejected unless the verifier
+returns direct support with confidence at least 0.90; the gate binds the
+attestation to claim, source context, and quote digests. This is an independent
+automated check, not a formal proof of semantic truth. No live model call was
+made during this run.
 
-An injected structured extractor receives bounded raw chunk text and a strict
-JSON Schema response contract. The proposal uses only ontology node and
-relationship enums, local references, confidence, epistemic mode and exact
-chunk evidence spans. Model-provided graph IDs are rejected; IDs are derived
-deterministically from normalized entity identity. The proposal is converted to
-a `GraphWriteBatch` and passed through GraphWriteGate. Only then may
-`persist_approved_batch()` execute a single Neo4j write transaction.
+Trusted extraction instructions are sent as a system message. Source chunks
+are passed separately as untrusted user payload. Extraction input, verifier
+context, output tokens, retries, and timeouts are bounded.
 
-The writer uses fixed labels/types from enums, parameterized row values, MERGE,
-and compares stored immutable properties/endpoints before accepting an
-identity. Persisted evidence references include document identity, ingestion
-run, chunk, exact quote offsets, page and source block IDs. It does not provide
-the model with Neo4j credentials or arbitrary Cypher.
+### Graph persistence
 
-### Changed files
+Semantic IDs are deterministic from normalized ontology identity fields and do
+not include document/run provenance. The Neo4j writer MERGEs entities by those
+IDs, validates identity fields, and accumulates unique document hashes, run
+IDs, evidence references, and assertion records so cross-document evidence is
+retained without changing identity. Node and relationship confidence and
+epistemic mode are persisted. Relationship IDs and endpoints are checked in
+the write transaction. Writes are one `execute_write` transaction and must
+pass `validate_graph_write_batch()` first.
 
-- `src/graph/graph_write_gate.py`: epistemic mode, confidence and stable
-  relationship identity; batch run provenance.
-- `src/graph/knowledge_extraction.py`: bounded proposal schema, explicit
-  OpenAI adapter, strict JSON Schema output, retry/timeout/token controls,
-  deterministic IDs, fail-closed proposal-to-batch validation.
-- `src/graph/knowledge_writer.py`: GraphWriteGate-only transactional writer,
-  deterministic MERGE identities, source evidence persistence and conflict
-  checks.
-- `tests/graph/test_knowledge_extraction.py`: mocked extraction/writer tests.
-- Removed the two local-psql pytest launchers under `tests/sql/`; their SQL
-  scripts are retained for Supabase SQL Editor use.
+Nested evidence and assertion structures are serialized as JSON strings
+because Neo4j properties do not store nested maps. No graph schema or ontology
+was changed. Concurrency safety for semantic-node creation is limited by the
+absence of new uniqueness constraints; no production write was attempted.
 
-No migration, ontology enum, structural schema, retrieval implementation,
-ingestion pipeline or Phase 3 benchmark artifact was changed.
+### Changed implementation and tests
 
-### Phase 5 test status and limits
+- `src/graph/graph_write_gate.py`
+- `src/graph/knowledge_extraction.py`
+- `src/graph/knowledge_writer.py`
+- `src/ingestion/chunk_contracts.py`
+- `src/ingestion/chunking.py`
+- `src/ingestion/parser_contracts.py`
+- `src/ingestion/screening/image_screening.py`
+- `src/ingestion/screening/image_vlm.py`
+- `tests/graph/test_graph_write_gate.py`
+- `tests/graph/test_knowledge_extraction.py`
+- `tests/graph/test_knowledge_writer_integration.py` (opt-in isolated DB)
+- Phase 4 image asset/screening/VLM regression tests
+- `tests/sql/test_phase4_image_vlm_persistence.sql` (Supabase SQL Editor)
 
-Focused tests: **15 passed**. Full suite: **582 passed, 7 skipped in 46.45s**.
-The skips are opt-in live integrations; no live Neo4j write tests were enabled.
+No migration, ingestion pipeline behavior, ontology, GraphWriteGate policy
+for structural edges, retrieval ranking, or frozen Phase 3 benchmark artifact
+was changed. The OCR/VLM source contract additions carry the existing source
+image hash into `ChunkSource`.
 
-No live Neo4j writes or real OpenAI extraction calls were made. Phase 5 is an
-initial implementation, not production acceptance: no end-to-end real model
-proposal has been exercised, concurrent semantic-node creation is not protected
-by new uniqueness constraints (the graph schema was intentionally preserved),
-contradiction detection across differently worded relations remains limited,
-and no Neo4j transaction integration test was run. Unsupported proposals with
-invalid evidence, ontology types, endpoints, missing entities or low confidence
-are rejected locally before the writer.
+### Test status and limits
 
-## Next actions
+Focused graph and Phase 4 image tests: **192 passed, 7 skipped in 4.29s**.
+Six skips are read-only Neo4j integration tests that require explicit isolated
+database configuration; one is the semantic-writer integration test. Complete local
+suite: **590 passed, 8 skipped in 37.51s**. Python compilation and
+`git diff --check` passed.
 
-1. Run the retained OCR and VLM SQL integration scripts in the disposable
-   Supabase SQL Editor; verify migration history first and record each assertion.
-2. Add isolated Neo4j transaction integration tests for semantic-node and
-   relationship conflict/idempotency behavior.
-3. Configure the explicit OpenAI extraction model in a test environment and
-   run one disposable end-to-end extraction through GraphWriteGate; inspect
-   persisted provenance and replay behavior before any production use.
+No live Neo4j transaction test, end-to-end extraction pilot, live OpenAI call,
+or Supabase SQL Editor scenario ran. Do not write production graph data yet.
+The proposed independent verifier is model-based and may still err; conflicting
+or differently worded assertions are retained as provenance, but semantic
+contradiction resolution is not implemented. Graph writes are gated in code,
+but real model and database behavior still needs disposable-environment
+verification.
+
+## Remaining validation steps
+
+1. Verify deployed migration state, then execute
+   `tests/sql/test_phase4_image_vlm_persistence.sql` in the disposable Supabase
+   SQL Editor and capture the role, rollback, replay, and write-once results.
+2. Configure `NEO4J_TEST_DATABASE` to an isolated database whose name contains
+   `test`, then run `tests/graph/test_knowledge_writer_integration.py`.
+3. Configure separate extraction and verifier models and run one disposable
+   end-to-end extraction, checking gate rejection, persisted provenance,
+   cross-document enrichment, rollback, and replay before any production use.

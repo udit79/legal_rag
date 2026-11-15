@@ -49,6 +49,7 @@ class ChunkSource(BaseModel):
     )
     extraction_method: Literal["NATIVE", "IMAGE_OCR", "IMAGE_VLM"] = "NATIVE"
     source_image_block_id: NonEmptyStr | None = None
+    source_image_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     ocr_text_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     visual_description_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     visual_model_provider: NonEmptyStr | None = None
@@ -93,6 +94,7 @@ class ChunkSource(BaseModel):
                 raise ValueError("VLM chunk source identity does not match its provenance")
         elif (
             self.source_image_block_id is not None
+            or self.source_image_sha256 is not None
             or self.ocr_text_sha256 is not None
             or self.block_derived_order is not None
             or self.visual_description_sha256 is not None

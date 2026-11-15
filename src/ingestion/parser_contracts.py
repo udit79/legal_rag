@@ -53,6 +53,7 @@ class CanonicalBlock(BaseModel):
     text_transformations: tuple[CanonicalTextTransformation, ...] = ()
     extraction_method: ExtractionMethod = "NATIVE"
     source_image_block_id: str | None = None
+    source_image_sha256: str | None = None
     ocr_text_sha256: str | None = None
     visual_description_sha256: str | None = None
     visual_model_provider: str | None = None
@@ -80,6 +81,8 @@ class CanonicalBlock(BaseModel):
             raise ValueError("Block ID must retain its page-scoped canonical format")
         if self.extraction_method == "IMAGE_OCR":
             if (self.block_type != "IMAGE" or not self.source_image_block_id
+                    or not self.source_image_sha256
+                    or not re.fullmatch(r"[0-9a-f]{64}", self.source_image_sha256)
                     or self.ocr_text_sha256 is None
                     or self.derived_order is None
                     or self.derived_order == 0
@@ -91,6 +94,8 @@ class CanonicalBlock(BaseModel):
                 raise ValueError("OCR blocks cannot carry VLM provenance")
         elif self.extraction_method == "IMAGE_VLM":
             if (self.block_type != "IMAGE" or not self.source_image_block_id
+                    or not self.source_image_sha256
+                    or not re.fullmatch(r"[0-9a-f]{64}", self.source_image_sha256)
                     or self.derived_order is None or self.derived_order < 2
                     or self.ocr_text_sha256 is not None
                     or not self.visual_description_sha256
@@ -110,6 +115,7 @@ class CanonicalBlock(BaseModel):
                 raise ValueError("VLM blocks require image identity, digest, model provenance and ordering")
         elif (
             self.source_image_block_id is not None
+            or self.source_image_sha256 is not None
             or self.ocr_text_sha256 is not None
             or self.derived_order is not None
             or self.visual_description_sha256 is not None

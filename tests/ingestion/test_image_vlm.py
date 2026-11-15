@@ -253,6 +253,7 @@ def test_admitted_description_is_separate_chunked_provenance_and_idempotent():
     block = updated.pages[0].blocks[1]
     assert block.extraction_method == "IMAGE_VLM"
     assert block.source_image_block_id == image.block_id
+    assert block.source_image_sha256 == result[0].image_sha256
     assert block.visual_description_sha256 == result[0].description_sha256
     assert block.visual_model_provider == "openai" and block.visual_model == "test-vlm"
     assert block.visual_prompt_version == result[0].prompt_version
@@ -260,6 +261,7 @@ def test_admitted_description_is_separate_chunked_provenance_and_idempotent():
     source = chunk.sources[0]
     assert source.extraction_method == "IMAGE_VLM"
     assert source.source_image_block_id == image.block_id
+    assert source.source_image_sha256 == ocr.image_sha256
     assert source.visual_model == "test-vlm"
     assert source.visual_prompt_version == result[0].prompt_version
     assert source.start_offset == 0 and source.end_offset == len(block.text)
@@ -421,6 +423,7 @@ def test_visual_evidence_resolves_same_private_asset_identity():
         block_reading_order=0, block_derived_order=2, block_type="IMAGE",
         source_text_length=len(text), start_offset=0, end_offset=len(text),
         extraction_method="IMAGE_VLM", source_image_block_id=image.block_id,
+        source_image_sha256=hashlib.sha256(b"png-crop").hexdigest(),
         visual_description_sha256=digest, visual_model_provider="openai",
         visual_model="test-vlm", visual_prompt_version="visual-description-v1",
     )
