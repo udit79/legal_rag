@@ -1,5 +1,6 @@
-"""Opt-in integration test for the local, disposable Supabase/Postgres database."""
+"""Opt-in integration test for a disposable Supabase/Postgres database."""
 
+import glob
 import os
 import shutil
 import subprocess
@@ -14,16 +15,24 @@ pytestmark = pytest.mark.sql_integration
 def test_image_ocr_atomic_persistence_and_shared_immutability_triggers():
     dsn = os.getenv("PHASE4_SQL_TEST_DSN")
     if not dsn:
-        pytest.skip("Set PHASE4_SQL_TEST_DSN to a disposable local Supabase/PostgreSQL database")
-    psql = shutil.which("psql")
+        pytest.skip("Set PHASE4_SQL_TEST_DSN to a disposable Supabase/PostgreSQL database")
+    psql = os.getenv("PHASE4_PSQL_PATH") or shutil.which("psql")
+    if not psql and os.name == "nt":
+        installed = glob.glob(r"C:\Program Files\PostgreSQL\*\bin\psql.exe")
+        psql = installed[-1] if installed else None
     if not psql:
         pytest.skip("psql is required for the opt-in SQL integration test")
 
     parsed = urlparse(dsn)
-    if parsed.scheme not in {"postgres", "postgresql"} or parsed.hostname not in {
-        "localhost", "127.0.0.1", "::1"
-    }:
-        pytest.fail("PHASE4_SQL_TEST_DSN must point to a loopback-only disposable database")
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        pytest.fail("PHASE4_SQL_TEST_DSN must be a PostgreSQL connection URI")
+    if parsed.hostname not in {"localhost", "127.0.0.1", "::1"} and os.getenv(
+        "PHASE4_SQL_TEST_ALLOW_REMOTE"
+    ) != "1":
+        pytest.fail(
+            "Remote database tests require explicit PHASE4_SQL_TEST_ALLOW_REMOTE=1 "
+            "and must target a disposable Supabase project"
+        )
 
     sql_file = os.path.join(
         os.path.dirname(__file__), "test_phase4_image_ocr_immutability.sql"

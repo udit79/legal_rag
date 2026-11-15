@@ -47,17 +47,20 @@ class ChunkSource(BaseModel):
         default=None,
         description="Exclusive Python Unicode character offset into source text.",
     )
-    extraction_method: Literal["NATIVE", "IMAGE_OCR"] = "NATIVE"
+    extraction_method: Literal["NATIVE", "IMAGE_OCR", "IMAGE_VLM"] = "NATIVE"
     source_image_block_id: NonEmptyStr | None = None
     ocr_text_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    visual_description_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    visual_model_provider: NonEmptyStr | None = None
+    visual_model: NonEmptyStr | None = None
 
     @model_validator(mode="after")
     def validate_source_range(self) -> Self:
         prefix = f"page-{self.page_number}-block-"
         suffix = self.block_id.removeprefix(prefix)
         native_id = suffix.isascii() and suffix.isdecimal()
-        ocr_id = re.fullmatch(r"ocr-[0-9a-f]{64}", suffix) is not None
-        if not self.block_id.startswith(prefix) or not (native_id or ocr_id):
+        derived_id = re.fullmatch(r"(?:ocr|vlm)-[0-9a-f]{64}", suffix) is not None
+        if not self.block_id.startswith(prefix) or not (native_id or derived_id):
             raise ValueError("block_id must retain its page-scoped canonical format")
         if self.extraction_method == "IMAGE_OCR":
             if (
@@ -68,12 +71,24 @@ class ChunkSource(BaseModel):
                 or self.block_derived_order == 0
             ):
                 raise ValueError("OCR chunk sources require image and OCR provenance")
+            if any((self.visual_description_sha256, self.visual_model_provider, self.visual_model)):
+                raise ValueError("OCR sources cannot carry VLM provenance")
+        elif self.extraction_method == "IMAGE_VLM":
+            if (self.block_type != "IMAGE" or not self.source_image_block_id
+                    or not self.visual_description_sha256
+                    or not self.visual_model_provider or not self.visual_model
+                    or self.block_derived_order is None or self.block_derived_order < 2
+                    or self.ocr_text_sha256 is not None):
+                raise ValueError("VLM chunk sources require image and model provenance")
         elif (
             self.source_image_block_id is not None
             or self.ocr_text_sha256 is not None
             or self.block_derived_order is not None
+            or self.visual_description_sha256 is not None
+            or self.visual_model_provider is not None
+            or self.visual_model is not None
         ):
-            raise ValueError("Native chunk sources cannot carry visual asset provenance")
+            raise ValueError("Native chunk sources cannot carry derived image provenance")
         offsets = (
             self.source_text_length,
             self.start_offset,

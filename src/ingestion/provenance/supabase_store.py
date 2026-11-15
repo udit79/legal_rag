@@ -16,6 +16,8 @@ from src.ingestion.pipeline import (
 from src.ingestion.chunk_contracts import serialize_chunk_source
 from src.ingestion.retrieval_text import RETRIEVAL_TEXT_POLICY_VERSION
 from src.ingestion.screening.image_screening import ImageScreeningResult
+from src.ingestion.screening.image_vlm import ImageVlmResult
+from src.security.ingestion_screening.enums import AdmissionDecision
 from src.security.ingestion_screening.contracts import DocumentContext, ScreenedChunkedDocument
 
 IMAGE_CROP_BUCKET = "ingestion-image-crops"
@@ -48,6 +50,7 @@ class ProvenancePersistenceReceipt:
     status: Literal["PERSISTED"]
     persisted_image_count: int
     persisted_admitted_ocr_count: int
+    persisted_visual_description_count: int = 0
 
 class SupabaseProvenanceStore:
     def __init__(self, base_url: str, service_role_key: str, client: httpx.AsyncClient):
@@ -65,6 +68,7 @@ class SupabaseProvenanceStore:
         context: DocumentContext,
         *,
         image_results: tuple[ImageScreeningResult, ...] = (),
+        image_vlm_results: tuple[ImageVlmResult, ...] = (),
         image_crops: tuple[UnrecognizedImageCrop, ...] = (),
     ) -> ProvenancePersistenceReceipt:
         """Persist screening and admitted OCR atomically after storing private crops."""
@@ -78,6 +82,9 @@ class SupabaseProvenanceStore:
             raise ValueError("Screening and document contexts identify different sources")
         if screened.report.document_id != screened.document.document_id:
             raise ValueError("Screening report and document IDs differ")
+        vlm_keys = [(result.page_number, result.block_id) for result in image_vlm_results]
+        if len(set(vlm_keys)) != len(vlm_keys):
+            raise SupabaseProvenanceError("VLM results contain duplicate image identities")
         document = screened.document
         image_metadata = await self._store_image_crops(
             image_crops,
@@ -146,6 +153,50 @@ class SupabaseProvenanceStore:
                 "ocr_text_length": result.ocr_text_length,
             })
 
+        admitted_vlm = []
+        image_result_by_key = {
+            (result.page_number, result.block_id): result for result in image_results
+        }
+        if len(image_result_by_key) != len(image_results):
+            raise SupabaseProvenanceError("Image screening contains duplicate composite identities")
+        for result in image_vlm_results:
+            if result.status != "ADMITTED":
+                continue
+            image_screening = image_result_by_key.get((result.page_number, result.block_id))
+            if (result.description is None or result.description_text is None
+                    or result.description_sha256 is None
+                    or hashlib.sha256(result.description_text.encode("utf-8")).hexdigest()
+                    != result.description_sha256
+                    or result.decision not in {"ADMITTED", "ADMITTED_FLAGGED"}
+                    or image_screening is None
+                    or image_screening.image_sha256 != result.image_sha256
+                    or image_screening.ocr_status not in {"NO_TEXT", "TEXT_FOUND"}
+                    or (image_screening.ocr_status == "TEXT_FOUND"
+                        and image_screening.decision not in {
+                            AdmissionDecision.ADMITTED,
+                            AdmissionDecision.ADMITTED_FLAGGED,
+                        })
+                    or (image_screening.ocr_status == "NO_TEXT"
+                        and image_screening.decision is not None)):
+                raise SupabaseProvenanceError(
+                    "Only validated admitted visual descriptions can be persisted"
+                )
+            admitted_vlm.append({
+                "ingestion_run_id": ingestion_run_id,
+                "page_number": result.page_number,
+                "block_id": result.block_id,
+                "image_sha256": result.image_sha256,
+                "description": result.description.model_dump(mode="json"),
+                "description_text": result.description_text,
+                "description_sha256": result.description_sha256,
+                "decision": result.decision,
+                "provider": result.provider,
+                "model": result.model,
+                "prompt_version": result.prompt_version,
+                "input_tokens": result.input_tokens,
+                "output_tokens": result.output_tokens,
+            })
+
         headers = {
             "apikey": self._key,
             "Authorization": f"Bearer {self._key}",
@@ -155,10 +206,11 @@ class SupabaseProvenanceStore:
             "p_payload": payload,
             "p_admitted_ocr": admitted_ocr,
         }
-        endpoint = (
-            f"{self._url}/rest/v1/rpc/"
-            "persist_ingestion_screening_with_admitted_ocr"
-        )
+        rpc_name = "persist_ingestion_screening_with_admitted_ocr"
+        if admitted_vlm:
+            request_body["p_admitted_vlm"] = admitted_vlm
+            rpc_name = "persist_ingestion_screening_with_admitted_ocr_and_vlm"
+        endpoint = f"{self._url}/rest/v1/rpc/{rpc_name}"
         last_error: httpx.HTTPError | None = None
         for attempt in range(_SCREENING_RPC_ATTEMPTS):
             try:
@@ -171,6 +223,7 @@ class SupabaseProvenanceStore:
                     status="PERSISTED",
                     persisted_image_count=len(image_metadata),
                     persisted_admitted_ocr_count=len(admitted_ocr),
+                    persisted_visual_description_count=len(admitted_vlm),
                 )
             except httpx.HTTPStatusError as exc:
                 last_error = exc

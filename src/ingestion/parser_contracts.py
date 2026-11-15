@@ -6,7 +6,7 @@ from src.ingestion.contracts import DocumentDisposition, PositiveInt
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 NonNegativeInt = Annotated[int, Field(ge=0, strict=True)]
 BlockType = Literal["TEXT", "TABLE", "IMAGE", "VECTOR", "OTHER"]
-ExtractionMethod = Literal["NATIVE", "IMAGE_OCR"]
+ExtractionMethod = Literal["NATIVE", "IMAGE_OCR", "IMAGE_VLM"]
 PageParseStatus = Literal["PARSED", "BLANK", "VECTOR_ONLY", "FAILED"]
 
 class SourceCoordinates(BaseModel):
@@ -54,6 +54,9 @@ class CanonicalBlock(BaseModel):
     extraction_method: ExtractionMethod = "NATIVE"
     source_image_block_id: str | None = None
     ocr_text_sha256: str | None = None
+    visual_description_sha256: str | None = None
+    visual_model_provider: str | None = None
+    visual_model: str | None = None
     derived_order: NonNegativeInt | None = None
 
     @model_validator(mode="before")
@@ -71,8 +74,8 @@ class CanonicalBlock(BaseModel):
         prefix = f"page-{self.page_number}-block-"
         suffix = self.block_id.removeprefix(prefix)
         native_id = suffix.isascii() and suffix.isdecimal()
-        ocr_id = re.fullmatch(r"ocr-[0-9a-f]{64}", suffix) is not None
-        if not self.block_id.startswith(prefix) or not (native_id or ocr_id):
+        derived_id = re.fullmatch(r"(?:ocr|vlm)-[0-9a-f]{64}", suffix) is not None
+        if not self.block_id.startswith(prefix) or not (native_id or derived_id):
             raise ValueError("Block ID must retain its page-scoped canonical format")
         if self.extraction_method == "IMAGE_OCR":
             if (self.block_type != "IMAGE" or not self.source_image_block_id
@@ -83,12 +86,26 @@ class CanonicalBlock(BaseModel):
                 raise ValueError("Image OCR blocks require source image identity and text digest")
             if self.ocr_text_sha256 != hashlib.sha256(self.text.encode("utf-8")).hexdigest():
                 raise ValueError("Image OCR digest does not match canonical text")
+            if any((self.visual_description_sha256, self.visual_model_provider, self.visual_model)):
+                raise ValueError("OCR blocks cannot carry VLM provenance")
+        elif self.extraction_method == "IMAGE_VLM":
+            if (self.block_type != "IMAGE" or not self.source_image_block_id
+                    or self.derived_order is None or self.derived_order < 2
+                    or self.ocr_text_sha256 is not None
+                    or not self.visual_description_sha256
+                    or not re.fullmatch(r"[0-9a-f]{64}", self.visual_description_sha256)
+                    or self.visual_description_sha256 != hashlib.sha256(self.text.encode("utf-8")).hexdigest()
+                    or not self.visual_model_provider or not self.visual_model):
+                raise ValueError("VLM blocks require image identity, digest, model provenance and ordering")
         elif (
             self.source_image_block_id is not None
             or self.ocr_text_sha256 is not None
             or self.derived_order is not None
+            or self.visual_description_sha256 is not None
+            or self.visual_model_provider is not None
+            or self.visual_model is not None
         ):
-            raise ValueError("Native blocks cannot carry image OCR provenance")
+            raise ValueError("Native blocks cannot carry derived image provenance")
         if self.text_transformations:
             if self.raw_text is None or len(self.raw_text) != len(self.text):
                 raise ValueError("Transformed blocks require same-length raw source text")

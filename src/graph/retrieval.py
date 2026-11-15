@@ -132,7 +132,7 @@ class EvidenceBundle(BaseModel):
         expected = {
             (source.page_number, source.source_image_block_id)
             for source in self.sources
-            if source.extraction_method == "IMAGE_OCR"
+            if source.extraction_method in {"IMAGE_OCR", "IMAGE_VLM"}
             and source.source_image_block_id is not None
         }
         actual = set()
@@ -177,9 +177,9 @@ async def resolve_visual_asset_references(
     keys_by_run: dict[str, set[tuple[int, str]]] = {}
     for item in evidence:
         for source in item.sources:
-            if source.extraction_method == "IMAGE_OCR":
+            if source.extraction_method in {"IMAGE_OCR", "IMAGE_VLM"}:
                 if source.source_image_block_id is None:
-                    raise ValueError("OCR evidence lacks its source image block ID")
+                    raise ValueError("Derived image evidence lacks its source image block ID")
                 keys_by_run.setdefault(item.ingestion_run_id, set()).add(
                     (source.page_number, source.source_image_block_id)
                 )
@@ -197,14 +197,24 @@ async def resolve_visual_asset_references(
     for item in evidence:
         references: dict[tuple[int, str], VisualAssetReference] = {}
         for source in item.sources:
-            if source.extraction_method != "IMAGE_OCR":
+            if source.extraction_method not in {"IMAGE_OCR", "IMAGE_VLM"}:
                 continue
             assert source.source_image_block_id is not None
             key = (source.page_number, source.source_image_block_id)
             resolved = resolved_by_run[item.ingestion_run_id].get(key)
-            if resolved is None or resolved.ocr_text_sha256 != source.ocr_text_sha256:
+            expected_digest = (
+                source.ocr_text_sha256 if source.extraction_method == "IMAGE_OCR"
+                else source.visual_description_sha256
+            )
+            if resolved is None or (
+                source.extraction_method == "IMAGE_OCR"
+                and resolved.ocr_text_sha256 != expected_digest
+            ) or (
+                source.extraction_method == "IMAGE_VLM"
+                and resolved.visual_description_sha256 != expected_digest
+            ):
                 raise VisualAssetResolutionUnavailable(
-                    f"Image asset does not match OCR chunk provenance: {key}"
+                    f"Image asset does not match derived image provenance: {key}"
                 )
             references[key] = resolved.reference
         enriched.append(EvidenceBundle.model_validate({

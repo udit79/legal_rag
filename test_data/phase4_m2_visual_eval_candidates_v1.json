@@ -1,0 +1,56 @@
+{
+  "dataset_id": "phase4_m2_visual_eval_candidates_v1",
+  "status": "PROPOSED_PENDING_HUMAN_REVIEW",
+  "source_scope": "version-controlled test_data PDFs; physical PDF page numbers",
+  "note": "Candidate identities and visual categories were checked against rendered source pages. Proposed prompts and any descriptions must be independently reviewed by a human before scoring. No gold labels or ingestion run IDs are asserted here.",
+  "cases": [
+    {
+      "case_id": "diag-cyber-p8",
+      "category": "diagram",
+      "source_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+      "filename": "cyber_security.pdf",
+      "page_number": 8,
+      "block_id": "page-8-block-5",
+      "proposed_query": "How does the figure organize the cybersecurity framework core?",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "expected_description": null,
+      "ingestion_run_id": null
+    },
+    {
+      "case_id": "chart-security-report-p4",
+      "category": "chart",
+      "source_sha256": "9a4675dae853057f0a0e682ad1c1ae51ab0e78505d7b133ed70ab40876d79980",
+      "filename": "security_report.pdf",
+      "page_number": 4,
+      "block_id": "page-4-block-11",
+      "proposed_query": "What email-use categories and proportions are shown in the chart?",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "expected_description": null,
+      "ingestion_run_id": null
+    },
+    {
+      "case_id": "text-cover-cyber-p1",
+      "category": "text_heavy_image",
+      "source_sha256": "3c31f46fee98cac0c4323453e5109291a213b4de7fef8c058af9bf67f717433c",
+      "filename": "cyber_security.pdf",
+      "page_number": 1,
+      "block_id": "page-1-block-2",
+      "proposed_query": "What publication title is visibly printed on the cover image?",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "expected_description": null,
+      "ingestion_run_id": null
+    },
+    {
+      "case_id": "screenshot-not-yet-sourced",
+      "category": "screenshot",
+      "source_sha256": null,
+      "filename": null,
+      "page_number": null,
+      "block_id": null,
+      "proposed_query": null,
+      "review_status": "SOURCE_EXAMPLE_NOT_IDENTIFIED",
+      "expected_description": null,
+      "ingestion_run_id": null
+    }
+  ]
+}

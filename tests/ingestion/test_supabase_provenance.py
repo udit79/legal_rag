@@ -19,6 +19,7 @@ from src.ingestion.provenance.supabase_store import (
     SupabaseProvenanceStore,
 )
 from src.ingestion.screening.image_screening import ImageScreeningResult
+from src.ingestion.screening.image_vlm import ImageVlmResult, VisualDescription
 from src.security.ingestion_screening.enums import AdmissionDecision
 from src.security.ingestion_screening.contracts import DocumentContext
 from src.security.ingestion_screening.enums import TrustTier
@@ -289,6 +290,55 @@ def test_admitted_image_ocr_is_included_in_atomic_rpc_and_exact_replay():
     assert first_payload == json.loads(calls[1].content)
     assert first_payload["p_admitted_ocr"][0]["ingestion_run_id"] == "run-id"
     assert first_payload["p_admitted_ocr"][0]["ocr_text"] == text
+
+
+def test_admitted_vlm_uses_atomic_extension_rpc_with_existing_image_identity():
+    png = b"\x89PNG\r\n\x1a\nvlm-crop"
+    crop = _image_crop("page-1-block-0", png)
+    image_result = _image_result(crop, png)
+    description = VisualDescription(
+        visual_type="flow diagram", purpose="Shows a process",
+        visible_elements=("Start box", "End box"),
+        relationships=("An arrow connects start to end",),
+    )
+    text = description.render()
+    vlm = ImageVlmResult(
+        page_number=1, block_id=crop.block_id, image_sha256=image_result.image_sha256,
+        status="ADMITTED", decision="ADMITTED", description=description,
+        description_text=text, description_sha256=hashlib.sha256(text.encode()).hexdigest(),
+        provider="openai", model="test-vlm", input_tokens=20, output_tokens=30,
+    )
+    requests = []
+    async def handle(request):
+        requests.append(request)
+        return httpx.Response(204)
+
+    async def run():
+        screened, context = await _screened()
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            store = SupabaseProvenanceStore("https://example.supabase.co", "key", client)
+            first = await store.persist_screened_document(
+                screened, context, image_results=(image_result,),
+                image_crops=(crop,), image_vlm_results=(vlm,),
+            )
+            replay = await store.persist_screened_document(
+                screened, context, image_results=(image_result,),
+                image_crops=(crop,), image_vlm_results=(vlm,),
+            )
+            assert first == replay
+            assert first.persisted_visual_description_count == 1
+
+    asyncio.run(run())
+    rpcs = [request for request in requests if "/rpc/" in request.url.path]
+    assert len(rpcs) == 2
+    assert rpcs[0].url.path.endswith("persist_ingestion_screening_with_admitted_ocr_and_vlm")
+    assert json.loads(rpcs[0].content) == json.loads(rpcs[1].content)
+    persisted = json.loads(rpcs[0].content)["p_admitted_vlm"][0]
+    assert persisted["ingestion_run_id"] == "run-id"
+    assert persisted["page_number"] == 1 and persisted["block_id"] == crop.block_id
+    assert persisted["image_sha256"] == image_result.image_sha256
+    assert persisted["description_sha256"] == vlm.description_sha256
+    assert persisted["provider"] == "openai" and persisted["model"] == "test-vlm"
 
 
 def test_atomic_rpc_retry_reuses_identical_ingestion_and_ocr_payload():

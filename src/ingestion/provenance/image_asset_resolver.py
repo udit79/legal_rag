@@ -1,6 +1,7 @@
 """Read-only resolution of existing image rows and chunk references."""
 from __future__ import annotations
 
+import hashlib
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,6 +27,7 @@ class ResolvedImageAsset(BaseModel):
     ocr_status: str
     ocr_text_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     ocr_text_length: int = Field(ge=0)
+    visual_description_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     decision: str | None
     source_coordinates: SourceCoordinates
     reading_order: int = Field(ge=0)
@@ -59,19 +61,44 @@ class SupabaseImageAssetResolver:
             raise ValueError("Image asset resolution requires a run and unique keys")
         resolved: dict[tuple[int, str], ResolvedImageAsset] = {}
         for page_number, block_id in keys:
+            params = {
+                "select": "ingestion_run_id,page_number,block_id,image_sha256,image_bucket,image_object_path,image_file_size_bytes,ocr_status,ocr_text_sha256,ocr_text_length,visual_description,decision,source_coordinates,reading_order",
+                "ingestion_run_id": f"eq.{ingestion_run_id}",
+                "page_number": f"eq.{page_number}",
+                "block_id": f"eq.{block_id}",
+            }
             try:
                 response = await self._client.get(
                     f"{self._url}/rest/v1/image_screening_results",
                     headers={"apikey": self._key, "Authorization": f"Bearer {self._key}"},
-                    params={
-                        "select": "ingestion_run_id,page_number,block_id,image_sha256,image_bucket,image_object_path,image_file_size_bytes,ocr_status,ocr_text_sha256,ocr_text_length,decision,source_coordinates,reading_order",
-                        "ingestion_run_id": f"eq.{ingestion_run_id}",
-                        "page_number": f"eq.{page_number}",
-                        "block_id": f"eq.{block_id}",
-                    },
+                    params=params,
                 )
                 response.raise_for_status()
                 rows = response.json()
+            except httpx.HTTPStatusError as exc:
+                try:
+                    body = exc.response.json()
+                except ValueError:
+                    body = {}
+                missing_vlm_column = (
+                    exc.response.status_code == 400
+                    and isinstance(body, dict)
+                    and body.get("code") == "PGRST204"
+                    and "visual_description" in str(body.get("message", ""))
+                )
+                if not missing_vlm_column:
+                    raise ImageAssetResolutionError("Supabase image asset lookup failed") from exc
+                params["select"] = params["select"].replace(",visual_description", "")
+                try:
+                    response = await self._client.get(
+                        f"{self._url}/rest/v1/image_screening_results",
+                        headers={"apikey": self._key, "Authorization": f"Bearer {self._key}"},
+                        params=params,
+                    )
+                    response.raise_for_status()
+                    rows = response.json()
+                except httpx.HTTPError as fallback_exc:
+                    raise ImageAssetResolutionError("Supabase image asset lookup failed") from fallback_exc
             except httpx.HTTPError as exc:
                 raise ImageAssetResolutionError("Supabase image asset lookup failed") from exc
             if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
@@ -79,6 +106,26 @@ class SupabaseImageAssetResolver:
                     "Image asset composite key did not resolve to exactly one record"
                 )
             row = rows[0]
+            description = row.get("visual_description")
+            visual_description_sha256 = None
+            has_valid_description = False
+            if isinstance(description, dict):
+                description_text = description.get("description_text")
+                description_digest = description.get("description_sha256")
+                provider = description.get("provider")
+                model = description.get("model")
+                if (
+                    isinstance(description_text, str)
+                    and isinstance(description_digest, str)
+                    and hashlib.sha256(description_text.encode("utf-8")).hexdigest()
+                    == description_digest
+                    and isinstance(provider, str)
+                    and bool(provider)
+                    and isinstance(model, str)
+                    and bool(model)
+                ):
+                    visual_description_sha256 = description_digest
+                    has_valid_description = True
             if (row.get("ingestion_run_id") != ingestion_run_id
                     or row.get("page_number") != page_number
                     or row.get("block_id") != block_id
@@ -88,8 +135,13 @@ class SupabaseImageAssetResolver:
                     or type(row.get("image_file_size_bytes")) is not int
                     or type(row.get("reading_order")) is not int
                     or not isinstance(row.get("source_coordinates"), dict)
-                    or row.get("ocr_status") != "TEXT_FOUND"
-                    or row.get("decision") not in {"ADMITTED", "ADMITTED_FLAGGED"}):
+                    or not (
+                        (row.get("ocr_status") == "TEXT_FOUND"
+                         and row.get("decision") in {"ADMITTED", "ADMITTED_FLAGGED"})
+                        or (row.get("ocr_status") == "NO_TEXT"
+                            and row.get("decision") is None
+                            and has_valid_description)
+                    )):
                 raise ImageAssetResolutionError("Supabase image asset metadata is inconsistent")
             resolved[(page_number, block_id)] = ResolvedImageAsset(
                 ingestion_run_id=ingestion_run_id,
@@ -102,6 +154,7 @@ class SupabaseImageAssetResolver:
                 ocr_status=row["ocr_status"],
                 ocr_text_sha256=row["ocr_text_sha256"],
                 ocr_text_length=row["ocr_text_length"],
+                visual_description_sha256=visual_description_sha256,
                 decision=row["decision"],
                 source_coordinates=SourceCoordinates.model_validate(row["source_coordinates"]),
                 reading_order=row["reading_order"],

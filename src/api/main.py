@@ -50,6 +50,12 @@ from src.ingestion.screening.image_screening import (
     attach_image_screening_results,
     screen_image_crops,
 )
+from src.ingestion.screening.image_vlm import (
+    VisualVlmConfig,
+    add_admitted_visual_descriptions,
+    create_visual_description_provider,
+    describe_eligible_images,
+)
 from src.ingestion.preflight import InvalidPdfError
 from src.ingestion.router import route_document
 from src.ingestion.scaledown_client import ScaleDownClient
@@ -98,6 +104,7 @@ async def lifespan(app: FastAPI):
     app.state.parser_worker = parser_worker
     db_connection = None
     instrumented = False
+    app.state.image_vlm_provider = None
     try:
         screening_policy = ScreeningPolicy()
         malware_scanner = ClamAVScanner()
@@ -117,6 +124,14 @@ async def lifespan(app: FastAPI):
             if supabase_url and supabase_key
             else None
         )
+        app.state.image_vlm_config = VisualVlmConfig.from_env()
+        if app.state.image_vlm_config is not None and app.state.provenance_store is None:
+            raise RuntimeError("VLM descriptions require the configured Supabase provenance store")
+        app.state.image_vlm_provider = (
+            create_visual_description_provider(app.state.image_vlm_config)
+            if app.state.image_vlm_config is not None
+            else None
+        )
         app.state.malware_scanner = malware_scanner
         await parser_worker.start()
         FastAPIInstrumentor.instrument_app(app)
@@ -127,6 +142,12 @@ async def lifespan(app: FastAPI):
 
         yield
     finally:
+        vlm_provider = getattr(app.state, "image_vlm_provider", None)
+        if vlm_provider is not None:
+            try:
+                await vlm_provider.aclose()
+            except Exception:
+                _LOGGER.warning("Failed to close OpenAI visual-description client")
         try:
             if instrumented:
                 FastAPIInstrumentor.uninstrument_app(app)
@@ -438,6 +459,50 @@ async def _process_pdf_upload(
                     sum(item.ocr_text is not None for item in image_screening_results),
                 )
             canonical = add_admitted_image_ocr(canonical, image_screening_results)
+            image_vlm_results = ()
+            vlm_config = request.app.state.image_vlm_config
+            vlm_provider = request.app.state.image_vlm_provider
+            if vlm_config is not None and vlm_provider is not None:
+                canonical_without_vlm = canonical
+                try:
+                    with _TRACER.start_as_current_span(
+                        "ingestion.image_vlm_description"
+                    ) as span:
+                        image_vlm_results = await describe_eligible_images(
+                            prepared_image_crops,
+                            image_screening_results,
+                            config=vlm_config,
+                            provider=vlm_provider,
+                            screening_service=request.app.state.screening_service,
+                        )
+                        span.set_attribute("ingestion.image_vlm.candidates", len(image_vlm_results))
+                        span.set_attribute(
+                            "ingestion.image_vlm.admitted",
+                            sum(item.status == "ADMITTED" for item in image_vlm_results),
+                        )
+                        span.set_attribute(
+                            "ingestion.image_vlm.failed",
+                            sum(item.status == "FAILED" for item in image_vlm_results),
+                        )
+                        span.set_attribute(
+                            "ingestion.image_vlm.input_tokens",
+                            sum(item.input_tokens for item in image_vlm_results),
+                        )
+                        span.set_attribute(
+                            "ingestion.image_vlm.output_tokens",
+                            sum(item.output_tokens for item in image_vlm_results),
+                        )
+                    canonical = add_admitted_visual_descriptions(
+                        canonical, image_vlm_results
+                    )
+                except Exception as exc:
+                    _LOGGER.warning(
+                        "Visual description failed; continuing ingestion without VLM blocks",
+                        extra={"ingestion_run_id": ingestion_run_id,
+                               "error_type": type(exc).__name__},
+                    )
+                    image_vlm_results = ()
+                    canonical = canonical_without_vlm
             ingestion = await run_in_threadpool(
                 ingest_pdf,
                 file_screening=file_screening,
@@ -479,6 +544,12 @@ async def _process_pdf_upload(
                         block.pop("source_image_block_id", None)
                     if block.get("ocr_text_sha256") is None:
                         block.pop("ocr_text_sha256", None)
+                    if block.get("visual_description_sha256") is None:
+                        block.pop("visual_description_sha256", None)
+                    if block.get("visual_model_provider") is None:
+                        block.pop("visual_model_provider", None)
+                    if block.get("visual_model") is None:
+                        block.pop("visual_model", None)
                     if block.get("derived_order") is None:
                         block.pop("derived_order", None)
             canonical_json = json.dumps(
@@ -558,6 +629,7 @@ async def _process_pdf_upload(
                             screened,
                             document_context,
                             image_results=image_screening_results,
+                            image_vlm_results=image_vlm_results,
                             image_crops=ingestion.unrecognized_images,
                         )
                     except Exception as exc:

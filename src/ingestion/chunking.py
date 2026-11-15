@@ -28,7 +28,7 @@ from src.ingestion.parser_contracts import (
 )
 from src.ingestion.retrieval_text import normalize_retrieval_chunks
 
-CHUNKING_ALGORITHM_VERSION = "1.5.0"
+CHUNKING_ALGORITHM_VERSION = "1.6.0"
 PROVISION_MARKER_PATTERNS = (
     r"(?m)^[ \t]*(?!20[0-9]{2}\.[ \t])"
     r"(?:[0-9]+(?:\.[0-9]+)+|[0-9]+[.)])(?=[ \t]|$)",
@@ -592,6 +592,9 @@ def _pack_page_text_blocks(
                                 extraction_method=block.extraction_method,
                                 source_image_block_id=block.source_image_block_id,
                                 ocr_text_sha256=block.ocr_text_sha256,
+                                visual_description_sha256=block.visual_description_sha256,
+                                visual_model_provider=block.visual_model_provider,
+                                visual_model=block.visual_model,
                             )
                         )
                         last_block_id = block.block_id
@@ -619,6 +622,9 @@ def _pack_page_text_blocks(
                         extraction_method=previous.extraction_method,
                         source_image_block_id=previous.source_image_block_id,
                         ocr_text_sha256=previous.ocr_text_sha256,
+                        visual_description_sha256=previous.visual_description_sha256,
+                        visual_model_provider=previous.visual_model_provider,
+                        visual_model=previous.visual_model,
                     )
                 else:
                     current_sources.append(
@@ -634,6 +640,9 @@ def _pack_page_text_blocks(
                             extraction_method=block.extraction_method,
                             source_image_block_id=block.source_image_block_id,
                             ocr_text_sha256=block.ocr_text_sha256,
+                            visual_description_sha256=block.visual_description_sha256,
+                            visual_model_provider=block.visual_model_provider,
+                            visual_model=block.visual_model,
                         )
                     )
                 last_block_id = block.block_id

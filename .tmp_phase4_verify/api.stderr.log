@@ -1,0 +1,6 @@
+INFO:     Started server process [27000]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+CPCR classification rejected for candidate 2458380be11803782a197461c4f48a469f86580122f0caec416aa41d73332a95 (reason=TABLE_CONTINUATION_REQUIRES_TABLE_CHUNKS)
+CPCR classification rejected for candidate 4a25beef165f1b8fed179a61746726c6c2fdc417577e9e59e252bb2bbbdd6284 (reason=TABLE_CONTINUATION_REQUIRES_TABLE_CHUNKS)

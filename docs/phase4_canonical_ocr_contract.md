@@ -56,3 +56,39 @@ loaded during retrieval.
 OCR source metadata lives in existing `sources_json`; run-specific storage
 references are resolved during evidence assembly. No Neo4j label,
 relationship, index or retrieval ranking change is needed.
+
+## Phase 4 Milestone 2 visual description contract
+
+OpenAI visual understanding is opt-in. Set `IMAGE_VLM_PERSISTENCE_ENABLED=true`,
+`IMAGE_VLM_PROVIDER=openai`, and an explicit `IMAGE_VLM_MODEL` only after
+`202611150001_image_vlm_descriptions.sql` has been deployed. `OPENAI_API_KEY`
+must be configured; it is never emitted to logs. The ingestion boundary uses a
+provider-independent adapter contract, with OpenAI as the currently registered
+adapter.
+
+Eligibility is deterministic: process only an image whose OCR result is
+`NO_TEXT`, or whose OCR text was admitted and is shorter than the configured
+minimum. `FAILED`, `QUARANTINED`, `REJECTED` and nonempty OCR rejected by policy
+are excluded. Per-document image, crop-size, request-timeout, retry and token
+limits bound work. Each structured result passes the same `screen_extracted_text`
+policy before it becomes canonical text.
+
+An admitted description is a separate `IMAGE_VLM` canonical block. Its stable
+page-scoped ID hashes the page, original image block, image digest, provider,
+model, prompt version and rendered description digest. `IMAGE_OCR` and native
+blocks remain separate and unchanged. VLM descriptions are explicitly prefixed
+as AI-generated and not verified source text. `ChunkSource` records the
+original image block, exact offsets, description digest, provider and model.
+
+The additive migration stores a write-once structured description and model
+provenance in `image_screening_results.visual_description`; the composite key
+and image SHA remain authoritative. The new service-role RPC composes the M1
+atomic persistence RPC with admitted VLM persistence in the same transaction.
+The private asset resolver checks the description digest and returns the
+existing private object reference. Retrieval uses the normal search paths;
+ranking and graph schema are unchanged.
+
+The migration is not applied by this code change. Keep the feature disabled
+until it is deployed, then validate it against a disposable Supabase and Neo4j
+test environment. The focused tests mock those services; they do not establish a
+live end-to-end pilot or a human-reviewed evaluation dataset.

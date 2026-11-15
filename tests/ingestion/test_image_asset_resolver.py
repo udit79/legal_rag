@@ -126,6 +126,59 @@ def test_resolver_fails_closed_for_missing_or_quarantined_metadata():
         asyncio.run(verify([_asset_row(decision="QUARANTINED")]))
 
 
+def test_resolver_accepts_no_text_asset_only_when_admitted_vlm_is_persisted():
+    from src.ingestion.screening.image_vlm import VisualDescription
+
+    description = VisualDescription(
+        visual_type="diagram", purpose="Shows a process",
+        visible_elements=("Start", "Finish"),
+    )
+    text = description.render()
+    row = _asset_row()
+    row.update({
+        "ocr_status": "NO_TEXT", "ocr_text_sha256": None,
+        "ocr_text_length": 0, "decision": None,
+        "visual_description": {
+            "description_sha256": hashlib.sha256(text.encode()).hexdigest(),
+            "description_text": text, "provider": "openai", "model": "test-vlm",
+            "prompt_version": "visual-description-v1",
+        },
+    })
+
+    async def handle(request):
+        return httpx.Response(200, json=[row])
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            resolver = SupabaseImageAssetResolver("https://db.test", "service", client)
+            return await resolver.resolve(RUN, ((4, BLOCK),))
+
+    asset = asyncio.run(run())[(4, BLOCK)]
+    assert asset.visual_description_sha256 == hashlib.sha256(text.encode()).hexdigest()
+
+
+def test_resolver_falls_back_for_ocr_only_schema_before_vlm_migration():
+    calls = []
+
+    async def handle(request):
+        calls.append(request)
+        if "visual_description" in request.url.params["select"]:
+            return httpx.Response(400, json={
+                "code": "PGRST204", "message": "Could not find visual_description column"
+            })
+        return httpx.Response(200, json=[_asset_row()])
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            resolver = SupabaseImageAssetResolver("https://db.test", "service", client)
+            return await resolver.resolve(RUN, ((4, BLOCK),))
+
+    asset = asyncio.run(run())[(4, BLOCK)]
+    assert asset.ocr_status == "TEXT_FOUND"
+    assert asset.visual_description_sha256 is None
+    assert len(calls) == 2
+
+
 def test_fulltext_retrieval_resolves_asset_after_neo4j_session_closes():
     source = _chunk().sources[0]
     resolved_asset = _resolved_asset()
