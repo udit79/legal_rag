@@ -162,6 +162,9 @@ class GraphWriteBatch(BaseModel):
 def _validate_batch_fields(batch: GraphWriteBatch) -> None:
     if batch.screened.document != batch.document:
         raise ValueError("Screening results do not match the source document")
+    if batch.nodes or batch.relationships:
+        if not batch.extraction_provider or not batch.extraction_model:
+            raise ValueError("Graph claims require extraction provider and model provenance")
     admitted = {
         result.chunk_index
         for result in batch.screened.report.chunk_results
@@ -194,8 +197,7 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
             node.evidence_spans,
             evidence_context_digest(batch.document, node.evidence_spans),
         )
-        if (batch.extraction_model is not None and node.support_attestation is not None
-                and node.support_attestation.model == batch.extraction_model):
+        if node.support_attestation is not None and node.support_attestation.model == batch.extraction_model:
             raise ValueError("Evidence verifier must be independent of the extraction model")
     for edge in batch.relationships:
         expected_relation_id = "relation:" + hashlib.sha256(
@@ -232,8 +234,7 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
             edge.evidence_spans,
             evidence_context_digest(batch.document, edge.evidence_spans),
         )
-        if (batch.extraction_model is not None and edge.support_attestation is not None
-                and edge.support_attestation.model == batch.extraction_model):
+        if edge.support_attestation is not None and edge.support_attestation.model == batch.extraction_model:
             raise ValueError("Evidence verifier must be independent of the extraction model")
 
 

@@ -97,9 +97,31 @@ def test_graph_write_gate_accepts_grounded_ontology_valid_relation():
     edge = _edge(document.chunks[0].text)
 
     batch = GraphWriteBatch(
-        document=document, screened=screened, nodes=_nodes(document.chunks[0].text), relationships=(edge,)
+        document=document, screened=screened, extraction_provider="test",
+        extraction_model="test-extractor", nodes=_nodes(document.chunks[0].text), relationships=(edge,)
     )
     validate_graph_write_batch(batch)
+
+
+def test_graph_write_gate_requires_extraction_identity_and_distinct_verifier():
+    document, screened = _screened("The Court owns the filing application.")
+    nodes = _nodes(document.chunks[0].text)
+    edge = _edge(document.chunks[0].text)
+
+    with pytest.raises(ValueError, match="extraction provider and model"):
+        GraphWriteBatch(document=document, screened=screened, nodes=nodes, relationships=(edge,))
+
+    same_model_nodes = tuple(node.model_copy(update={
+        "support_attestation": node.support_attestation.model_copy(
+            update={"model": "extractor-model"}
+        ),
+    }) for node in nodes)
+    with pytest.raises(ValueError, match="must be independent"):
+        GraphWriteBatch(
+            document=document, screened=screened,
+            extraction_provider="test", extraction_model="extractor-model",
+            nodes=same_model_nodes, relationships=(edge,),
+        )
 
 
 def test_graph_write_gate_rejects_invalid_ontology_and_ungrounded_evidence():
@@ -109,6 +131,8 @@ def test_graph_write_gate_rejects_invalid_ontology_and_ungrounded_evidence():
         GraphWriteBatch(
             document=document,
             screened=screened,
+            extraction_provider="test",
+            extraction_model="test-extractor",
             nodes=_nodes(document.chunks[0].text),
             relationships=(invalid_relation,),
         )
@@ -125,6 +149,8 @@ def test_graph_write_gate_rejects_invalid_ontology_and_ungrounded_evidence():
         GraphWriteBatch(
             document=document,
             screened=screened,
+            extraction_provider="test",
+            extraction_model="test-extractor",
             nodes=_nodes(document.chunks[0].text),
             relationships=(invalid_evidence,),
         )
@@ -137,7 +163,8 @@ def test_graph_write_gate_rejects_quarantined_chunk_evidence():
 
     with pytest.raises(ValueError, match="only cite admitted"):
         GraphWriteBatch(
-            document=document, screened=screened, nodes=_nodes(text), relationships=(edge,)
+            document=document, screened=screened, extraction_provider="test",
+            extraction_model="test-extractor", nodes=_nodes(text), relationships=(edge,)
         )
 
 
@@ -148,6 +175,8 @@ def test_graph_write_gate_rejects_extracted_entity_without_evidence():
         GraphWriteBatch(
             document=document,
             screened=screened,
+            extraction_provider="test",
+            extraction_model="test-extractor",
             nodes=(
                 GraphNode(
                     node_type="RISK",
@@ -165,6 +194,8 @@ def test_graph_write_gate_reserves_structural_nodes_and_relationships():
         GraphWriteBatch(
             document=document,
             screened=screened,
+            extraction_provider="test",
+            extraction_model="test-extractor",
             nodes=nodes,
             relationships=(_edge(document.chunks[0].text, relation="HAS_CHUNK"),),
         )
@@ -172,6 +203,8 @@ def test_graph_write_gate_reserves_structural_nodes_and_relationships():
         GraphWriteBatch(
             document=document,
             screened=screened,
+            extraction_provider="test",
+            extraction_model="test-extractor",
             nodes=(GraphNode(
                 node_type="DOCUMENT",
                 properties={"id": "document-1", "source_sha256": "a" * 64},

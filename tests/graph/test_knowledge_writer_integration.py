@@ -17,12 +17,16 @@ pytestmark = pytest.mark.neo4j_integration
 
 
 def _configured_database():
+    from dotenv import load_dotenv
+
+    load_dotenv(override=False)
     name = os.getenv("NEO4J_TEST_DATABASE", "").strip()
     if not name:
         pytest.skip("set NEO4J_TEST_DATABASE to an isolated database with 'test' in its name")
     if "test" not in name.casefold():
         pytest.fail("Refusing Neo4j integration writes: test database name must contain 'test'")
-    if name == os.getenv("NEO4J_DATABASE", "neo4j"):
+    configured_database = os.getenv("NEO4J_DATABASE", "neo4j").strip()
+    if name == configured_database:
         pytest.fail("Refusing Neo4j integration writes against NEO4J_DATABASE")
     values = [os.getenv(key) for key in ("NEO4J_URI", "NEO4J_USERNAME", "NEO4J_PASSWORD")]
     if any(not value for value in values):
@@ -74,6 +78,23 @@ def test_semantic_writer_replay_cross_document_provenance_and_rollback():
             assert first == replay == second_document == {"nodes": 2, "relationships": 1}
             async with db.get_session() as session:
                 result = await session.run(
+                    "MATCH (n) WHERE n.id IN $ids RETURN count(n) AS count",
+                    ids=node_ids,
+                )
+                assert (await result.single())["count"] == 2
+                result = await session.run(
+                    "MATCH ()-[r]->() WHERE r.id IN $ids "
+                    "RETURN collect({id:r.id, source:startNode(r).id, "
+                    "target:endNode(r).id, type:type(r)}) AS records",
+                    ids=relation_ids,
+                )
+                relationship_records = (await result.single())["records"]
+                assert len(relationship_records) == 1, relationship_records
+                assert relationship_records[0] == {
+                    "id": relation_ids[0], "source": batch_a.relationships[0].source_id,
+                    "target": batch_a.relationships[0].target_id, "type": "OWNS",
+                }
+                result = await session.run(
                     "MATCH (n:ORGANIZATION {id:$id}) RETURN n.source_sha256s AS hashes, "
                     "n.ingestion_run_ids AS runs, n.evidence_references AS evidence, "
                     "n.confidence AS confidence, n.epistemic_mode AS epistemic",
@@ -88,10 +109,10 @@ def test_semantic_writer_replay_cross_document_provenance_and_rollback():
 
                 # Corrupt only this fixture to trigger a conflict after MERGE;
                 # execute_write must roll back its attempted provenance append.
-                await session.run(
+                await (await session.run(
                     "MATCH (n:ORGANIZATION {id:$id}) SET n.name=$name",
                     id=node_ids[0], name=organization + " changed",
-                ).consume()
+                )).consume()
                 with pytest.raises(GraphIdentityConflict):
                     await persist_approved_batch(db, batch_a)
                 result = await session.run(
@@ -105,12 +126,25 @@ def test_semantic_writer_replay_cross_document_provenance_and_rollback():
         finally:
             try:
                 async with db.get_session() as session:
-                    await session.run(
-                        "MATCH ()-[r:OWNS]-() WHERE r.id IN $ids DELETE r", ids=relation_ids
-                    ).consume()
-                    await session.run(
+                    await (await session.run(
+                                "MATCH (a)-[r]->(b) WHERE a.id IN $ids OR b.id IN $ids DELETE r",
+                            ids=node_ids,
+                    )).consume()
+                    await (await session.run(
                         "MATCH (n) WHERE n.id IN $ids DETACH DELETE n", ids=node_ids
-                    ).consume()
+                    )).consume()
+                    remaining_nodes = await session.run(
+                        "MATCH (n) WHERE n.id IN $ids RETURN count(n) AS count",
+                        ids=node_ids,
+                    )
+                    if (await remaining_nodes.single())["count"] != 0:
+                        raise AssertionError("Neo4j integration fixture nodes were not cleaned up")
+                    remaining_relationships = await session.run(
+                        "MATCH ()-[r]->() WHERE r.id IN $ids RETURN count(r) AS count",
+                        ids=relation_ids,
+                    )
+                    if (await remaining_relationships.single())["count"] != 0:
+                        raise AssertionError("Neo4j integration fixture relationships were not cleaned up")
             finally:
                 await db.close()
 

@@ -16,6 +16,8 @@ from src.graph.knowledge_extraction import (
     extract_validated_batch,
     proposal_to_batch,
     _stable_id,
+    _openai_extraction_schema,
+    _parse_extraction_proposal,
 )
 from src.graph.graph_write_gate import (
     EvidenceSpan,
@@ -219,6 +221,50 @@ def test_verifier_confidence_below_floor_is_rejected():
         ))
 
 
+def test_unique_model_quote_gets_canonical_source_offsets():
+    text = "The Court owns the filing application."
+    doc, screened = _screened(text)
+
+    class OffsetMistakeExtractor(FakeExtractor):
+        async def extract(self, *, payload, max_output_tokens):
+            result = json.loads(await super().extract(payload=payload, max_output_tokens=max_output_tokens))
+            for claim in (*result["entities"], *result["relationships"]):
+                for span in claim["evidence_spans"]:
+                    span["start_offset"] = 1
+                    span["end_offset"] = len(text)
+            return json.dumps(result)
+
+    batch = asyncio.run(extract_validated_batch(
+        OffsetMistakeExtractor(), FakeVerifier(), document=doc, screened=screened,
+        ingestion_run_id="run-offset-repair",
+    ))
+    assert batch.nodes
+    assert all(
+        span.start_offset == 0 and span.end_offset == len(text) and span.quote == text
+        for node in batch.nodes for span in node.evidence_spans
+    )
+
+
+def test_ambiguous_model_quote_with_bad_offsets_is_rejected():
+    text = "The Court owns the Court filing application."
+    doc, screened = _screened(text)
+
+    class AmbiguousQuoteExtractor(FakeExtractor):
+        async def extract(self, *, payload, max_output_tokens):
+            result = json.loads(await super().extract(payload=payload, max_output_tokens=max_output_tokens))
+            for claim in (*result["entities"], *result["relationships"]):
+                claim["evidence_spans"] = [{
+                    "chunk_index": 0, "start_offset": 1, "end_offset": 6, "quote": "Court"
+                }]
+            return json.dumps(result)
+
+    with pytest.raises(ExtractionRejected, match="one unique exact source span"):
+        asyncio.run(extract_validated_batch(
+            AmbiguousQuoteExtractor(), FakeVerifier(), document=doc, screened=screened,
+            ingestion_run_id="run-ambiguous-offset",
+        ))
+
+
 def test_independent_verifier_context_has_a_document_budget():
     text = "The Court owns the filing application."
     doc, screened = _screened(text)
@@ -277,7 +323,10 @@ def test_gate_does_not_admit_vlm_description_as_original_fact_evidence():
         evidence_spans=(span,),
     )
     with pytest.raises(ValueError, match="AI-generated visual descriptions"):
-        GraphWriteBatch(document=doc, screened=screened, nodes=(node,), relationships=())
+        GraphWriteBatch(
+            document=doc, screened=screened, extraction_provider="openai",
+            extraction_model="extractor", nodes=(node,), relationships=(),
+        )
 
 
 def test_independent_models_must_be_distinct():
@@ -314,6 +363,39 @@ def test_extractor_uses_system_instructions_and_strict_schema():
     schema = captured["response_format"]["json_schema"]
     assert schema["strict"] is True
     assert '"confidence"' not in json.dumps(schema["schema"])
+    entity_properties = schema["schema"]["$defs"]["ProposedEntity"]["properties"]["properties"]
+    assert entity_properties["type"] == "array"
+    assert entity_properties["items"]["additionalProperties"] is False
+    assert "id" not in entity_properties["items"]["properties"]["key"]["enum"]
+
+
+def test_openai_property_pair_wire_format_normalizes_to_existing_property_contract():
+    parsed = _parse_extraction_proposal(json.dumps({
+        "entities": [{
+            "ref": "org", "node_type": "ORGANIZATION",
+            "properties": [{"key": "name", "value": "Quill Harbor Authority"}],
+            "evidence_spans": [{
+                "chunk_index": 0, "start_offset": 0, "end_offset": 5, "quote": "Quill",
+            }],
+        }],
+        "relationships": [],
+    }))
+    assert parsed.entities[0].properties == {"name": "Quill Harbor Authority"}
+
+    with pytest.raises(ValueError, match="duplicate key"):
+        _parse_extraction_proposal(json.dumps({
+            "entities": [{
+                "ref": "org", "node_type": "ORGANIZATION",
+                "properties": [
+                    {"key": "name", "value": "first"},
+                    {"key": "name", "value": "second"},
+                ],
+                "evidence_spans": [{
+                    "chunk_index": 0, "start_offset": 0, "end_offset": 5, "quote": "Quill",
+                }],
+            }],
+            "relationships": [],
+        }))
 
 
 def test_openai_verifier_requires_separate_model_and_returns_strict_verdict(monkeypatch):
