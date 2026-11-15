@@ -2,7 +2,7 @@ import re
 from typing import Final, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
-from src.ingestion.parser_contracts import BlockType
+from src.ingestion.parser_contracts import BlockType, canonical_visual_block_id
 
 TEXT_BEARING_BLOCK_TYPES: Final[frozenset[BlockType]] = frozenset(
     {"TEXT", "TABLE", "OTHER"}
@@ -53,6 +53,7 @@ class ChunkSource(BaseModel):
     visual_description_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     visual_model_provider: NonEmptyStr | None = None
     visual_model: NonEmptyStr | None = None
+    visual_prompt_version: NonEmptyStr | None = None
 
     @model_validator(mode="after")
     def validate_source_range(self) -> Self:
@@ -71,15 +72,25 @@ class ChunkSource(BaseModel):
                 or self.block_derived_order == 0
             ):
                 raise ValueError("OCR chunk sources require image and OCR provenance")
-            if any((self.visual_description_sha256, self.visual_model_provider, self.visual_model)):
+            if any((self.visual_description_sha256, self.visual_model_provider, self.visual_model, self.visual_prompt_version)):
                 raise ValueError("OCR sources cannot carry VLM provenance")
         elif self.extraction_method == "IMAGE_VLM":
             if (self.block_type != "IMAGE" or not self.source_image_block_id
                     or not self.visual_description_sha256
                     or not self.visual_model_provider or not self.visual_model
+                    or not self.visual_prompt_version
                     or self.block_derived_order is None or self.block_derived_order < 2
                     or self.ocr_text_sha256 is not None):
                 raise ValueError("VLM chunk sources require image and model provenance")
+            if self.block_id != canonical_visual_block_id(
+                self.page_number,
+                self.source_image_block_id,
+                self.visual_model_provider,
+                self.visual_model,
+                self.visual_prompt_version,
+                self.visual_description_sha256,
+            ):
+                raise ValueError("VLM chunk source identity does not match its provenance")
         elif (
             self.source_image_block_id is not None
             or self.ocr_text_sha256 is not None
@@ -87,6 +98,7 @@ class ChunkSource(BaseModel):
             or self.visual_description_sha256 is not None
             or self.visual_model_provider is not None
             or self.visual_model is not None
+            or self.visual_prompt_version is not None
         ):
             raise ValueError("Native chunk sources cannot carry derived image provenance")
         offsets = (

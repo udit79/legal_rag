@@ -155,6 +155,7 @@ def test_resolver_accepts_no_text_asset_only_when_admitted_vlm_is_persisted():
 
     asset = asyncio.run(run())[(4, BLOCK)]
     assert asset.visual_description_sha256 == hashlib.sha256(text.encode()).hexdigest()
+    assert asset.visual_prompt_version == "visual-description-v1"
 
 
 def test_resolver_falls_back_for_ocr_only_schema_before_vlm_migration():

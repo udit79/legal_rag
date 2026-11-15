@@ -57,6 +57,7 @@ class CanonicalBlock(BaseModel):
     visual_description_sha256: str | None = None
     visual_model_provider: str | None = None
     visual_model: str | None = None
+    visual_prompt_version: str | None = None
     derived_order: NonNegativeInt | None = None
 
     @model_validator(mode="before")
@@ -86,7 +87,7 @@ class CanonicalBlock(BaseModel):
                 raise ValueError("Image OCR blocks require source image identity and text digest")
             if self.ocr_text_sha256 != hashlib.sha256(self.text.encode("utf-8")).hexdigest():
                 raise ValueError("Image OCR digest does not match canonical text")
-            if any((self.visual_description_sha256, self.visual_model_provider, self.visual_model)):
+            if any((self.visual_description_sha256, self.visual_model_provider, self.visual_model, self.visual_prompt_version)):
                 raise ValueError("OCR blocks cannot carry VLM provenance")
         elif self.extraction_method == "IMAGE_VLM":
             if (self.block_type != "IMAGE" or not self.source_image_block_id
@@ -95,7 +96,17 @@ class CanonicalBlock(BaseModel):
                     or not self.visual_description_sha256
                     or not re.fullmatch(r"[0-9a-f]{64}", self.visual_description_sha256)
                     or self.visual_description_sha256 != hashlib.sha256(self.text.encode("utf-8")).hexdigest()
-                    or not self.visual_model_provider or not self.visual_model):
+                    or not self.visual_model_provider or not self.visual_model
+                    or not self.visual_prompt_version
+                    or not self.visual_prompt_version.strip()
+                    or self.block_id != canonical_visual_block_id(
+                        self.page_number,
+                        self.source_image_block_id,
+                        self.visual_model_provider,
+                        self.visual_model,
+                        self.visual_prompt_version,
+                        self.visual_description_sha256,
+                    )):
                 raise ValueError("VLM blocks require image identity, digest, model provenance and ordering")
         elif (
             self.source_image_block_id is not None
@@ -104,6 +115,7 @@ class CanonicalBlock(BaseModel):
             or self.visual_description_sha256 is not None
             or self.visual_model_provider is not None
             or self.visual_model is not None
+            or self.visual_prompt_version is not None
         ):
             raise ValueError("Native blocks cannot carry derived image provenance")
         if self.text_transformations:
@@ -122,6 +134,23 @@ class CanonicalBlock(BaseModel):
         return self
 
 def canonical_block_id(page_number: int, reading_order: int) -> str:return f"page-{page_number}-block-{reading_order}"
+
+
+def canonical_visual_block_id(
+    page_number: int,
+    source_image_block_id: str,
+    provider: str,
+    model: str,
+    prompt_version: str,
+    description_sha256: str,
+) -> str:
+    identity = hashlib.sha256(
+        "\0".join((
+            str(page_number), source_image_block_id, provider, model,
+            prompt_version, description_sha256,
+        )).encode("utf-8")
+    ).hexdigest()
+    return f"page-{page_number}-block-vlm-{identity}"
 
 class ParserFailure(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)

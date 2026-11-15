@@ -136,10 +136,24 @@ set search_path = pg_catalog, public, pg_temp
 as $$
 declare
     item jsonb;
+    payload_run_id text;
 begin
     if p_admitted_vlm is null or jsonb_typeof(p_admitted_vlm) <> 'array' then
         raise exception 'Admitted VLM array is required';
     end if;
+    if p_payload is null
+       or jsonb_typeof(p_payload -> 'run') <> 'object'
+       or p_payload -> 'run' ->> 'ingestion_run_id' is null then
+        raise exception 'Base payload is missing its ingestion run ID';
+    end if;
+    payload_run_id := p_payload -> 'run' ->> 'ingestion_run_id';
+    for item in select value from jsonb_array_elements(p_admitted_vlm) loop
+        if jsonb_typeof(item) <> 'object'
+           or item ->> 'ingestion_run_id' is distinct from payload_run_id then
+            raise exception 'VLM result ingestion run does not match base payload';
+        end if;
+    end loop;
+
     perform public.persist_ingestion_screening_with_admitted_ocr(
         p_payload, p_admitted_ocr
     );

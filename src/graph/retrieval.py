@@ -211,7 +211,10 @@ async def resolve_visual_asset_references(
                 and resolved.ocr_text_sha256 != expected_digest
             ) or (
                 source.extraction_method == "IMAGE_VLM"
-                and resolved.visual_description_sha256 != expected_digest
+                and (
+                    resolved.visual_description_sha256 != expected_digest
+                    or resolved.visual_prompt_version != source.visual_prompt_version
+                )
             ):
                 raise VisualAssetResolutionUnavailable(
                     f"Image asset does not match derived image provenance: {key}"

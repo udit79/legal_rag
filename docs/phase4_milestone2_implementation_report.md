@@ -11,12 +11,18 @@
   Failed, rejected and quarantined OCR is excluded before the VLM adapter is
   called. Responses are schema-validated and run through the existing text
   screening policy before canonicalization. Per-document image, image-byte,
-  timeout, retry, output-token and total-token limits are configurable.
+  timeout, retry, output-token and total-token limits are configurable. The
+  default per-document token budget is 20,000 after the pilot exposed a
+  14,288-input-token high-resolution crop that could not pass the former
+  6,000-token ceiling.
 - `CanonicalBlock` and `ChunkSource` support the distinct `IMAGE_VLM` method.
   Generated text has a deterministic page-scoped identity and retains source
-  page, image block identity, exact text offsets, text digest, provider and
-  model. Native text and OCR blocks remain separate. The rendered description
-  labels itself AI-generated and unverified.
+  page, image block identity, exact text offsets, text digest, provider, model
+  and the actual `prompt_version` returned with the result. Prompt version is
+  part of the derived block identity, is copied into chunk provenance, and is
+  checked against persisted asset metadata during evidence resolution. Native
+  text and OCR blocks remain separate. The rendered description labels itself
+  AI-generated and unverified.
 - The existing chunker carries the VLM provenance into sources. Existing full
   text/vector retrieval continues to search the chunk retrieval text; VLM
   evidence resolves the existing private asset through the same
@@ -28,30 +34,95 @@
   `supabase/migrations/202611150001_image_vlm_descriptions.sql` adds a
   write-once JSON description to `image_screening_results` and a service-role
   atomic RPC. It preserves the existing table, storage bucket and image SHA.
-  The migration has **not** been applied. Keep VLM disabled until deployment.
+  The configured disposable Supabase project returned HTTP 200 for the
+  `visual_description` column read check, and the live ingestion pilot
+  successfully persisted through the wrapper.
 
 ## Validation results
 
 Focused command:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests\ingestion\test_image_vlm.py tests\ingestion\test_image_screening.py tests\ingestion\test_image_asset_resolver.py tests\ingestion\test_supabase_provenance.py tests\sql\test_phase4_image_vlm_sql_integration.py -q --basetemp .tmp_phase4_m2_pytest -p no:cacheprovider
+.venv\Scripts\python.exe -m pytest tests\ingestion\test_image_vlm.py tests\ingestion\test_image_screening.py tests\ingestion\test_image_asset_resolver.py tests\ingestion\test_supabase_provenance.py tests\sql\test_phase4_image_vlm_sql_integration.py -q --basetemp .tmp_phase4_m2_focused -p no:cacheprovider
 ```
 
-Focused command (including the opt-in SQL integration test): **43 passed,
-1 skipped in 3.07s**. The SQL integration skipped because the new migration has
-not been deployed and no disposable M2 database was configured. The wider
-regression command was
+Focused result: **46 passed, 1 skipped in 3.64s**. The psql-based SQL test
+skipped because `PHASE4_VLM_SQL_TEST_DSN` and `psql` were unavailable. Its
+core online assertions were separately exercised over the configured
+disposable Supabase PostgREST endpoint as `service_role`: the VLM wrapper
+rejected a run mismatch (HTTP 400), rejected a wrong image hash after the base
+write (HTTP 400), and left no document, run or image rows from the failed
+transaction. Direct helper execution was denied (HTTP 403). The successful
+pilot below also verified service-role wrapper execution and owner helper
+execution. The SQL file still needs a psql run for its full database-side
+assertion set.
+
+Latest focused rerun after the OpenAI SDK response-format typing fix:
+**38 passed, 1 skipped in 3.67s** (image VLM, asset resolver, provenance and
+opt-in SQL integration tests). The SQL integration still skips because no
+`PHASE4_VLM_SQL_TEST_DSN`/psql setup is configured. `py_compile` passed, and
+`mypy src/ingestion/screening/image_vlm.py --follow-imports=silent` exited 0.
+
+The broader regression command was
 
 ```powershell
 .venv\Scripts\python.exe -m pytest tests\ingestion tests\graph tests\test_ingestion_chunking_packing.py tests\test_ingestion_chunking_routing.py tests\test_ingestion_chunking_m0_probes.py tests\test_ingestion_contracts.py tests\test_ingestion_adapters.py -q --basetemp .tmp_phase4_m2_broad -p no:cacheprovider
 ```
 
-It reported **389 passed, 7 skipped in 38.13s**. Compilation passed for
-the changed Python modules. Tests use mock providers, Supabase HTTP and Neo4j
+It reported **392 passed, 7 skipped in 35.93s**. Python compilation and
+`git diff --check` passed. Unit tests use mock providers, Supabase HTTP and Neo4j
 sessions; they cover eligibility, malformed/retried responses, source
 provenance, OCR separation, chunk offsets, exact replay/conflict handling,
 asset resolution, and the existing FullTextRetriever path.
+
+### Live one-page pilot
+
+The API ran with `IMAGE_VLM_PERSISTENCE_ENABLED=true`, OpenAI
+`gpt-4o-mini`, and the 20,000-token per-document default. The input was a
+one-page test copy of page 8 from `cyber_security.pdf`; the original PDF was
+not changed. The API returned `SUCCEEDED`, one page and four chunks.
+
+- Source SHA-256: `5072f60b0622470ffd80a376ef3890a3e728933ce3f02fbc6100dd9ca43940b3`
+- Ingestion run: `ec6a1c9de53647d896fc08f916d83c0d`
+- Image key: page 1, `page-1-block-2`; image SHA-256:
+  `d5e1689b18703d91f01130dc6d5c0dbd02ac8b6570719a331704c6a1778bb0fd`
+- Storage: private `ingestion-image-crops` bucket; persisted crop size 127,387 bytes.
+- OCR remained `TEXT_FOUND` and `ADMITTED`; VLM output was admitted with
+  provider `openai`, model `gpt-4o-mini`, prompt version
+  `visual-description-v1`, and description SHA-256
+  `83f506cdd31dbc246ddd53e21b5c428ae63c9cc82bd25ae030257cec1e069a85`.
+- The model described the Cybersecurity Framework Core diagram, its six
+  functions, category/subcategory hierarchy and uncertainty about missing
+  labels. Reported usage was 14,399 input and 127 output tokens.
+- Supabase corpus CLI dry-run validated all four CPCR chunks. Neo4j import
+  created one DOCUMENT, four CHUNKs, four HAS_CHUNK and three NEXT_CHUNK
+  relationships (12 records); `--verify-idempotency` created zero records.
+- Read-only FullTextRetriever returned VLM chunk
+  `54ce4d0dbd5297b2ff1b30c2fa83a7efed8d79149e8cb2be6c54e6cae3febd0a` with
+  the matching run, image digest, source block and private bucket/object
+  reference. No public URL was returned.
+- Comparing the VLM-off pilot copy with this run showed the three non-VLM
+  chunks and their source mappings were identical; the VLM run added one
+  `IMAGE_VLM` source.
+
+After the migration update, a fresh pilot was run again. It returned
+`SUCCEEDED` with four chunks; the newest ingestion run was
+`bc39895054a74b2ea5bced44065186aa` for source hash
+`68865b3f89d19ddb52deb3a68f34c1eff3b68e25fc885de595a63d97d41d7efb`.
+The wrapper persisted an admitted description on image
+`page-1-block-2` (`visual-description-v1`, description SHA-256
+`3a33cc28fe2ab5a2b6b9631e4e5e5dd16db978929f9910fff7b9e23532f8e286`). Corpus
+dry-run validated four chunks; Neo4j import created 12 records and its
+idempotency rerun created zero. Read-only full-text retrieval returned VLM
+chunk `71b12b4c0b258149db57b5fad1f1ac77db642237c358c338796b0ef2ccefffd5`
+with the matching image hash and private object reference.
+
+Two earlier isolated uploads did not produce descriptions: one server started
+without VLM enabled, and the next exposed JSON-mode response shape failures
+and the former 6,000-token ceiling. The adapter now requests strict JSON Schema
+output and the default token ceiling is 20,000. Those first attempts remain
+as separate test records in the disposable project; the successful run uses
+a third unique test-document hash.
 
 `test_data/phase4_m2_visual_eval_candidates_v1.json` contains three source-linked
 visual candidates identified from rendered source pages and one explicit
@@ -61,13 +132,10 @@ a text-heavy cover image, but a suitable screenshot example was not identified.
 
 ## Acceptance status and limitations
 
-The code-level path is implemented, but the end-to-end acceptance pilot is not
-complete. I did not send an image to OpenAI, apply the Supabase migration, write
-Neo4j data, or re-ingest a document. The current working environment did not
-provide an isolated Neo4j test database; Docker access was denied. The
-FullTextRetriever integration test is mocked and does not prove a live index
-search. The candidate evaluation set is not human-reviewed, and there is no
-verified screenshot example.
+The one-image pilot and live retrieval path are verified in the disposable
+development environment. The candidate evaluation set is still not
+human-reviewed, and it lacks a sourced screenshot example. Therefore this is
+not Milestone 2 acceptance.
 
 Provider-reported input usage is known only after an image call completes, so
 the total-token budget can be exceeded by one call. Image count, crop-byte size
@@ -75,22 +143,23 @@ and output-token limits bound that exposure. Strict pre-call input-token
 enforcement needs provider-specific image-token estimation and remains a
 calibration task.
 
-Therefore the recommendation is **HOLD FOR MILESTONE 2 ACCEPTANCE** until the
-migration is deployed to a disposable Supabase project, a disposable Neo4j
-corpus is available, a one-image OpenAI pilot succeeds end to end, and the
-evaluation examples are reviewed and completed.
+The tracked `.tmp_phase4_verify` logs were open in another running Python
+process and could not be physically deleted. Their tracked paths were removed
+from the Git index and the directory is ignored; the active process was not
+stopped. The image artifact was removed from the working tree.
+
+Therefore the recommendation remains **HOLD FOR MILESTONE 2 ACCEPTANCE** until
+the psql SQL integration file passes against a disposable project and human
+reviewers complete the evaluation set, including a sourced screenshot case.
 
 ## Remaining steps
 
-1. Apply the migration through the approved Supabase workflow in a disposable
-   project, then run the SQL immutability and RPC permission tests.
-2. Configure an isolated Neo4j database and OpenAI model, ingest one test PDF
-   containing a diagram/chart, import its chunks and run FullTextRetriever;
-   verify the returned description digest and private asset composite key.
-3. Have a human reviewer finalize expected descriptions and add a real
+1. Run `tests/sql/test_phase4_image_vlm_persistence.sql` through psql against a
+   disposable project to complete the database-native role and rollback checks.
+2. Have a human reviewer finalize expected descriptions and add a real
    screenshot source example. Measure field accuracy and unsafe-description
    rejection before enabling the feature beyond staging.
-4. Deploy to staging with VLM disabled, apply the migration, enable VLM for a
+3. Deploy to staging with VLM disabled, apply the migration, enable VLM for a
    small canary, and review logs, token usage, screening outcomes and retrieval.
-5. Production rollout follows staging sign-off; preserve rollback by disabling
+4. Production rollout follows staging sign-off; preserve rollback by disabling
    `IMAGE_VLM_PERSISTENCE_ENABLED` without changing existing OCR behavior.

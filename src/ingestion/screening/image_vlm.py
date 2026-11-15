@@ -12,9 +12,15 @@ from typing import Protocol, Sequence
 from typing import Literal
 
 from dotenv import load_dotenv
+from openai.types.shared_params.response_format_json_schema import ResponseFormatJSONSchema
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from src.ingestion.parser_contracts import CanonicalBlock, CanonicalDocument, CanonicalPage
+from src.ingestion.parser_contracts import (
+    CanonicalBlock,
+    CanonicalDocument,
+    CanonicalPage,
+    canonical_visual_block_id,
+)
 from src.ingestion.pipeline import UnrecognizedImageCrop
 from src.ingestion.screening.image_screening import ImageScreeningResult
 from src.security.ingestion_screening.enums import AdmissionDecision
@@ -22,6 +28,29 @@ from src.security.ingestion_screening.screening_service import ScreeningService
 
 VLM_PROMPT_VERSION = "visual-description-v1"
 MAX_DESCRIPTION_CHARS = 6000
+_VISUAL_DESCRIPTION_RESPONSE_SCHEMA: ResponseFormatJSONSchema = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "visual_description",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "visual_type": {"type": "string"},
+                "purpose": {"type": "string"},
+                "visible_elements": {"type": "array", "items": {"type": "string"}},
+                "relationships": {"type": "array", "items": {"type": "string"}},
+                "axes_trends_values": {"type": "array", "items": {"type": "string"}},
+                "uncertainty": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": [
+                "visual_type", "purpose", "visible_elements", "relationships",
+                "axes_trends_values", "uncertainty",
+            ],
+        },
+    },
+}
 
 
 class VisualDescription(BaseModel):
@@ -85,7 +114,7 @@ class VisualVlmConfig:
     max_images_per_document: int = 8
     max_image_bytes: int = 4_000_000
     max_output_tokens: int = 700
-    max_total_tokens_per_document: int = 6000
+    max_total_tokens_per_document: int = 20000
     min_ocr_characters: int = 80
 
     def __post_init__(self) -> None:
@@ -140,7 +169,7 @@ class VisualVlmConfig:
             max_images_per_document=int(os.getenv("IMAGE_VLM_MAX_IMAGES", "8")),
             max_image_bytes=int(os.getenv("IMAGE_VLM_MAX_IMAGE_BYTES", "4000000")),
             max_output_tokens=int(os.getenv("IMAGE_VLM_MAX_OUTPUT_TOKENS", "700")),
-            max_total_tokens_per_document=int(os.getenv("IMAGE_VLM_MAX_TOTAL_TOKENS", "6000")),
+            max_total_tokens_per_document=int(os.getenv("IMAGE_VLM_MAX_TOTAL_TOKENS", "20000")),
             min_ocr_characters=int(os.getenv("IMAGE_VLM_MIN_OCR_CHARACTERS", "80")),
         )
 
@@ -170,8 +199,9 @@ class OpenAIVisualDescriptionProvider:
                         "axis labels, units, trends and values only when clearly readable. "
                         "For screenshots, identify visible interface regions and labels. "
                         "Record uncertainty and illegible content explicitly. "
-                        "Return JSON with visual_type, purpose, visible_elements, relationships, "
-                        "axes_trends_values, and uncertainty. State when labels or values are illegible."
+                        "Return exactly the requested JSON object: visual_type and purpose are strings; "
+                        "visible_elements, relationships, axes_trends_values, and uncertainty are arrays "
+                        "of strings. Use empty arrays when there are no items. State when labels or values are illegible."
                     ),
                 },
                 {
@@ -182,7 +212,7 @@ class OpenAIVisualDescriptionProvider:
                     ],
                 },
             ],
-            response_format={"type": "json_object"},
+            response_format=_VISUAL_DESCRIPTION_RESPONSE_SCHEMA,
             max_completion_tokens=max_output_tokens,
         )
         content = response.choices[0].message.content
@@ -214,13 +244,15 @@ class ImageVlmResult(BaseModel):
     description_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     provider: str = Field(min_length=1)
     model: str = Field(min_length=1)
-    prompt_version: str = VLM_PROMPT_VERSION
+    prompt_version: str = Field(default=VLM_PROMPT_VERSION, min_length=1)
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
     error_code: str | None = None
 
     @model_validator(mode="after")
     def validate_result(self):
+        if not self.prompt_version.strip():
+            raise ValueError("VLM result must identify the prompt version")
         if self.status == "ADMITTED":
             if (self.description is None or self.description_text is None
                     or self.description_sha256 is None
@@ -370,10 +402,14 @@ def add_admitted_visual_descriptions(
             raise ValueError("VLM result does not identify an original blank image block")
         if not item.description_text or not item.description_sha256 or hashlib.sha256(item.description_text.encode()).hexdigest() != item.description_sha256:
             raise ValueError("VLM description digest is missing or invalid")
-        identity = hashlib.sha256(
-            f"{item.page_number}\0{item.block_id}\0{item.image_sha256}\0{item.provider}\0{item.model}\0{VLM_PROMPT_VERSION}\0{item.description_sha256}".encode()
-        ).hexdigest()
-        block_id = f"page-{item.page_number}-block-vlm-{identity}"
+        block_id = canonical_visual_block_id(
+            item.page_number,
+            item.block_id,
+            item.provider,
+            item.model,
+            item.prompt_version,
+            item.description_sha256,
+        )
         generated = CanonicalBlock(
             page_number=item.page_number, block_id=block_id,
             text=item.description_text, block_type="IMAGE",
@@ -382,6 +418,7 @@ def add_admitted_visual_descriptions(
             extraction_method="IMAGE_VLM", source_image_block_id=source.block_id,
             visual_description_sha256=item.description_sha256,
             visual_model_provider=item.provider, visual_model=item.model,
+            visual_prompt_version=item.prompt_version,
         )
         existing_derived = [
             block for block in canonical.pages[item.page_number - 1].blocks

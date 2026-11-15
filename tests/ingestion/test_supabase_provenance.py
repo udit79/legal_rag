@@ -339,6 +339,7 @@ def test_admitted_vlm_uses_atomic_extension_rpc_with_existing_image_identity():
     assert persisted["image_sha256"] == image_result.image_sha256
     assert persisted["description_sha256"] == vlm.description_sha256
     assert persisted["provider"] == "openai" and persisted["model"] == "test-vlm"
+    assert persisted["prompt_version"] == vlm.prompt_version
 
 
 def test_atomic_rpc_retry_reuses_identical_ingestion_and_ocr_payload():

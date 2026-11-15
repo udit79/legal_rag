@@ -28,6 +28,7 @@ class ResolvedImageAsset(BaseModel):
     ocr_text_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     ocr_text_length: int = Field(ge=0)
     visual_description_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    visual_prompt_version: str | None = None
     decision: str | None
     source_coordinates: SourceCoordinates
     reading_order: int = Field(ge=0)
@@ -114,6 +115,7 @@ class SupabaseImageAssetResolver:
                 description_digest = description.get("description_sha256")
                 provider = description.get("provider")
                 model = description.get("model")
+                prompt_version = description.get("prompt_version")
                 if (
                     isinstance(description_text, str)
                     and isinstance(description_digest, str)
@@ -123,9 +125,16 @@ class SupabaseImageAssetResolver:
                     and bool(provider)
                     and isinstance(model, str)
                     and bool(model)
+                    and isinstance(prompt_version, str)
+                    and bool(prompt_version.strip())
                 ):
                     visual_description_sha256 = description_digest
+                    visual_prompt_version = prompt_version
                     has_valid_description = True
+                else:
+                    visual_prompt_version = None
+            else:
+                visual_prompt_version = None
             if (row.get("ingestion_run_id") != ingestion_run_id
                     or row.get("page_number") != page_number
                     or row.get("block_id") != block_id
@@ -155,6 +164,7 @@ class SupabaseImageAssetResolver:
                 ocr_text_sha256=row["ocr_text_sha256"],
                 ocr_text_length=row["ocr_text_length"],
                 visual_description_sha256=visual_description_sha256,
+                visual_prompt_version=visual_prompt_version,
                 decision=row["decision"],
                 source_coordinates=SourceCoordinates.model_validate(row["source_coordinates"]),
                 reading_order=row["reading_order"],

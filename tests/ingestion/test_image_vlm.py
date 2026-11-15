@@ -3,13 +3,20 @@ import base64
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from src.graph.embeddings import EmbeddingConfig
-from src.graph.retrieval import EvidenceBundle, FullTextRetriever, VectorRetriever, resolve_visual_asset_references
+from src.graph.retrieval import (
+    EvidenceBundle, FullTextRetriever, VectorRetriever,
+    VisualAssetResolutionUnavailable, resolve_visual_asset_references,
+)
 from src.ingestion.chunking import chunk_document
-from src.ingestion.parser_contracts import CanonicalBlock, CanonicalDocument, CanonicalPage, SourceCoordinates
+from src.ingestion.parser_contracts import (
+    CanonicalBlock, CanonicalDocument, CanonicalPage, SourceCoordinates,
+    canonical_visual_block_id,
+)
 from src.ingestion.pipeline import UnrecognizedImageCrop
 from src.ingestion.provenance.image_asset_resolver import ResolvedImageAsset
 from src.ingestion.screening.image_screening import ImageScreeningResult, screen_image_crops
@@ -122,6 +129,68 @@ def test_openai_configuration_is_explicit_and_opt_in(monkeypatch):
     assert config.provider == "openai" and config.model == "gpt-4o-mini"
 
 
+def test_default_token_budget_accepts_observed_high_resolution_image_usage():
+    cfg = VisualVlmConfig(provider="openai", model="test-vlm")
+    image = crop()
+    ocr = ImageScreeningResult(
+        page_number=1, block_id=image.block_id, reading_order=0,
+        source_coordinates=image.source_coordinates,
+        image_sha256=hashlib.sha256(b"png-crop").hexdigest(), ocr_status="NO_TEXT",
+    )
+
+    class HighResolutionTokenProvider(Provider):
+        async def describe(self, image_png, *, max_output_tokens):
+            self.calls += 1
+            return json.dumps(description()), 14_288, 202
+
+    results = asyncio.run(describe_eligible_images(
+        (image,), (ocr,), config=cfg,
+        provider=HighResolutionTokenProvider([]),
+        screening_service=ScreeningService(),
+    ))
+    assert cfg.max_total_tokens_per_document == 20_000
+    assert results[0].status == "ADMITTED"
+
+
+def test_openai_adapter_requests_strict_visual_description_schema(monkeypatch):
+    import openai
+    from src.ingestion.screening import image_vlm
+
+    captured = {}
+
+    class FakeOpenAI:
+        def __init__(self):
+            self.chat = SimpleNamespace(completions=self)
+
+        async def create(self, **kwargs):
+            captured.update(kwargs)
+            message = SimpleNamespace(content=json.dumps(description()))
+            usage = SimpleNamespace(prompt_tokens=20, completion_tokens=30)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)], usage=usage
+            )
+
+        async def close(self):
+            return None
+
+    monkeypatch.setattr(openai, "AsyncOpenAI", FakeOpenAI)
+    provider = image_vlm.OpenAIVisualDescriptionProvider("test-vlm")
+    response, input_tokens, output_tokens = asyncio.run(
+        provider.describe(b"png", max_output_tokens=100)
+    )
+    asyncio.run(provider.aclose())
+    assert json.loads(response)["visual_type"] == "flow diagram"
+    assert input_tokens == 20 and output_tokens == 30
+    schema = captured["response_format"]
+    assert schema["type"] == "json_schema"
+    assert schema["json_schema"]["strict"] is True
+    assert schema["json_schema"]["schema"]["additionalProperties"] is False
+    assert set(schema["json_schema"]["schema"]["required"]) == {
+        "visual_type", "purpose", "visible_elements", "relationships",
+        "axes_trends_values", "uncertainty",
+    }
+
+
 def test_generated_prompt_injection_is_screened_out_before_canonicalization():
     image = crop()
     ocr = ImageScreeningResult(
@@ -186,11 +255,13 @@ def test_admitted_description_is_separate_chunked_provenance_and_idempotent():
     assert block.source_image_block_id == image.block_id
     assert block.visual_description_sha256 == result[0].description_sha256
     assert block.visual_model_provider == "openai" and block.visual_model == "test-vlm"
+    assert block.visual_prompt_version == result[0].prompt_version
     chunk = chunk_document(updated, "a" * 64).document.chunks[0]
     source = chunk.sources[0]
     assert source.extraction_method == "IMAGE_VLM"
     assert source.source_image_block_id == image.block_id
     assert source.visual_model == "test-vlm"
+    assert source.visual_prompt_version == result[0].prompt_version
     assert source.start_offset == 0 and source.end_offset == len(block.text)
     assert "AI-generated visual description" in chunk.text
     assert chunk_document(updated, "a" * 64).document.policy_version.startswith("5c-1.6.0+")
@@ -222,6 +293,34 @@ def test_vlm_keeps_admitted_ocr_and_native_source_content_separate():
     assert combined.pages[0].blocks[1].text == ocr_text
     assert combined.pages[0].blocks[2].text != ocr_text
     assert add_admitted_visual_descriptions(combined, result) == combined
+
+
+def test_prompt_version_is_in_derived_identity_and_chunk_provenance():
+    image = crop()
+    ocr = ImageScreeningResult(
+        page_number=1, block_id=image.block_id, reading_order=0,
+        source_coordinates=image.source_coordinates,
+        image_sha256=hashlib.sha256(b"png-crop").hexdigest(), ocr_status="NO_TEXT",
+    )
+    result = asyncio.run(describe_eligible_images(
+        (image,), (ocr,), config=config(), provider=Provider([json.dumps(description())]),
+        screening_service=ScreeningService(),
+    ))[0]
+    revised = ImageVlmResult.model_validate({
+        **result.model_dump(), "prompt_version": "visual-description-v2"
+    })
+    first = add_admitted_visual_descriptions(canonical(), (result,)).pages[0].blocks[1]
+    second = add_admitted_visual_descriptions(canonical(), (revised,)).pages[0].blocks[1]
+    assert first.block_id != second.block_id
+    assert second.visual_prompt_version == "visual-description-v2"
+    source = chunk_document(
+        add_admitted_visual_descriptions(canonical(), (revised,)), "a" * 64
+    ).document.chunks[0].sources[0]
+    assert source.visual_prompt_version == "visual-description-v2"
+    assert source.block_id == canonical_visual_block_id(
+        1, image.block_id, "openai", "test-vlm", "visual-description-v2",
+        revised.description_sha256,
+    )
 
 
 def test_conflicting_visual_description_is_not_silently_replaced():
@@ -316,12 +415,14 @@ def test_visual_evidence_resolves_same_private_asset_identity():
     digest = hashlib.sha256(text.encode()).hexdigest()
     from src.ingestion.chunk_contracts import ChunkSource
     source = ChunkSource(
-        page_number=1, block_id=f"page-1-block-vlm-{'b' * 64}",
+        page_number=1, block_id=canonical_visual_block_id(
+            1, image.block_id, "openai", "test-vlm", "visual-description-v1", digest,
+        ),
         block_reading_order=0, block_derived_order=2, block_type="IMAGE",
         source_text_length=len(text), start_offset=0, end_offset=len(text),
         extraction_method="IMAGE_VLM", source_image_block_id=image.block_id,
         visual_description_sha256=digest, visual_model_provider="openai",
-        visual_model="test-vlm",
+        visual_model="test-vlm", visual_prompt_version="visual-description-v1",
     )
     asset = ResolvedImageAsset(
         ingestion_run_id=RUN, page_number=1, block_id=image.block_id,
@@ -330,6 +431,7 @@ def test_visual_evidence_resolves_same_private_asset_identity():
         file_size_bytes=8, ocr_status="NO_TEXT", ocr_text_length=0,
         decision=None, source_coordinates=image.source_coordinates,
         reading_order=0, visual_description_sha256=digest,
+        visual_prompt_version="visual-description-v1",
     )
     evidence = EvidenceBundle(
         chunk_id="chunk-vlm", document_sha256="a" * 64, raw_text=text,
@@ -345,6 +447,15 @@ def test_visual_evidence_resolves_same_private_asset_identity():
     assert resolved.visual_assets[0].image_sha256 == asset.image_sha256
     assert resolved.sources[0].extraction_method == "IMAGE_VLM"
     assert "https://" not in resolved.model_dump_json()
+
+    class WrongPromptResolver:
+        async def resolve(self, run_id, keys):
+            return {(1, image.block_id): asset.model_copy(update={
+                "visual_prompt_version": "visual-description-v2"
+            })}
+
+    with pytest.raises(VisualAssetResolutionUnavailable, match="does not match"):
+        asyncio.run(resolve_visual_asset_references([evidence], WrongPromptResolver()))
 
 
 def test_admitted_vlm_chunk_is_searchable_and_returns_matching_visual_reference():
@@ -369,6 +480,7 @@ def test_admitted_vlm_chunk_is_searchable_and_returns_matching_visual_reference(
         ocr_status="NO_TEXT", ocr_text_length=0, decision=None,
         source_coordinates=image.source_coordinates, reading_order=0,
         visual_description_sha256=source.visual_description_sha256,
+        visual_prompt_version=source.visual_prompt_version,
     )
 
     class Result:
@@ -424,6 +536,7 @@ def test_vector_retrieval_returns_vlm_provenance_and_private_asset_reference():
         ocr_status="NO_TEXT", ocr_text_length=0, decision=None,
         source_coordinates=image.source_coordinates, reading_order=0,
         visual_description_sha256=source.visual_description_sha256,
+        visual_prompt_version=source.visual_prompt_version,
     )
 
     class Embeddings:

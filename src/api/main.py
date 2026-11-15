@@ -550,6 +550,8 @@ async def _process_pdf_upload(
                         block.pop("visual_model_provider", None)
                     if block.get("visual_model") is None:
                         block.pop("visual_model", None)
+                    if block.get("visual_prompt_version") is None:
+                        block.pop("visual_prompt_version", None)
                     if block.get("derived_order") is None:
                         block.pop("derived_order", None)
             canonical_json = json.dumps(

@@ -595,6 +595,7 @@ def _pack_page_text_blocks(
                                 visual_description_sha256=block.visual_description_sha256,
                                 visual_model_provider=block.visual_model_provider,
                                 visual_model=block.visual_model,
+                                visual_prompt_version=block.visual_prompt_version,
                             )
                         )
                         last_block_id = block.block_id
@@ -625,6 +626,7 @@ def _pack_page_text_blocks(
                         visual_description_sha256=previous.visual_description_sha256,
                         visual_model_provider=previous.visual_model_provider,
                         visual_model=previous.visual_model,
+                        visual_prompt_version=previous.visual_prompt_version,
                     )
                 else:
                     current_sources.append(
@@ -643,6 +645,7 @@ def _pack_page_text_blocks(
                             visual_description_sha256=block.visual_description_sha256,
                             visual_model_provider=block.visual_model_provider,
                             visual_model=block.visual_model,
+                            visual_prompt_version=block.visual_prompt_version,
                         )
                     )
                 last_block_id = block.block_id
