@@ -1,5 +1,6 @@
+import re
 from typing import Final, Literal, Self
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
 from src.ingestion.parser_contracts import BlockType
 
@@ -7,6 +8,25 @@ TEXT_BEARING_BLOCK_TYPES: Final[frozenset[BlockType]] = frozenset(
     {"TEXT", "TABLE", "OTHER"}
 )
 OPTIONAL_TEXT_BLOCK_TYPES: Final[frozenset[BlockType]] = frozenset({"IMAGE"})
+
+class VisualAssetReference(BaseModel):
+    """Private pointer to an existing crop; this model never contains a public URL."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    ingestion_run_id: NonEmptyStr
+    page_number: PositiveInt
+    source_block_id: NonEmptyStr
+    image_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    bucket: Literal["ingestion-image-crops"]
+    object_path: NonEmptyStr
+    file_size_bytes: int = Field(ge=0, strict=True)
+
+    @field_validator("object_path")
+    @classmethod
+    def require_private_object_path(cls, value: str) -> str:
+        if "://" in value or value.startswith("/") or ".." in value.split("/"):
+            raise ValueError("Visual asset reference must contain a private relative object path")
+        return value
 
 class ChunkSource(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -26,13 +46,23 @@ class ChunkSource(BaseModel):
         default=None,
         description="Exclusive Python Unicode character offset into source text.",
     )
+    extraction_method: Literal["NATIVE", "IMAGE_OCR"] = "NATIVE"
+    source_image_block_id: NonEmptyStr | None = None
+    ocr_text_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @model_validator(mode="after")
     def validate_source_range(self) -> Self:
         prefix = f"page-{self.page_number}-block-"
         suffix = self.block_id.removeprefix(prefix)
-        if not self.block_id.startswith(prefix) or not suffix.isascii() or not suffix.isdecimal():
+        native_id = suffix.isascii() and suffix.isdecimal()
+        ocr_id = re.fullmatch(r"ocr-[0-9a-f]{64}", suffix) is not None
+        if not self.block_id.startswith(prefix) or not (native_id or ocr_id):
             raise ValueError("block_id must retain its page-scoped canonical format")
+        if self.extraction_method == "IMAGE_OCR":
+            if self.block_type != "IMAGE" or not self.source_image_block_id or not self.ocr_text_sha256:
+                raise ValueError("OCR chunk sources require image and OCR provenance")
+        elif self.source_image_block_id is not None or self.ocr_text_sha256 is not None:
+            raise ValueError("Native chunk sources cannot carry visual asset provenance")
         offsets = (
             self.source_text_length,
             self.start_offset,
@@ -60,6 +90,11 @@ class ChunkSource(BaseModel):
         if self.end_offset > self.source_text_length:
             raise ValueError("Source end offset exceeds the source text length")
         return self
+
+
+def serialize_chunk_source(source: ChunkSource) -> dict[str, object]:
+    """Serialize without introducing new nullable/default keys to legacy native refs."""
+    return source.model_dump(mode="json", exclude_defaults=True)
 
 class RetrievalTextEdit(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)

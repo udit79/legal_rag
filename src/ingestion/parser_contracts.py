@@ -1,9 +1,12 @@
 from typing import Annotated, Literal, Self
+import re
+import hashlib
 from pydantic import BaseModel,ConfigDict,Field,StringConstraints,model_validator
 from src.ingestion.contracts import DocumentDisposition, PositiveInt
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 NonNegativeInt = Annotated[int, Field(ge=0, strict=True)]
 BlockType = Literal["TEXT", "TABLE", "IMAGE", "VECTOR", "OTHER"]
+ExtractionMethod = Literal["NATIVE", "IMAGE_OCR"]
 PageParseStatus = Literal["PARSED", "BLANK", "VECTOR_ONLY", "FAILED"]
 
 class SourceCoordinates(BaseModel):
@@ -48,6 +51,9 @@ class CanonicalBlock(BaseModel):
     confidence: Annotated[float, Field(ge=0.0, le=100.0)] | None = None
     raw_text: str | None = None
     text_transformations: tuple[CanonicalTextTransformation, ...] = ()
+    extraction_method: ExtractionMethod = "NATIVE"
+    source_image_block_id: str | None = None
+    ocr_text_sha256: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -63,8 +69,19 @@ class CanonicalBlock(BaseModel):
     def validate_block_id_scope(self) -> "CanonicalBlock":
         prefix = f"page-{self.page_number}-block-"
         suffix = self.block_id.removeprefix(prefix)
-        if not self.block_id.startswith(prefix) or not suffix.isascii() or not suffix.isdecimal():
+        native_id = suffix.isascii() and suffix.isdecimal()
+        ocr_id = re.fullmatch(r"ocr-[0-9a-f]{64}", suffix) is not None
+        if not self.block_id.startswith(prefix) or not (native_id or ocr_id):
             raise ValueError("Block ID must retain its page-scoped canonical format")
+        if self.extraction_method == "IMAGE_OCR":
+            if (self.block_type != "IMAGE" or not self.source_image_block_id
+                    or self.ocr_text_sha256 is None
+                    or not re.fullmatch(r"[0-9a-f]{64}", self.ocr_text_sha256)):
+                raise ValueError("Image OCR blocks require source image identity and text digest")
+            if self.ocr_text_sha256 != hashlib.sha256(self.text.encode("utf-8")).hexdigest():
+                raise ValueError("Image OCR digest does not match canonical text")
+        elif self.source_image_block_id is not None or self.ocr_text_sha256 is not None:
+            raise ValueError("Native blocks cannot carry image OCR provenance")
         if self.text_transformations:
             if self.raw_text is None or len(self.raw_text) != len(self.text):
                 raise ValueError("Transformed blocks require same-length raw source text")

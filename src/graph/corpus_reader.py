@@ -11,7 +11,12 @@ from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 from pydantic import ValidationError
 
-from src.ingestion.chunk_contracts import Chunk, ChunkSource, RetrievalTextEdit
+from src.ingestion.chunk_contracts import (
+    Chunk,
+    ChunkSource,
+    RetrievalTextEdit,
+    serialize_chunk_source,
+)
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _ADMITTED = {"ADMITTED", "ADMITTED_FLAGGED"}
@@ -197,7 +202,7 @@ def validate_corpus_response(requested: tuple[str, ...], rows: Any) -> tuple[Cor
                 (source + "\0" + policy + "\0" + ",".join(map(str, indices))).encode("utf-8")
             ).hexdigest()
             chunks.append(CorpusChunk(identity, final_index, tuple(indices), raw, retrieval, digest,
-                                      [source.model_dump(mode="json") for source in validated_chunk.sources],
+                                      [serialize_chunk_source(source) for source in validated_chunk.sources],
                                       [edit.model_dump(mode="json") for edit in validated_chunk.retrieval_text_edits],
                                       decisions))
         admitted_original = {

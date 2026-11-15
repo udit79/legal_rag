@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Literal, Sequence
 
 from dotenv import load_dotenv
+import httpx
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
@@ -30,6 +31,7 @@ from src.graph.retrieval import (
     VectorRetriever,
     _require_search_indexes_online,
 )
+from src.ingestion.provenance.image_asset_resolver import SupabaseImageAssetResolver
 from src.infrastructure.neo4j_client import create_db_connect
 from src.observability.telemetry import configure_telemetry
 from src.ingestion.chunk_contracts import ChunkSource
@@ -88,6 +90,8 @@ def _validate_bundle(strategy: str, item: EvidenceBundle) -> None:
         raise ValueError(f"Invalid document hash for chunk {item.chunk_id}")
     if not item.raw_text.strip() or not item.sources or not item.ingestion_run_id:
         raise ValueError(f"Missing raw text, sources, or ingestion run for {item.chunk_id}")
+    if any(source.extraction_method == "IMAGE_OCR" for source in item.sources) and not item.visual_assets:
+        raise ValueError(f"OCR evidence has no resolved private image reference: {item.chunk_id}")
     channels = set(item.retrieval_channels)
     if strategy == "fulltext":
         if channels != {"fulltext"} or item.fulltext_score is None or item.vector_score is not None:
@@ -159,6 +163,7 @@ def _evidence_summary(item: EvidenceBundle) -> dict:
         "vector_score": item.vector_score,
         "fulltext_score": item.fulltext_score,
         "rrf_score": item.rrf_score,
+        "visual_assets": [asset.model_dump(mode="json") for asset in item.visual_assets],
         "abstention_score": item.abstention_score,
         "abstention_score_type": item.abstention_score_type,
     }
@@ -183,6 +188,19 @@ async def _run(args) -> dict:
         raise ValueError("Result limit must be positive")
 
     db = create_db_connect()
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if bool(supabase_url) != bool(supabase_key):
+        await db.close()
+        raise ValueError("Both SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for image references")
+    asset_client = (
+        httpx.AsyncClient(timeout=15.0) if supabase_url and supabase_key else None
+    )
+    asset_resolver = (
+        SupabaseImageAssetResolver(supabase_url, supabase_key, asset_client)
+        if supabase_url and supabase_key and asset_client is not None
+        else None
+    )
     try:
         if db.database != "rag":
             raise ValueError(f"Neo4j client selected {db.database!r}; expected 'rag'")
@@ -195,13 +213,15 @@ async def _run(args) -> dict:
                 db, config.vector_index_name, require_fulltext=False
             )
 
-        fulltext = FullTextRetriever(db)
+        fulltext = FullTextRetriever(db, image_asset_resolver=asset_resolver)
         strategies: dict[
             str, FullTextRetriever | VectorRetriever | HybridRetriever
         ] = {"fulltext": fulltext}
         if any(name in strategies_requested for name in ("vector", "hybrid")):
             provider = _CachedQueryEmbeddingProvider(create_embedding_provider(config))
-            vector = VectorRetriever(db, provider, config)
+            vector = VectorRetriever(
+                db, provider, config, image_asset_resolver=asset_resolver
+            )
             strategies["vector"] = vector
             strategies["hybrid"] = HybridRetriever(vector, fulltext, RRFConfig())
         if len(strategies_requested) != len(set(strategies_requested)) or any(
@@ -259,6 +279,8 @@ async def _run(args) -> dict:
             "synthetic_evaluation": evaluation_results,
         }
     finally:
+        if asset_client is not None:
+            await asset_client.aclose()
         await db.close()
 
 

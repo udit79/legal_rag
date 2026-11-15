@@ -46,6 +46,7 @@ from src.ingestion.parser_worker.limits import MAX_PDF_PAGES, MAX_PDF_SIZE_BYTES
 from src.ingestion.parser_worker.runner import ParserWorkerRunner
 from src.ingestion.provenance.supabase_store import SupabaseProvenanceStore
 from src.ingestion.screening.image_screening import (
+    add_admitted_image_ocr,
     attach_image_screening_results,
     screen_image_crops,
 )
@@ -419,6 +420,24 @@ async def _process_pdf_upload(
                 source, canonical
             )
             prepared_image_crops = worker_crops
+            with _TRACER.start_as_current_span("ingestion.image_ocr_screening") as span:
+                image_screening_results = await screen_image_crops(
+                    prepared_image_crops,
+                    ocr=request.app.state.parser_worker,
+                    screening_service=request.app.state.screening_service,
+                )
+                span.set_attribute(
+                    "ingestion.image_ocr.count", len(image_screening_results)
+                )
+                span.set_attribute(
+                    "ingestion.image_ocr.failed",
+                    sum(item.ocr_status == "FAILED" for item in image_screening_results),
+                )
+                span.set_attribute(
+                    "ingestion.image_ocr.admitted",
+                    sum(item.ocr_text is not None for item in image_screening_results),
+                )
+            canonical = add_admitted_image_ocr(canonical, image_screening_results)
             ingestion = await run_in_threadpool(
                 ingest_pdf,
                 file_screening=file_screening,
@@ -449,8 +468,19 @@ async def _process_pdf_upload(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail={"code": "NO_ELIGIBLE_CONTENT"},
                 )
+            canonical_payload = ingestion.canonical.model_dump(mode="json")
+            for page in canonical_payload["pages"]:
+                for block in page["blocks"]:
+                    # Keep the pre-M1 digest representation byte-compatible for
+                    # native blocks; serialize the new metadata only for OCR.
+                    if block.get("extraction_method") == "NATIVE":
+                        block.pop("extraction_method", None)
+                    if block.get("source_image_block_id") is None:
+                        block.pop("source_image_block_id", None)
+                    if block.get("ocr_text_sha256") is None:
+                        block.pop("ocr_text_sha256", None)
             canonical_json = json.dumps(
-                ingestion.canonical.model_dump(mode="json"),
+                canonical_payload,
                 ensure_ascii=False,
                 sort_keys=True,
                 separators=(",", ":"),
@@ -502,23 +532,6 @@ async def _process_pdf_upload(
                         "decision": AdmissionDecision.QUARANTINED.value,
                     },
                 ) from exc
-            with _TRACER.start_as_current_span("ingestion.image_ocr_screening") as span:
-                image_screening_results = await screen_image_crops(
-                    ingestion.unrecognized_images,
-                    ocr=request.app.state.parser_worker,
-                    screening_service=request.app.state.screening_service,
-                )
-                span.set_attribute(
-                    "ingestion.image_ocr.count", len(image_screening_results)
-                )
-                span.set_attribute(
-                    "ingestion.image_ocr.failed",
-                    sum(item.ocr_status == "FAILED" for item in image_screening_results),
-                )
-                span.set_attribute(
-                    "ingestion.image_ocr.flagged",
-                    sum(bool(item.flags) for item in image_screening_results),
-                )
             try:
                 response_images = attach_image_screening_results(
                     ingestion.unrecognized_images, image_screening_results

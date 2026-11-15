@@ -19,6 +19,7 @@ from src.ingestion.provenance.supabase_store import (
     SupabaseProvenanceStore,
 )
 from src.ingestion.screening.image_screening import ImageScreeningResult
+from src.security.ingestion_screening.enums import AdmissionDecision
 from src.security.ingestion_screening.contracts import DocumentContext
 from src.security.ingestion_screening.enums import TrustTier
 from src.security.ingestion_screening.screening_service import ScreeningService
@@ -226,6 +227,60 @@ def test_image_upload_retries_and_persists_private_object_metadata():
     assert metadata["image_file_size_bytes"] == len(png)
     assert "data_base64" not in metadata
     assert base64.b64encode(png).decode("ascii") not in rpc_requests[0].content.decode()
+
+
+def test_admitted_image_ocr_persistence_is_replay_safe_and_conflicts_fail_closed():
+    text = "Retained OCR text"
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    result = ImageScreeningResult(
+        page_number=1,
+        block_id="page-1-block-0",
+        reading_order=0,
+        source_coordinates=SourceCoordinates(
+            x0=0, y0=0, x1=10, y1=10, unit="PDF_POINT", origin="TOP_LEFT"
+        ),
+        image_sha256="a" * 64,
+        ocr_status="TEXT_FOUND",
+        ocr_text_sha256=digest,
+        ocr_text_length=len(text),
+        ocr_text=text,
+        decision=AdmissionDecision.ADMITTED,
+    )
+    requests = []
+    reject_changed_payload = False
+
+    async def handle(request):
+        nonlocal reject_changed_payload
+        requests.append(request)
+        if reject_changed_payload and request.url.path.endswith("persist_admitted_image_ocr"):
+            return httpx.Response(409, json={"code": "55000"})
+        return httpx.Response(204)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            store = SupabaseProvenanceStore("https://example.supabase.co", "key", client)
+            await store._persist_admitted_image_ocr("run-1", (result,))
+            await store._persist_admitted_image_ocr("run-1", (result,))
+            nonlocal reject_changed_payload
+            reject_changed_payload = True
+            changed = result.model_copy(update={
+                "ocr_text": "Different OCR",
+                "ocr_text_length": len("Different OCR"),
+                "ocr_text_sha256": hashlib.sha256(b"Different OCR").hexdigest(),
+            })
+            try:
+                await store._persist_admitted_image_ocr("run-1", (changed,))
+            except SupabaseProvenanceError:
+                return
+            raise AssertionError("Changed content under the same image key was accepted")
+
+    asyncio.run(run())
+    calls = [request for request in requests if request.url.path.endswith("persist_admitted_image_ocr")]
+    assert len(calls) == 3
+    first_payload = json.loads(calls[0].content)
+    assert first_payload == json.loads(calls[1].content)
+    assert first_payload["p_ingestion_run_id"] == "run-1"
+    assert first_payload["p_ocr_text"] == text
 
 
 def test_image_upload_rejects_hash_mismatch_before_storage_or_rpc():

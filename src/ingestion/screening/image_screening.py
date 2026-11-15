@@ -4,7 +4,12 @@ import hashlib
 from typing import Literal, Protocol
 from pydantic import BaseModel, ConfigDict
 from src.ingestion.pipeline import UnrecognizedImageCrop
-from src.ingestion.parser_contracts import SourceCoordinates
+from src.ingestion.parser_contracts import (
+    CanonicalBlock,
+    CanonicalDocument,
+    CanonicalPage,
+    SourceCoordinates,
+)
 from src.security.ingestion_screening.contracts import ScreeningFlag
 from src.security.ingestion_screening.enums import (
     AdmissionDecision,
@@ -32,6 +37,7 @@ class ImageScreeningResult(BaseModel):
     ocr_status: Literal["TEXT_FOUND", "NO_TEXT", "FAILED"]
     ocr_text_sha256: str | None = None
     ocr_text_length: int = 0
+    ocr_text: str | None = None
     decision: AdmissionDecision | None = None
     flags: tuple[ScreeningFlag, ...] = ()
 
@@ -102,11 +108,108 @@ async def screen_image_crops(
                 ocr_status="TEXT_FOUND",
                 ocr_text_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
                 ocr_text_length=len(text),
+                ocr_text=(
+                    text
+                    if decision in {
+                        AdmissionDecision.ADMITTED,
+                        AdmissionDecision.ADMITTED_FLAGGED,
+                    }
+                    else None
+                ),
                 decision=decision,
                 flags=flags,
             )
         )
     return tuple(results)
+
+
+def add_admitted_image_ocr(
+    canonical: CanonicalDocument,
+    results: tuple[ImageScreeningResult, ...],
+) -> CanonicalDocument:
+    """Add only admitted OCR as deterministic, source-backed IMAGE text blocks."""
+    results_by_key = {(item.page_number, item.block_id): item for item in results}
+    if len(results_by_key) != len(results):
+        raise ValueError("Image OCR results contain duplicate composite identities")
+    source_blocks = {
+        (block.page_number, block.block_id): block
+        for page in canonical.pages
+        for block in page.blocks
+    }
+    for item in results:
+        source = source_blocks.get((item.page_number, item.block_id))
+        if (
+            source is None
+            or source.block_type != "IMAGE"
+            or source.text.strip()
+            or source.reading_order != item.reading_order
+            or source.source_coordinates != item.source_coordinates
+        ):
+            raise ValueError("Image OCR result does not match its canonical source block")
+    pages: list[CanonicalPage] = []
+    for page in canonical.pages:
+        blocks = list(page.blocks)
+        page_results = sorted(
+            (item for item in results if item.page_number == page.page_number),
+            key=lambda item: item.reading_order,
+        )
+        additions: dict[str, CanonicalBlock] = {}
+        for item in page_results:
+            if item.ocr_status != "TEXT_FOUND" or item.decision not in {
+                AdmissionDecision.ADMITTED,
+                AdmissionDecision.ADMITTED_FLAGGED,
+            }:
+                continue
+            if not item.ocr_text or not item.ocr_text.strip():
+                raise ValueError("Admitted image OCR is missing non-empty source text")
+            digest = hashlib.sha256(item.ocr_text.encode("utf-8")).hexdigest()
+            if (
+                digest != item.ocr_text_sha256
+                or len(item.ocr_text) != item.ocr_text_length
+            ):
+                raise ValueError("Admitted image OCR failed text digest or length validation")
+            source = source_blocks[(item.page_number, item.block_id)]
+            identity_digest = hashlib.sha256(
+                f"{page.page_number}\0{item.block_id}\0{digest}".encode("utf-8")
+            ).hexdigest()
+            generated_id = f"page-{page.page_number}-block-ocr-{identity_digest}"
+            if (
+                any(block.block_id == generated_id for block in blocks)
+                or generated_id in additions
+            ):
+                raise ValueError("Generated OCR block identity collides with canonical content")
+            additions[item.block_id] = CanonicalBlock(
+                page_number=page.page_number,
+                block_id=generated_id,
+                text=item.ocr_text,
+                block_type="IMAGE",
+                reading_order=0,  # assigned below after stable source-order insertion
+                source_coordinates=source.source_coordinates,
+                extraction_method="IMAGE_OCR",
+                source_image_block_id=source.block_id,
+                ocr_text_sha256=digest,
+            )
+        if additions:
+            expanded: list[CanonicalBlock] = []
+            for block in blocks:
+                expanded.append(block)
+                generated = additions.get(block.block_id)
+                if generated is not None:
+                    expanded.append(generated)
+            blocks = [
+                CanonicalBlock.model_validate(
+                    {**block.model_dump(mode="python"), "reading_order": index}
+                )
+                for index, block in enumerate(expanded)
+            ]
+        pages.append(
+            CanonicalPage.model_validate(
+                {**page.model_dump(mode="python"), "blocks": blocks}
+            )
+        )
+    return CanonicalDocument.model_validate(
+        {**canonical.model_dump(mode="python"), "pages": pages}
+    )
 
 def attach_image_screening_results(
     crops: tuple[UnrecognizedImageCrop, ...],

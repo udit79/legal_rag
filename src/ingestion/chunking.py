@@ -588,6 +588,9 @@ def _pack_page_text_blocks(
                                 source_text_length=len(block.text),
                                 start_offset=overlap_start,
                                 end_offset=atom.start,
+                                extraction_method=block.extraction_method,
+                                source_image_block_id=block.source_image_block_id,
+                                ocr_text_sha256=block.ocr_text_sha256,
                             )
                         )
                         last_block_id = block.block_id
@@ -611,6 +614,9 @@ def _pack_page_text_blocks(
                         source_text_length=previous.source_text_length,
                         start_offset=previous.start_offset,
                         end_offset=atom.end,
+                        extraction_method=previous.extraction_method,
+                        source_image_block_id=previous.source_image_block_id,
+                        ocr_text_sha256=previous.ocr_text_sha256,
                     )
                 else:
                     current_sources.append(
@@ -622,6 +628,9 @@ def _pack_page_text_blocks(
                             source_text_length=len(block.text),
                             start_offset=atom.start,
                             end_offset=atom.end,
+                            extraction_method=block.extraction_method,
+                            source_image_block_id=block.source_image_block_id,
+                            ocr_text_sha256=block.ocr_text_sha256,
                         )
                     )
                 last_block_id = block.block_id

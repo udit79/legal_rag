@@ -11,6 +11,7 @@ from src.ingestion.pipeline import (
     RevisedChunkSet,
     UnrecognizedImageCrop,
 )
+from src.ingestion.chunk_contracts import serialize_chunk_source
 from src.ingestion.retrieval_text import RETRIEVAL_TEXT_POLICY_VERSION
 from src.ingestion.screening.image_screening import ImageScreeningResult
 from src.security.ingestion_screening.contracts import DocumentContext, ScreenedChunkedDocument
@@ -94,7 +95,7 @@ class SupabaseProvenanceStore:
                     "chunk_index": chunk.index,
                     "chunk_digest": result.chunk_digest,
                     "text": chunk.text,
-                    "sources": [source.model_dump(mode="json") for source in chunk.sources],
+                    "sources": [serialize_chunk_source(source) for source in chunk.sources],
                 }
                 for chunk, result in zip(
                     document.chunks, screened.report.chunk_results, strict=True
@@ -117,6 +118,9 @@ class SupabaseProvenanceStore:
                 json={"p_payload": payload},
             )
             response.raise_for_status()
+            await self._persist_admitted_image_ocr(
+                context.ingestion_run_id, image_results
+            )
         except httpx.HTTPError as exc:
             failure_detail = ""
             failure_http_status = None
@@ -179,6 +183,41 @@ class SupabaseProvenanceStore:
                 provider_error_code=failure_error_code,
                 request_id=failure_request_id,
             ) from exc
+
+    async def _persist_admitted_image_ocr(
+        self,
+        ingestion_run_id: str,
+        image_results: tuple[ImageScreeningResult, ...],
+    ) -> None:
+        for result in image_results:
+            if result.ocr_text is None:
+                continue
+            if result.decision is None or result.ocr_text_sha256 is None:
+                raise SupabaseProvenanceError(
+                    "Admitted image OCR is missing its screening digest"
+                )
+            try:
+                response = await self._client.post(
+                    f"{self._url}/rest/v1/rpc/persist_admitted_image_ocr",
+                    headers={
+                        "apikey": self._key,
+                        "Authorization": f"Bearer {self._key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "p_ingestion_run_id": ingestion_run_id,
+                        "p_page_number": result.page_number,
+                        "p_block_id": result.block_id,
+                        "p_ocr_text": result.ocr_text,
+                        "p_ocr_text_sha256": result.ocr_text_sha256,
+                        "p_ocr_text_length": result.ocr_text_length,
+                    },
+                )
+                response.raise_for_status()
+            except httpx.HTTPError as exc:
+                raise SupabaseProvenanceError(
+                    "Supabase did not persist admitted image OCR text"
+                ) from exc
 
     async def _store_image_crops(
         self,
@@ -243,7 +282,7 @@ class SupabaseProvenanceStore:
                 uploaded_paths.add(object_path)
             metadata.append(
                 {
-                    **result.model_dump(mode="json"),
+                    **result.model_dump(mode="json", exclude={"ocr_text"}),
                     "image_bucket": IMAGE_CROP_BUCKET,
                     "image_object_path": object_path,
                     "image_file_size_bytes": len(image_bytes),
@@ -389,7 +428,7 @@ class SupabaseProvenanceStore:
                     "chunk_sha256": hashlib.sha256(
                         chunk.text.encode("utf-8")
                     ).hexdigest(),
-                    "sources": [source.model_dump(mode="json") for source in chunk.sources],
+                    "sources": [serialize_chunk_source(source) for source in chunk.sources],
                 }
                 for chunk in revised.chunks
             ],
