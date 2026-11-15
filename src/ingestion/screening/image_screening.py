@@ -183,11 +183,12 @@ def add_admitted_image_ocr(
                 block_id=generated_id,
                 text=item.ocr_text,
                 block_type="IMAGE",
-                reading_order=0,  # assigned below after stable source-order insertion
+                reading_order=source.reading_order,
                 source_coordinates=source.source_coordinates,
                 extraction_method="IMAGE_OCR",
                 source_image_block_id=source.block_id,
                 ocr_text_sha256=digest,
+                derived_order=1,
             )
         if additions:
             expanded: list[CanonicalBlock] = []
@@ -196,12 +197,7 @@ def add_admitted_image_ocr(
                 generated = additions.get(block.block_id)
                 if generated is not None:
                     expanded.append(generated)
-            blocks = [
-                CanonicalBlock.model_validate(
-                    {**block.model_dump(mode="python"), "reading_order": index}
-                )
-                for index, block in enumerate(expanded)
-            ]
+            blocks = expanded
         pages.append(
             CanonicalPage.model_validate(
                 {**page.model_dump(mode="python"), "blocks": blocks}

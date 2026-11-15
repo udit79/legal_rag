@@ -479,6 +479,8 @@ async def _process_pdf_upload(
                         block.pop("source_image_block_id", None)
                     if block.get("ocr_text_sha256") is None:
                         block.pop("ocr_text_sha256", None)
+                    if block.get("derived_order") is None:
+                        block.pop("derived_order", None)
             canonical_json = json.dumps(
                 canonical_payload,
                 ensure_ascii=False,

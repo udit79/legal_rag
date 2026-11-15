@@ -33,6 +33,7 @@ class ChunkSource(BaseModel):
     page_number: PositiveInt
     block_id: NonEmptyStr
     block_reading_order: NonNegativeInt
+    block_derived_order: NonNegativeInt | None = None
     block_type: BlockType
     source_text_length: NonNegativeInt | None = Field(
         default=None,
@@ -59,9 +60,19 @@ class ChunkSource(BaseModel):
         if not self.block_id.startswith(prefix) or not (native_id or ocr_id):
             raise ValueError("block_id must retain its page-scoped canonical format")
         if self.extraction_method == "IMAGE_OCR":
-            if self.block_type != "IMAGE" or not self.source_image_block_id or not self.ocr_text_sha256:
+            if (
+                self.block_type != "IMAGE"
+                or not self.source_image_block_id
+                or not self.ocr_text_sha256
+                or self.block_derived_order is None
+                or self.block_derived_order == 0
+            ):
                 raise ValueError("OCR chunk sources require image and OCR provenance")
-        elif self.source_image_block_id is not None or self.ocr_text_sha256 is not None:
+        elif (
+            self.source_image_block_id is not None
+            or self.ocr_text_sha256 is not None
+            or self.block_derived_order is not None
+        ):
             raise ValueError("Native chunk sources cannot carry visual asset provenance")
         offsets = (
             self.source_text_length,
@@ -135,6 +146,7 @@ class Chunk(BaseModel):
             (
                 source.page_number,
                 source.block_reading_order,
+                source.block_derived_order or 0,
                 source.start_offset if source.start_offset is not None else -1,
             )
             for source in self.sources

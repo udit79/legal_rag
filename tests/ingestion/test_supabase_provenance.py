@@ -72,7 +72,7 @@ def test_supabase_store_sends_one_rpc_with_hashes_sources_and_screening_results(
 
     asyncio.run(run())
     assert len(calls) == 1
-    assert calls[0].url.path == "/rest/v1/rpc/persist_ingestion_screening"
+    assert calls[0].url.path == "/rest/v1/rpc/persist_ingestion_screening_with_admitted_ocr"
     assert calls[0].headers["apikey"] == "service-secret"
     payload = json.loads(calls[0].content)["p_payload"]
     assert payload["document"]["source_sha256"] == "a" * 64
@@ -95,6 +95,27 @@ def test_supabase_store_reports_database_failure():
 
     with pytest.raises(SupabaseProvenanceError):
         asyncio.run(run())
+
+
+def test_screening_persistence_requires_an_ingestion_run_id_before_io():
+    import pytest
+
+    calls = []
+
+    async def handle(request):
+        calls.append(request)
+        return httpx.Response(204)
+
+    async def run():
+        screened, context = await _screened()
+        context_without_run = context.model_copy(update={"ingestion_run_id": None})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            store = SupabaseProvenanceStore("https://example.supabase.co", "key", client)
+            await store.persist_screened_document(screened, context_without_run)
+
+    with pytest.raises(ValueError, match="requires an ingestion run ID"):
+        asyncio.run(run())
+    assert calls == []
 
 
 def test_supabase_store_persists_final_cpcr_chunks_and_decisions():
@@ -211,7 +232,7 @@ def test_image_upload_retries_and_persists_private_object_metadata():
     ]
     rpc_requests = [
         request for request in requests
-        if request.url.path.endswith("/persist_ingestion_screening")
+        if request.url.path.endswith("/persist_ingestion_screening_with_admitted_ocr")
     ]
     assert storage_attempts == 3
     assert storage_requests[0].url.path == storage_requests[1].url.path
@@ -229,58 +250,94 @@ def test_image_upload_retries_and_persists_private_object_metadata():
     assert base64.b64encode(png).decode("ascii") not in rpc_requests[0].content.decode()
 
 
-def test_admitted_image_ocr_persistence_is_replay_safe_and_conflicts_fail_closed():
+def test_admitted_image_ocr_is_included_in_atomic_rpc_and_exact_replay():
     text = "Retained OCR text"
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    result = ImageScreeningResult(
-        page_number=1,
-        block_id="page-1-block-0",
-        reading_order=0,
-        source_coordinates=SourceCoordinates(
-            x0=0, y0=0, x1=10, y1=10, unit="PDF_POINT", origin="TOP_LEFT"
-        ),
-        image_sha256="a" * 64,
-        ocr_status="TEXT_FOUND",
-        ocr_text_sha256=digest,
-        ocr_text_length=len(text),
-        ocr_text=text,
-        decision=AdmissionDecision.ADMITTED,
-    )
+    png = b"\x89PNG\r\n\x1a\nocr-crop"
+    crop = _image_crop("page-1-block-0", png)
+    result = _image_result(crop, png).model_copy(update={
+        "ocr_status": "TEXT_FOUND",
+        "ocr_text_sha256": digest,
+        "ocr_text_length": len(text),
+        "ocr_text": text,
+        "decision": AdmissionDecision.ADMITTED,
+    })
     requests = []
-    reject_changed_payload = False
-
     async def handle(request):
-        nonlocal reject_changed_payload
         requests.append(request)
-        if reject_changed_payload and request.url.path.endswith("persist_admitted_image_ocr"):
-            return httpx.Response(409, json={"code": "55000"})
         return httpx.Response(204)
 
     async def run():
         async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
             store = SupabaseProvenanceStore("https://example.supabase.co", "key", client)
-            await store._persist_admitted_image_ocr("run-1", (result,))
-            await store._persist_admitted_image_ocr("run-1", (result,))
-            nonlocal reject_changed_payload
-            reject_changed_payload = True
-            changed = result.model_copy(update={
-                "ocr_text": "Different OCR",
-                "ocr_text_length": len("Different OCR"),
-                "ocr_text_sha256": hashlib.sha256(b"Different OCR").hexdigest(),
-            })
-            try:
-                await store._persist_admitted_image_ocr("run-1", (changed,))
-            except SupabaseProvenanceError:
-                return
-            raise AssertionError("Changed content under the same image key was accepted")
+            screened, context = await _screened()
+            first = await store.persist_screened_document(
+                screened, context, image_results=(result,), image_crops=(crop,)
+            )
+            second = await store.persist_screened_document(
+                screened, context, image_results=(result,), image_crops=(crop,)
+            )
+            assert first == second
+            assert first.ingestion_run_id == context.ingestion_run_id
+            assert first.status == "PERSISTED"
+            assert first.persisted_admitted_ocr_count == 1
 
     asyncio.run(run())
-    calls = [request for request in requests if request.url.path.endswith("persist_admitted_image_ocr")]
-    assert len(calls) == 3
+    calls = [request for request in requests if request.url.path.endswith("persist_ingestion_screening_with_admitted_ocr")]
+    assert len(calls) == 2
     first_payload = json.loads(calls[0].content)
     assert first_payload == json.loads(calls[1].content)
-    assert first_payload["p_ingestion_run_id"] == "run-1"
-    assert first_payload["p_ocr_text"] == text
+    assert first_payload["p_admitted_ocr"][0]["ingestion_run_id"] == "run-id"
+    assert first_payload["p_admitted_ocr"][0]["ocr_text"] == text
+
+
+def test_atomic_rpc_retry_reuses_identical_ingestion_and_ocr_payload():
+    png = b"\x89PNG\r\n\x1a\nretry-crop"
+    crop = _image_crop("page-1-block-0", png)
+    result = _image_result(crop, png)
+    requests = []
+    rpc_calls = 0
+
+    async def handle(request):
+        nonlocal rpc_calls
+        requests.append(request)
+        if request.url.path.startswith("/storage/v1/object/"):
+            return httpx.Response(200)
+        if request.url.path.endswith("persist_ingestion_screening_with_admitted_ocr"):
+            rpc_calls += 1
+            return httpx.Response(503 if rpc_calls == 1 else 204)
+        raise AssertionError(f"Unexpected request: {request.url}")
+
+    async def run():
+        screened, context = await _screened()
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            store = SupabaseProvenanceStore("https://example.supabase.co", "key", client)
+            receipt = await store.persist_screened_document(
+                screened, context, image_results=(result,), image_crops=(crop,)
+            )
+            assert receipt.status == "PERSISTED"
+            assert receipt.ingestion_run_id == context.ingestion_run_id
+
+    asyncio.run(run())
+    rpc_requests = [r for r in requests if r.url.path.endswith("persist_ingestion_screening_with_admitted_ocr")]
+    assert len(rpc_requests) == 2
+    assert json.loads(rpc_requests[0].content) == json.loads(rpc_requests[1].content)
+
+
+def test_failed_atomic_rpc_does_not_return_a_persisted_receipt():
+    async def handle(request):
+        return httpx.Response(500) if request.url.path.endswith("persist_ingestion_screening_with_admitted_ocr") else httpx.Response(200)
+
+    async def run():
+        screened, context = await _screened()
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            store = SupabaseProvenanceStore("https://example.supabase.co", "key", client)
+            await store.persist_screened_document(screened, context)
+
+    import pytest
+
+    with pytest.raises(SupabaseProvenanceError):
+        asyncio.run(run())
 
 
 def test_image_upload_rejects_hash_mismatch_before_storage_or_rpc():
@@ -367,7 +424,7 @@ def test_partial_image_upload_failure_does_not_persist_metadata():
         request for request in requests if request.method == "DELETE"
     ]
     assert sum(
-        request.url.path.endswith("/persist_ingestion_screening")
+        request.url.path.endswith("/persist_ingestion_screening_with_admitted_ocr")
         for request in requests
     ) == 0
     assert len(delete_requests) == 1
@@ -400,7 +457,7 @@ def test_rpc_failure_only_deletes_images_confirmed_unreferenced():
                 "/storage/v1/object/"
             ):
                 return httpx.Response(200)
-            if request.url.path.endswith("/persist_ingestion_screening"):
+            if request.url.path.endswith("/persist_ingestion_screening_with_admitted_ocr"):
                 return httpx.Response(500)
             if request.method == "GET" and request.url.path.endswith(
                 "/image_screening_results"

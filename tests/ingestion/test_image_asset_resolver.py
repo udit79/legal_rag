@@ -36,6 +36,7 @@ def _chunk() -> Chunk:
             page_number=4,
             block_id=OCR_BLOCK,
             block_reading_order=9,
+            block_derived_order=1,
             block_type="IMAGE",
             source_text_length=len(text),
             start_offset=0,

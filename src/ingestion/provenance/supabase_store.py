@@ -5,6 +5,8 @@ import binascii
 import hashlib
 import json
 import logging
+from dataclasses import dataclass
+from typing import Literal
 import httpx
 from src.ingestion.pipeline import (
     CPCRResult,
@@ -19,6 +21,7 @@ from src.security.ingestion_screening.contracts import DocumentContext, Screened
 IMAGE_CROP_BUCKET = "ingestion-image-crops"
 _IMAGE_UPLOAD_ATTEMPTS = 3
 _IMAGE_RECONCILIATION_BATCH_SIZE = 50
+_SCREENING_RPC_ATTEMPTS = 3
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -38,6 +41,14 @@ class SupabaseProvenanceError(RuntimeError):
         self.provider_error_code = provider_error_code
         self.request_id = request_id
 
+
+@dataclass(frozen=True)
+class ProvenancePersistenceReceipt:
+    ingestion_run_id: str
+    status: Literal["PERSISTED"]
+    persisted_image_count: int
+    persisted_admitted_ocr_count: int
+
 class SupabaseProvenanceStore:
     def __init__(self, base_url: str, service_role_key: str, client: httpx.AsyncClient):
         if not base_url.startswith(("https://", "http://")):
@@ -55,8 +66,11 @@ class SupabaseProvenanceStore:
         *,
         image_results: tuple[ImageScreeningResult, ...] = (),
         image_crops: tuple[UnrecognizedImageCrop, ...] = (),
-    ) -> None:
-        """Store verified private crops, then persist screening metadata by RPC."""
+    ) -> ProvenancePersistenceReceipt:
+        """Persist screening and admitted OCR atomically after storing private crops."""
+        ingestion_run_id = context.ingestion_run_id
+        if ingestion_run_id is None:
+            raise ValueError("Screening provenance persistence requires an ingestion run ID")
         if any(
             result.source_sha256 != context.source_sha256
             for result in screened.report.chunk_results
@@ -68,7 +82,7 @@ class SupabaseProvenanceStore:
         image_metadata = await self._store_image_crops(
             image_crops,
             image_results,
-            ingestion_run_id=context.ingestion_run_id,
+            ingestion_run_id=ingestion_run_id,
         )
         payload = {
             "document": {
@@ -78,7 +92,7 @@ class SupabaseProvenanceStore:
                 "source_page_count": context.source_page_count,
             },
             "run": {
-                "ingestion_run_id": context.ingestion_run_id,
+                "ingestion_run_id": ingestion_run_id,
                 "chunking_policy_version": context.chunking_policy_version,
                 "screening_policy_version": screened.report.screening_policy_version,
                 "screening_policy_digest": screened.report.screening_policy_digest,
@@ -107,117 +121,121 @@ class SupabaseProvenanceStore:
             ],
             "image_results": image_metadata,
         }
-        try:
-            response = await self._client.post(
-                f"{self._url}/rest/v1/rpc/persist_ingestion_screening",
-                headers={
-                    "apikey": self._key,
-                    "Authorization": f"Bearer {self._key}",
-                    "Content-Type": "application/json",
-                },
-                json={"p_payload": payload},
-            )
-            response.raise_for_status()
-            await self._persist_admitted_image_ocr(
-                context.ingestion_run_id, image_results
-            )
-        except httpx.HTTPError as exc:
-            failure_detail = ""
-            failure_http_status = None
-            failure_error_code = None
-            failure_request_id = None
-            if isinstance(exc, httpx.HTTPStatusError):
-                try:
-                    error_body = exc.response.json()
-                except ValueError:
-                    error_body = {}
-                error_code = (
-                    error_body.get("code")
-                    if isinstance(error_body, dict)
-                    and isinstance(error_body.get("code"), str)
-                    else None
-                )
-                request_id = (
-                    exc.response.headers.get("x-request-id")
-                    or exc.response.headers.get("sb-request-id")
-                )
-                failure_http_status = exc.response.status_code
-                failure_error_code = error_code
-                failure_request_id = request_id
-                failure_detail = (
-                    f" (HTTP {exc.response.status_code}, Supabase code "
-                    f"{error_code or 'unavailable'}, request ID "
-                    f"{request_id or 'unavailable'})"
-                )
-                _LOGGER.error(
-                    "Supabase rejected ingestion screening provenance%s for run %s",
-                    failure_detail,
-                    context.ingestion_run_id,
-                )
-                await self._reconcile_image_objects(
-                    [
-                        path
-                        for item in image_metadata
-                        if isinstance(
-                            (path := item.get("image_object_path")), str
-                        )
-                    ]
-                )
-            elif image_metadata:
-                _LOGGER.exception(
-                    "Supabase screening provenance transport outcome is unknown",
-                    extra={"ingestion_run_id": context.ingestion_run_id},
-                )
-                _LOGGER.warning(
-                    "Ingestion metadata RPC outcome is unknown; retaining uploaded images"
-                )
-            else:
-                _LOGGER.exception(
-                    "Supabase screening provenance transport failed",
-                    extra={"ingestion_run_id": context.ingestion_run_id},
-                )
-            raise SupabaseProvenanceError(
-                "Supabase did not persist the ingestion screening batch"
-                f"{failure_detail}",
-                http_status=failure_http_status,
-                provider_error_code=failure_error_code,
-                request_id=failure_request_id,
-            ) from exc
-
-    async def _persist_admitted_image_ocr(
-        self,
-        ingestion_run_id: str,
-        image_results: tuple[ImageScreeningResult, ...],
-    ) -> None:
+        admitted_ocr = []
         for result in image_results:
             if result.ocr_text is None:
                 continue
-            if result.decision is None or result.ocr_text_sha256 is None:
+            if (
+                result.ocr_status != "TEXT_FOUND"
+                or result.decision is None
+                or result.decision.value not in {"ADMITTED", "ADMITTED_FLAGGED"}
+                or result.ocr_text_sha256 is None
+                or hashlib.sha256(result.ocr_text.encode("utf-8")).hexdigest()
+                != result.ocr_text_sha256
+                or len(result.ocr_text) != result.ocr_text_length
+            ):
                 raise SupabaseProvenanceError(
-                    "Admitted image OCR is missing its screening digest"
+                    "Only validated admitted OCR can be included in provenance persistence"
                 )
+            admitted_ocr.append({
+                "ingestion_run_id": ingestion_run_id,
+                "page_number": result.page_number,
+                "block_id": result.block_id,
+                "ocr_text": result.ocr_text,
+                "ocr_text_sha256": result.ocr_text_sha256,
+                "ocr_text_length": result.ocr_text_length,
+            })
+
+        headers = {
+            "apikey": self._key,
+            "Authorization": f"Bearer {self._key}",
+            "Content-Type": "application/json",
+        }
+        request_body = {
+            "p_payload": payload,
+            "p_admitted_ocr": admitted_ocr,
+        }
+        endpoint = (
+            f"{self._url}/rest/v1/rpc/"
+            "persist_ingestion_screening_with_admitted_ocr"
+        )
+        last_error: httpx.HTTPError | None = None
+        for attempt in range(_SCREENING_RPC_ATTEMPTS):
             try:
                 response = await self._client.post(
-                    f"{self._url}/rest/v1/rpc/persist_admitted_image_ocr",
-                    headers={
-                        "apikey": self._key,
-                        "Authorization": f"Bearer {self._key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "p_ingestion_run_id": ingestion_run_id,
-                        "p_page_number": result.page_number,
-                        "p_block_id": result.block_id,
-                        "p_ocr_text": result.ocr_text,
-                        "p_ocr_text_sha256": result.ocr_text_sha256,
-                        "p_ocr_text_length": result.ocr_text_length,
-                    },
+                    endpoint, headers=headers, json=request_body
                 )
                 response.raise_for_status()
-            except httpx.HTTPError as exc:
-                raise SupabaseProvenanceError(
-                    "Supabase did not persist admitted image OCR text"
-                ) from exc
+                return ProvenancePersistenceReceipt(
+                    ingestion_run_id=ingestion_run_id,
+                    status="PERSISTED",
+                    persisted_image_count=len(image_metadata),
+                    persisted_admitted_ocr_count=len(admitted_ocr),
+                )
+            except httpx.HTTPStatusError as exc:
+                last_error = exc
+                retryable = (
+                    exc.response.status_code in {408, 429}
+                    or exc.response.status_code >= 500
+                )
+                if retryable and attempt + 1 < _SCREENING_RPC_ATTEMPTS:
+                    await asyncio.sleep(0.05 * (2**attempt))
+                    continue
+                break
+            except httpx.TransportError as exc:
+                last_error = exc
+                if attempt + 1 < _SCREENING_RPC_ATTEMPTS:
+                    await asyncio.sleep(0.05 * (2**attempt))
+                    continue
+                break
+
+        if last_error is None:
+            raise AssertionError("Screening RPC retry loop exited without a result")
+        failure_http_status = None
+        failure_error_code = None
+        failure_request_id = None
+        failure_detail = ""
+        if isinstance(last_error, httpx.HTTPStatusError):
+            try:
+                error_body = last_error.response.json()
+            except ValueError:
+                error_body = {}
+            failure_error_code = (
+                error_body.get("code")
+                if isinstance(error_body, dict)
+                and isinstance(error_body.get("code"), str)
+                else None
+            )
+            failure_http_status = last_error.response.status_code
+            failure_request_id = (
+                last_error.response.headers.get("x-request-id")
+                or last_error.response.headers.get("sb-request-id")
+            )
+            failure_detail = (
+                f" (HTTP {failure_http_status}, Supabase code "
+                f"{failure_error_code or 'unavailable'}, request ID "
+                f"{failure_request_id or 'unavailable'})"
+            )
+        _LOGGER.error(
+            "Supabase did not atomically persist screening/OCR for run %s%s: %s",
+            ingestion_run_id,
+            failure_detail,
+            last_error,
+        )
+        await self._reconcile_image_objects(
+            [
+                path
+                for item in image_metadata
+                if isinstance((path := item.get("image_object_path")), str)
+            ]
+        )
+        raise SupabaseProvenanceError(
+            "Supabase did not atomically persist the ingestion screening and OCR batch"
+            f"{failure_detail}",
+            http_status=failure_http_status,
+            provider_error_code=failure_error_code,
+            request_id=failure_request_id,
+        ) from last_error
 
     async def _store_image_crops(
         self,

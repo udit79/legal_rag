@@ -21,16 +21,26 @@ its parser-assigned `block_id`, coordinates and reading order identity.
 - `ChunkSource` copies extraction method, OCR digest and original image block
   identity while retaining the generated text block's page and half-open source
   offsets.
+- Native parser blocks keep their original `reading_order` and IDs. OCR blocks
+  reuse the source image's reading order and carry `derived_order=1`; canonical
+  ordering is `(reading_order, derived_order-or-zero)`. The generated OCR block
+  sorts immediately after its image without renumbering parser blocks. Chunk
+  provenance carries both order fields, keeping crop metadata aligned to its
+  original block.
 
 ## Stored OCR and visual asset reference
 
 The existing `image_screening_results` row remains the asset record, keyed by
 `(ingestion_run_id, page_number, block_id)`. Migration
 `202611130001_image_ocr_canonical_text.sql` adds nullable `ocr_text` and a
-service-role-only write-once RPC. It validates the existing screening decision,
-stored digest and length. Existing historical rows remain null and are not
-backfilled. Exact replay is accepted; different text for an existing key is
-rejected.
+service-role-only atomic RPC. It persists screening/document/chunk/image
+metadata and admitted OCR in one transaction. OCR validation failure rolls
+back the entire write; retrying the same ingestion run is idempotent. It
+validates the existing screening decision, stored digest and length. Existing
+historical rows remain null and are not backfilled. Exact replay is accepted;
+different text for an existing key is rejected. The shared append-only trigger
+keeps OCR's one-time NULL-to-text exception inside a nested image-table branch;
+all other image metadata and provenance tables remain immutable.
 
 The persisted `ChunkSource` carries stable OCR provenance only: page, generated
 text block, original image block ID, OCR method/hash/offsets. It does not carry

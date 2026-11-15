@@ -54,6 +54,7 @@ class CanonicalBlock(BaseModel):
     extraction_method: ExtractionMethod = "NATIVE"
     source_image_block_id: str | None = None
     ocr_text_sha256: str | None = None
+    derived_order: NonNegativeInt | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -76,11 +77,17 @@ class CanonicalBlock(BaseModel):
         if self.extraction_method == "IMAGE_OCR":
             if (self.block_type != "IMAGE" or not self.source_image_block_id
                     or self.ocr_text_sha256 is None
+                    or self.derived_order is None
+                    or self.derived_order == 0
                     or not re.fullmatch(r"[0-9a-f]{64}", self.ocr_text_sha256)):
                 raise ValueError("Image OCR blocks require source image identity and text digest")
             if self.ocr_text_sha256 != hashlib.sha256(self.text.encode("utf-8")).hexdigest():
                 raise ValueError("Image OCR digest does not match canonical text")
-        elif self.source_image_block_id is not None or self.ocr_text_sha256 is not None:
+        elif (
+            self.source_image_block_id is not None
+            or self.ocr_text_sha256 is not None
+            or self.derived_order is not None
+        ):
             raise ValueError("Native blocks cannot carry image OCR provenance")
         if self.text_transformations:
             if self.raw_text is None or len(self.raw_text) != len(self.text):
@@ -119,9 +126,19 @@ class CanonicalPage(BaseModel):
     def validate_page_result(self) -> "CanonicalPage":
         if any(block.page_number != self.page_number for block in self.blocks):
             raise ValueError("Every block must belong to its containing page")
-        reading_orders = tuple(block.reading_order for block in self.blocks)
-        if reading_orders != tuple(range(len(self.blocks))):
-            raise ValueError("Block reading order must be contiguous and ascending")
+        original_reading_orders = tuple(
+            block.reading_order
+            for block in self.blocks
+            if block.extraction_method == "NATIVE"
+        )
+        if original_reading_orders != tuple(range(len(original_reading_orders))):
+            raise ValueError("Original parser block reading order must remain contiguous")
+        ordering_keys = tuple(
+            (block.reading_order, block.derived_order or 0)
+            for block in self.blocks
+        )
+        if ordering_keys != tuple(sorted(ordering_keys)) or len(ordering_keys) != len(set(ordering_keys)):
+            raise ValueError("Canonical block order must be stable and unique")
         block_ids = tuple(block.block_id for block in self.blocks)
         if len(block_ids) != len(set(block_ids)):
             raise ValueError("Block IDs must be unique within a page")

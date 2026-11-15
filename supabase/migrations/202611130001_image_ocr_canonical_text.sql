@@ -13,15 +13,16 @@ begin
             using errcode = '55000';
     end if;
 
-    if tg_table_name = 'image_screening_results'
-       and (to_jsonb(new) - 'ocr_text') = (to_jsonb(old) - 'ocr_text')
-       and old.ocr_text is null
-       and new.ocr_text is not null
-       and new.ocr_status = 'TEXT_FOUND'
-       and new.decision in ('ADMITTED', 'ADMITTED_FLAGGED')
-       and char_length(new.ocr_text) = new.ocr_text_length
-       and encode(sha256(convert_to(new.ocr_text, 'UTF8')), 'hex') = new.ocr_text_sha256 then
-        return new;
+    if tg_table_name = 'image_screening_results' then
+        if (to_jsonb(new) - 'ocr_text') = (to_jsonb(old) - 'ocr_text')
+           and old.ocr_text is null
+           and new.ocr_text is not null
+           and new.ocr_status = 'TEXT_FOUND'
+           and new.decision in ('ADMITTED', 'ADMITTED_FLAGGED')
+           and char_length(new.ocr_text) = new.ocr_text_length
+           and encode(sha256(convert_to(new.ocr_text, 'UTF8')), 'hex') = new.ocr_text_sha256 then
+            return new;
+        end if;
     end if;
 
     if to_jsonb(new) is distinct from to_jsonb(old) then
@@ -84,7 +85,50 @@ begin
 end;
 $$;
 
+-- Keep component writers private. The service-role entry point below wraps
+-- both calls in one PostgreSQL transaction, so a failed OCR persist rolls
+-- back the screening/document/chunk/image writes as well.
+revoke all on function public.persist_ingestion_screening(jsonb)
+    from public, anon, authenticated, service_role;
 revoke all on function public.persist_admitted_image_ocr(text, integer, text, text, text, integer)
+    from public, anon, authenticated, service_role;
+
+create or replace function public.persist_ingestion_screening_with_admitted_ocr(
+    p_payload jsonb,
+    p_admitted_ocr jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $$
+declare
+    item jsonb;
+begin
+    if p_payload is null or p_admitted_ocr is null
+       or jsonb_typeof(p_admitted_ocr) <> 'array' then
+        raise exception 'Screening payload and admitted OCR array are required';
+    end if;
+
+    perform public.persist_ingestion_screening(p_payload);
+
+    for item in select value from jsonb_array_elements(p_admitted_ocr) loop
+        perform public.persist_admitted_image_ocr(
+            item ->> 'ingestion_run_id',
+            (item ->> 'page_number')::integer,
+            item ->> 'block_id',
+            item ->> 'ocr_text',
+            item ->> 'ocr_text_sha256',
+            (item ->> 'ocr_text_length')::integer
+        );
+    end loop;
+end;
+$$;
+
+revoke all on function public.persist_ingestion_screening_with_admitted_ocr(jsonb, jsonb)
     from public, anon, authenticated;
-grant execute on function public.persist_admitted_image_ocr(text, integer, text, text, text, integer)
+grant execute on function public.persist_ingestion_screening_with_admitted_ocr(jsonb, jsonb)
     to service_role;
+
+comment on function public.persist_ingestion_screening_with_admitted_ocr(jsonb, jsonb) is
+    'Atomically persists ingestion screening, image metadata and admitted image OCR; service_role only.';

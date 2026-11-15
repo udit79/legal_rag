@@ -26,24 +26,41 @@
 - Added regression coverage for admitted and excluded OCR, empty/failing OCR,
   offsets, resolver validation, evidence references, replay and run versioning.
 
-## Migration requirement
+## Review corrections and migration status
 
-The existing row contains only OCR digest and length, so the actual admitted
-text cannot be reconstructed from the current database or included in
-canonical chunks. A nullable text column plus a service-role-only write-once
-RPC is therefore required. Existing rows remain untouched; fresh ingestion
-runs populate the new field. Apply
-`supabase/migrations/202611130001_image_ocr_canonical_text.sql` before enabling
-the application change.
+- The shared mutation trigger uses a nested table-name branch before accessing
+  OCR fields. Its one-time NULL-to-text allowance is limited to
+  `image_screening_results`; the four provenance tables remain append-only.
+- Parser-assigned IDs and reading orders remain unchanged. Generated OCR blocks
+  retain the image's reading order and use a separate `derived_order` to sort
+  after their source image. Chunk provenance retains both values.
+- `persist_screened_document()` calls the service-role-only
+  `persist_ingestion_screening_with_admitted_ocr` RPC. It runs the existing
+  provenance writer and OCR writer in one database transaction. OCR failure
+  rolls the entire write back; exact retries use the same ingestion run ID and
+  payload, while conflicting OCR is rejected. The API proceeds only after this
+  RPC succeeds.
+- A loopback-only opt-in SQL integration test and Python retry/replay/failure
+  tests cover these corrections. The SQL test uses a transaction and rolls back
+  fixtures.
+
+Migration `supabase/migrations/202611130001_image_ocr_canonical_text.sql` is
+pending deployment. It was not applied to live Supabase. Apply it to the target
+environment before enabling this persistence path.
 
 ## Verification
 
-Final focused run: `75 passed` across image screening, image asset resolver,
-Supabase provenance, retrieval smoke validation, hybrid retrieval, and
-evaluation-pipeline tests. Broader related regression run: `264 passed, 1 skipped`.
-Compilation passed for every changed Python module and test module.
-The skipped test is the two-column scanned-PDF ordering case, which requires
-the Tesseract executable and skips when it is unavailable.
-`git diff --check` passed. No live Supabase, storage, Neo4j, corpus, or benchmark
-writes were performed. The migration was not applied to Supabase during this
-code change; apply it before enabling OCR persistence in a deployed environment.
+- Focused: `63 passed, 1 skipped` across image screening, asset resolution,
+  Supabase provenance, chunk contract, and opt-in SQL integration tests.
+- Broader ingestion regression: `220 passed, 2 skipped` across `tests/ingestion`,
+  the ingestion adapters and chunk contract/packing/routing tests.
+- Python compilation passed for all changed modules and tests; `git diff --check`
+  passed.
+- SQL integration was skipped because `psql` and
+  `PHASE4_SQL_TEST_DSN` are not configured. The SQL test requires a disposable
+  loopback database with all migrations applied and rolls back its fixtures.
+- The other broader-suite skip is the scanned two-column PDF test, which needs
+  Tesseract.
+- No live Supabase, storage, Neo4j, corpus, or benchmark writes were performed.
+  Migration `202611130001_image_ocr_canonical_text.sql` remains pending
+  deployment.
