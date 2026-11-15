@@ -11,6 +11,7 @@ from src.graph.graph_write_gate import (
     validate_graph_write_batch,
     claim_evidence_digest,
 )
+from src.graph.assertion_contracts import AssertionContext
 from src.ingestion.chunk_contracts import Chunk, ChunkSource, ChunkedDocument
 from src.security.ingestion_screening.contracts import DocumentContext
 from src.security.ingestion_screening.enums import TrustTier
@@ -121,6 +122,19 @@ def test_graph_write_gate_requires_extraction_identity_and_distinct_verifier():
             document=document, screened=screened,
             extraction_provider="test", extraction_model="extractor-model",
             nodes=same_model_nodes, relationships=(edge,),
+        )
+
+
+def test_applicability_context_is_bound_to_independent_support_attestation():
+    document, screened = _screened("The Court owns the filing application.")
+    node = _nodes(document.chunks[0].text)[0]
+    modified = node.model_copy(update={
+        "assertion_context": AssertionContext(jurisdiction="IN", scope="state audit")
+    })
+    with pytest.raises(ValueError, match="does not match the proposed claim"):
+        GraphWriteBatch(
+            document=document, screened=screened, extraction_provider="test",
+            extraction_model="test-extractor", nodes=(modified,), relationships=(),
         )
 
 

@@ -1,129 +1,128 @@
-# Phase 4 closure and Phase 5 validation status
+# Phase 4 closure and Phase 5 completion evidence
 
-Repository inspected at baseline commit `7d6543f5e6cd6f49173504a42b5ee5e6f0edcf01`.
-Changes described below are in the uncommitted working tree. No production
-Neo4j or Supabase writes were made.
+Inspected baseline: `b15f97b19559c14823257598ecff82019a3ff518`.
+Phase 5 implementation is committed separately; no production graph or
+Supabase writes were made.
 
-## Phase 4 — final verification
+## Phase 4 status
 
-**Verdict: PARTIAL.** No human review or annotation was used as an acceptance
-gate. The Phase 4 OCR/VLM implementation is present, but remote Supabase
-catalog/role/migration checks and the Supabase-native SQL scenarios were not
-executed in this run. Those required checks remain unverified; no migration
-was applied. The previous Milestone 2 pilot report is implementation evidence,
-not proof of the current remote database state. The frozen Phase 3 benchmark
-was not changed.
+**PARTIAL.** Phase 4 OCR/VLM code and its prior pilot are present. Remote
+Supabase migration catalog, role permissions, and Supabase-native SQL scenarios
+were not executed in this Phase 5 run, so those database checks remain
+unverified. No migration was applied. No human annotation or review was used
+as an acceptance gate. The frozen Phase 3 benchmark was not modified.
 
-## Phase 5 — audit and verified slice
+## Phase 5 status
 
-### Reused code
+**COMPLETE for implementation and isolated technical acceptance.** The
+extractor, independent verifier, GraphWriteGate, transactional Neo4j writer,
+cross-document identity/provenance, concurrent creation, assertion
+classifications, replay, conflict handling, and rollback passed local,
+isolated Neo4j, and real-model pilot checks. Semantic writes remain fail-closed
+until the semantic uniqueness constraints exist in their target database.
+They were installed only in the disposable `test-rag` database; production
+schema deployment was not approved or attempted.
 
-- `src/domain/ontology.py` and `src/domain/graph_schema.py` define node
-  properties, relation types, and directed endpoint constraints.
-- `src/ingestion/chunk_contracts.py` and screening contracts provide immutable
-  source chunks and admission decisions.
-- `src/infrastructure/neo4j_client.py` provides async sessions and
-  transactions.
-- `src/graph/graph_write_gate.py` remains the required persistence boundary.
+### Identity and database uniqueness
 
-### Gate and extraction behavior
+The isolated target reported Neo4j **2026.10.2 Enterprise**, Cypher 5/25. Its
+pre-test graph had zero nodes, relationships, or constraints. The explicit
+`src/graph/semantic_schema.py` bootstrap:
 
-`extract_validated_batch()` sends only ADMITTED or ADMITTED_FLAGGED chunks to
-the extractor, and excludes IMAGE_VLM chunks from source-fact extraction.
-Trusted extraction instructions use a system message; source text is passed
-as explicitly untrusted user data. Extractor output cannot set confidence or
-epistemic mode. Exact source quotes and offsets are validated before a
-separately configured verifier checks claims. The gate requires verifier
-attestations bound to claim, context, and quote digests, rejects identical
-extractor/verifier models, and enforces confidence of at least 0.90. Ontology
-properties, relation types, endpoints, and evidence references are validated
-before a batch is accepted. IMAGE_VLM descriptions remain excluded as
-original source facts.
+- Runs a duplicate/missing-ID preflight across semantic node labels and
+  semantic relationship types before DDL.
+- Applies the common `SEMANTIC_ENTITY.id` uniqueness constraint, covering all
+  ontology semantic node types.
+- Applies `KNOWLEDGE_ASSERTION.id` uniqueness.
+- Applies relationship-property uniqueness on each semantic relation type and
+  `ASSERTION_CLASSIFICATION.id` (11 constraints total).
+- Verifies the resulting constraint shapes before returning success.
 
-When model-supplied offsets are wrong, extraction recomputes the range only
-if the exact quote has exactly one occurrence in the source chunk. Missing or
-ambiguous matches are rejected. Persisted offsets therefore come from a
-unique literal source match, not the model's offset estimate.
+Enterprise relationship-property uniqueness was chosen because the deployed
+edition supports it. The writer checks the required constraint set inside its
+write transaction and refuses semantic writes if it is missing. It does not
+silently bootstrap or mutate a production schema. The disposable test database
+now contains the 11 constraints and, after fixture cleanup, zero nodes and zero
+relationships.
 
-The verifier is a second model-based check, not a formal proof of entailment.
-Automated verification can still make semantic errors; this limitation is
-retained explicitly rather than claiming verified legal truth.
+### First-class assertions and conflict handling
 
-### Persistence, identity, and concurrency
+Each admitted entity or relationship claim creates or merges a deterministic
+`KNOWLEDGE_ASSERTION` node. Its identity includes subject, predicate, object,
+jurisdiction, scope, and temporal validity. It retains original evidence
+references, document SHA-256 values, ingestion run IDs, extractor provenance,
+and independent verifier attestations. Replays deduplicate identical evidence
+and attestations; competing values remain separate assertions.
 
-`src/graph/knowledge_writer.py` uses one Neo4j write transaction, deterministic
-semantic node IDs, and deterministic relationship IDs. It checks identity
-properties and endpoints, accumulates unique document/run provenance and
-assertion evidence, and stores confidence and epistemic metadata. Replays do
-not add duplicate evidence. A forced identity conflict in the isolated
-integration test rolls back attempted provenance updates.
+`AssertionClassification` supports `SUPPORTS`, `CONTRADICTS`, `QUALIFIES`,
+`SUPERSEDES`, and `UNRESOLVED`. A deterministic scan records only potential
+conflicts as `UNRESOLVED`; candidates require matching jurisdiction and scope
+and potentially overlapping validity periods. Missing time bounds are treated
+conservatively as possibly overlapping. Classification proposals are stored
+with source references and `NOT_ADJUDICATED` status. No automated component
+overwrites a claim or decides legal truth. Explicit classifications are
+accepted only when both assertion endpoints exist and their document/run/
+evidence references are already present on those assertions.
 
-The current schema has uniqueness constraints for structural DOCUMENT and
-CHUNK IDs, but no semantic-node/relationship uniqueness constraints. MERGE
-alone does not guarantee uniqueness during concurrent creation. The smallest
-safe production hardening is to preflight duplicate IDs, then add constraints
-for semantic node labels and relationship identity using the repository's
-Neo4j version and supported key strategy. No schema change was made because a
-production schema migration was outside the granted scope. Differently worded
-contradictory assertions are retained with provenance, but no contradiction
-adjudicator is implemented.
+### Execution evidence
 
-### Executed verification
-
-- Focused graph suite including isolated writer integration:
-  **28 passed in 2.74s**.
-- Required standalone integration command, with
-  `NEO4J_TEST_DATABASE=test-rag`:
+- Real Neo4j integration command, with `NEO4J_TEST_DATABASE=test-rag`:
   `python -m pytest tests/graph/test_knowledge_writer_integration.py -v`
-  — **1 passed in 2.39s**. It verified transaction lifecycle, initial node
-  and relationship creation, exact replay, cross-document evidence/run
-  enrichment, identity conflict rollback, and cleanup of fixture nodes and
-  relationships in `test-rag`.
-- Real end-to-end pilot on `test-rag`: OpenAI extractor `gpt-6-luna`, separate
-  verifier `gpt-6.1-sol`; 2 byte-distinct source PDFs with identical synthetic
-  text and 2 admitted chunks. One real extractor response was replayed for
-  identical source text; independent verification ran against each PDF's own
-  chunk and hash. Each document had 2 entities and 1 relationship. Initial
-  write, exact replay, and second-document write each returned 2 nodes / 1
-  relationship. Both entities were shared across documents; the stable
-  relationship retained evidence and verifier attestations from both runs.
-  Source quotes, hashes, run IDs, endpoints, and attestations were checked in
-  Neo4j. Random identity preflight and cleanup succeeded; no production data
-  was touched.
-- Full local suite:
-  **594 passed, 8 skipped in 36.55s**.
+  — **1 passed**. The test applied the semantic schema after duplicate
+  preflight, verified duplicate preflight rejection, issued six concurrent
+  writes across two documents sharing entity/relationship identities, checked
+  stable node/relationship/assertion counts,
+  exact replay, cross-document enrichment, all five classification values,
+  unresolved conflict provenance, evidence/attestation integrity, a mid-write
+  identity conflict with transaction rollback, and fixture cleanup.
+- Real-model pilot against `test-rag`: extractor `gpt-6-luna`, verifier
+  `gpt-6.1-sol`; 2 byte-distinct synthetic PDFs and 2 admitted chunks. The
+  extractor proposal was replayed against identical source text, and the
+  independent verifier ran against each source's own document hash/run. First
+  write, exact replay, and second-document write each returned 2 semantic
+  nodes / 1 relationship. The pilot verified shared identity, accumulated
+  evidence and verifier attestations on semantic records and first-class
+  assertions, 11 uniqueness constraints, random-ID preflight, and cleanup.
+- Focused assertion/schema/gate/extraction unit suite: **41 passed**; the
+  opt-in Neo4j integration case is run separately above.
+- Complete local regression suite: **608 passed, 8 skipped in 38.10s**.
 - Python compilation and `git diff --check`: passed.
 
 Full-suite skips (`pytest -rs`):
 
-- 1 schema-bootstrap Neo4j integration: requires `NEO4J_INTEGRATION=1`.
-- 2 hybrid retrieval live tests: isolated Neo4j settings unavailable in the
-  full-suite environment.
-- 1 semantic writer test: isolated database was intentionally unset for the
-  full suite; it was run separately and passed against `test-rag`.
-- 2 live retrieval tests: require `GRAPH_RAG_LIVE_RETRIEVAL=1`.
-- 1 structural writer integration: requires `NEO4J_INTEGRATION=1`.
-- 1 OCR parser test: Tesseract is not installed on the host.
+- 1 graph schema bootstrap integration (`NEO4J_INTEGRATION=1` not set).
+- 2 hybrid retrieval integrations (isolated read-test database not configured
+  in the full-suite run).
+- 1 knowledge writer integration (database intentionally unset in the full
+  suite; it passed separately against `test-rag`).
+- 2 live retrieval evaluations (`GRAPH_RAG_LIVE_RETRIEVAL=1` not set).
+- 1 structural writer integration (`NEO4J_INTEGRATION=1` not set).
+- 1 OCR host test (Tesseract is not installed on the host).
 
-### Phase 5 status
+### Production rollout boundary
 
-**PARTIAL — the isolated extraction/write path is verified, production-grade
-concurrency and contradiction handling are not complete.** Before production
-semantic writes, approve and apply an identity-constraint migration after
-duplicate preflight, then add concurrent-creation integration coverage.
-Consider an explicit contradiction classifier that preserves competing
-assertions rather than merging their meaning. No production writes should be
-enabled until the identity constraint gap is addressed.
+No production uniqueness constraints were installed. Before production
+semantic writes, run the reviewed duplicate preflight against that target,
+approve the schema deployment, and execute `initialize_semantic_schema()` for
+the production database. Until then, `persist_approved_batch()` fails closed.
+The verification does not claim formal semantic proof from the independent
+model; it remains an automated verifier with possible model error.
 
-## Changed files in this working tree
+## Changed files
 
+- `src/graph/assertion_contracts.py` (new assertion/context/classification
+  contracts)
+- `src/graph/semantic_schema.py` (new preflight and explicit constraints)
 - `src/graph/graph_write_gate.py`
-- `src/graph/knowledge_extraction.py`
+- `src/graph/knowledge_writer.py`
+- `tests/graph/test_assertion_contracts.py` (new)
+- `tests/graph/test_semantic_schema.py` (new)
 - `tests/graph/test_graph_write_gate.py`
 - `tests/graph/test_knowledge_extraction.py`
 - `tests/graph/test_knowledge_writer_integration.py`
-- `scripts/phase5_e2e_pilot.py` (new, disposable-database-only pilot)
+- `scripts/phase5_e2e_pilot.py`
 - `docs/phase4_closure_phase5_implementation.md`
 
-No migration, ontology, ingestion pipeline, retrieval ranking, frozen Phase 3
-artifact, or production graph was changed.
+No ontology, ingestion, CPCR, retrieval ranking, frozen Phase 3 artifact,
+Supabase data, or production Neo4j data was changed. No production migration
+was applied.

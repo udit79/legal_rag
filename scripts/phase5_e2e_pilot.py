@@ -32,7 +32,8 @@ from src.graph.knowledge_extraction import (
     StructuredExtractionConfig,
     extract_validated_batch,
 )
-from src.graph.knowledge_writer import persist_approved_batch
+from src.graph.knowledge_writer import _batch_assertions, persist_approved_batch
+from src.graph.semantic_schema import initialize_semantic_schema, preflight_semantic_identities
 from src.ingestion.chunking import ChunkingConfig, chunk_document
 from src.ingestion.parser_contracts import CanonicalDocument
 from src.ingestion.parsers import FastTextParser
@@ -158,6 +159,7 @@ async def run_pilot() -> dict[str, object]:
         database=database,
     )
     node_ids: set[str] = set()
+    assertion_ids: set[str] = set()
     relationship_ids: set[str] = set()
     pilot_token = "".join(secrets.choice(string.ascii_uppercase) for _ in range(10))
     first_name = f"{pilot_token} Authority"
@@ -169,6 +171,8 @@ async def run_pilot() -> dict[str, object]:
         if extractor.model == verifier.model:
             raise ValueError("Extraction and evidence verifier models must differ")
         await db.verify_connection()
+        preflight = await preflight_semantic_identities(db)
+        semantic_schema = await initialize_semantic_schema(db)
 
         with tempfile.TemporaryDirectory(prefix="phase5-pilot-", dir=".") as temp:
             temp_dir = Path(temp)
@@ -178,8 +182,14 @@ async def run_pilot() -> dict[str, object]:
             )
             first_node_ids = {str(node.properties["id"]) for node in first.nodes}
             first_relationship_ids = {str(edge.id) for edge in first.relationships}
-            await _assert_ids_available(db, first_node_ids, first_relationship_ids)
+            first_assertion_ids = {
+                assertion.id for assertion, _, _ in _batch_assertions(first)
+            }
+            await _assert_ids_available(
+                db, first_node_ids | first_assertion_ids, first_relationship_ids
+            )
             node_ids.update(first_node_ids)
+            assertion_ids.update(first_assertion_ids)
             relationship_ids.update(first_relationship_ids)
             first_write = await persist_approved_batch(db, first)
             replay = await persist_approved_batch(db, first)
@@ -191,12 +201,16 @@ async def run_pilot() -> dict[str, object]:
                 raise RuntimeError("Pilot source documents must have distinct hashes")
             second_node_ids = {str(node.properties["id"]) for node in second.nodes}
             second_relationship_ids = {str(edge.id) for edge in second.relationships}
+            second_assertion_ids = {
+                assertion.id for assertion, _, _ in _batch_assertions(second)
+            }
             await _assert_ids_available(
                 db,
-                second_node_ids - node_ids,
+                (second_node_ids | second_assertion_ids) - node_ids - assertion_ids,
                 second_relationship_ids - relationship_ids,
             )
             node_ids.update(second_node_ids)
+            assertion_ids.update(second_assertion_ids)
             relationship_ids.update(second_relationship_ids)
             second_write = await persist_approved_batch(db, second)
             shared_ids = {
@@ -244,6 +258,36 @@ async def run_pilot() -> dict[str, object]:
                         raise RuntimeError("Independent verifier metadata did not persist")
 
                 result = await session.run(
+                    "MATCH (a:KNOWLEDGE_ASSERTION) WHERE a.id IN $ids "
+                    "RETURN a.id AS id, a.source_sha256s AS hashes, "
+                    "a.ingestion_run_ids AS runs, a.evidence_references AS evidence, "
+                    "a.support_attestations AS attestations",
+                    ids=list(assertion_ids),
+                )
+                persisted_assertions = await result.data()
+                if len(persisted_assertions) != len(assertion_ids):
+                    raise RuntimeError("First-class assertion nodes are missing or duplicated")
+                for assertion in persisted_assertions:
+                    if not {source_a, source_b}.issubset(set(assertion["hashes"])):
+                        raise RuntimeError("Assertion source hashes did not accumulate")
+                    if not set(run_ids).issubset(set(assertion["runs"])):
+                        raise RuntimeError("Assertion ingestion runs did not accumulate")
+                    evidence = [json.loads(item) for item in assertion["evidence"]]
+                    if len(evidence) != 2 or any(
+                        item["source_sha256"] not in {source_a, source_b}
+                        or item["ingestion_run_id"] not in run_ids
+                        or item["quote"] not in texts[0]
+                        for item in evidence
+                    ):
+                        raise RuntimeError("Assertion evidence provenance is invalid")
+                    attestations = [json.loads(item) for item in assertion["attestations"]]
+                    if not attestations or any(
+                        item["model"] != verifier.model or not item["supported"]
+                        for item in attestations
+                    ):
+                        raise RuntimeError("Assertion verifier attestations did not persist")
+
+                result = await session.run(
                     "MATCH ()-[r]->() WHERE r.id IN $ids "
                     "RETURN r.id AS id, startNode(r).id AS source_id, "
                     "endNode(r).id AS target_id, r.ingestion_run_ids AS runs, "
@@ -285,6 +329,8 @@ async def run_pilot() -> dict[str, object]:
                 "extraction_model": extractor.model,
                 "verifier_model": verifier.model,
                 "source_documents": 2,
+                "semantic_schema_constraints": semantic_schema["constraints_verified"],
+                "preflight_semantic_nodes": preflight["semantic_nodes_to_label"],
                 "admitted_chunks": len(first.screened.document.chunks) + len(second.screened.document.chunks),
                 "nodes_per_document": [len(first.nodes), len(second.nodes)],
                 "relationships_per_document": [len(first.relationships), len(second.relationships)],
@@ -301,27 +347,29 @@ async def run_pilot() -> dict[str, object]:
             }
     finally:
         try:
-            if node_ids or relationship_ids:
+            fixture_node_ids = node_ids | assertion_ids
+            if fixture_node_ids or relationship_ids:
                 async with db.get_session() as session:
-                    if relationship_ids:
+                    if fixture_node_ids:
                         await (await session.run(
-                            "MATCH ()-[r]->() WHERE r.id IN $ids DELETE r",
-                            ids=list(relationship_ids),
+                            "MATCH (a)-[r]->(b) WHERE a.id IN $ids OR b.id IN $ids DELETE r",
+                            ids=list(fixture_node_ids),
                         )).consume()
-                    if node_ids:
+                    if fixture_node_ids:
                         await (await session.run(
                             "MATCH (n) WHERE n.id IN $ids DETACH DELETE n",
-                            ids=list(node_ids),
+                            ids=list(fixture_node_ids),
                         )).consume()
                     result = await session.run(
                         "MATCH (n) WHERE n.id IN $ids RETURN count(n) AS count",
-                        ids=list(node_ids),
+                        ids=list(fixture_node_ids),
                     )
                     if (await result.single())["count"]:
                         raise RuntimeError("Phase 5 pilot cleanup left graph nodes")
                     result = await session.run(
-                        "MATCH ()-[r]->() WHERE r.id IN $ids RETURN count(r) AS count",
-                        ids=list(relationship_ids),
+                        "MATCH (a)-[r]->(b) WHERE a.id IN $ids OR b.id IN $ids "
+                        "RETURN count(r) AS count",
+                        ids=list(fixture_node_ids),
                     )
                     if (await result.single())["count"]:
                         raise RuntimeError("Phase 5 pilot cleanup left graph relationships")

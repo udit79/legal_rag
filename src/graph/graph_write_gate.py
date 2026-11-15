@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from src.domain.graph_schema import validate_node
 from src.domain.ontology import EpistemicMode, NodeType, RelationType, validate_relation
+from src.graph.assertion_contracts import AssertionContext
 from src.ingestion.chunk_contracts import Chunk, ChunkedDocument
 from src.ingestion.contracts import NonEmptyStr, NonNegativeInt, PositiveInt
 from src.security.ingestion_screening.contracts import ScreenedChunkedDocument
@@ -51,10 +52,13 @@ VISUAL_FACT_EVIDENCE_POLICY = "DENY_IMAGE_VLM_SOURCE_FACTS"
 
 
 def claim_evidence_digest(
-    kind: str, claim: Mapping[str, object], spans: tuple[EvidenceSpan, ...]
+    kind: str, claim: Mapping[str, object], spans: tuple[EvidenceSpan, ...],
+    assertion_context: AssertionContext | None = None,
 ) -> str:
     payload = {"kind": kind, "claim": dict(claim),
                "evidence": [span.model_dump(mode="json") for span in spans]}
+    if assertion_context and any(assertion_context.model_dump().values()):
+        payload["applicability_context"] = assertion_context.model_dump(mode="json")
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
@@ -108,6 +112,7 @@ class GraphNode(BaseModel):
     epistemic_mode: EpistemicMode = EpistemicMode.VERBATIM_EXTRACTION
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, allow_inf_nan=False)
     support_attestation: EvidenceSupportAttestation | None = None
+    assertion_context: AssertionContext = Field(default_factory=AssertionContext)
 
     @model_validator(mode="after")
     def validate_properties(self) -> Self:
@@ -126,6 +131,7 @@ class GraphRelationship(BaseModel):
     epistemic_mode: EpistemicMode = EpistemicMode.VERBATIM_EXTRACTION
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, allow_inf_nan=False)
     support_attestation: EvidenceSupportAttestation | None = None
+    assertion_context: AssertionContext = Field(default_factory=AssertionContext)
 
     @model_validator(mode="after")
     def assign_stable_id(self) -> Self:
@@ -193,7 +199,7 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
         claim = {key: value for key, value in node.properties.items() if key != "id"}
         _validate_support_attestation(
             node.support_attestation,
-            claim_evidence_digest(node_type, claim, node.evidence_spans),
+            claim_evidence_digest(node_type, claim, node.evidence_spans, node.assertion_context),
             node.evidence_spans,
             evidence_context_digest(batch.document, node.evidence_spans),
         )
@@ -230,6 +236,7 @@ def _validate_batch_fields(batch: GraphWriteBatch) -> None:
                 {"source_id": edge.source_id, "relation_type": edge.relation_type.upper(),
                  "target_id": edge.target_id},
                 edge.evidence_spans,
+                edge.assertion_context,
             ),
             edge.evidence_spans,
             evidence_context_digest(batch.document, edge.evidence_spans),

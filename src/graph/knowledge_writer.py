@@ -16,6 +16,16 @@ from src.graph.graph_write_gate import (
     stable_semantic_node_id,
     validate_graph_write_batch,
 )
+from src.graph.assertion_contracts import (
+    AssertionClassification,
+    AssertionClassificationProposal,
+    AssertionRecord,
+    AssertionContext,
+    applicability_overlaps,
+    assertion_identity,
+    classification_identity,
+)
+from src.graph.semantic_schema import semantic_constraints_ready
 
 _TRACER = trace.get_tracer("graph_rag.graph.knowledge_writer")
 
@@ -85,9 +95,9 @@ def _node_query(node_type: str) -> str:
     label = NodeType(node_type.upper()).value
     return f"""
     UNWIND $rows AS row
-    MERGE (n:{label} {{id: row.id}})
+    MERGE (n:SEMANTIC_ENTITY {{id: row.id}})
     ON CREATE SET n += row.properties
-    SET n.confidence = CASE
+    SET n:{label}, n.confidence = CASE
             WHEN n.confidence IS NULL OR row.confidence > n.confidence
                 THEN row.confidence ELSE n.confidence END,
         n.epistemic_mode = row.epistemic_mode,
@@ -101,7 +111,7 @@ def _node_query(node_type: str) -> str:
             CASE WHEN item IN acc THEN acc ELSE acc + [item] END),
         n.extraction_assertions = reduce(acc = coalesce(n.extraction_assertions, []), item IN row.assertions |
             CASE WHEN item IN acc THEN acc ELSE acc + [item] END)
-    RETURN row.id AS id, properties(n) AS properties
+    RETURN row.id AS id, properties(n) AS properties, labels(n) AS labels
     """
 
 
@@ -149,7 +159,226 @@ def _relationship_identity_query(relation_type: str) -> str:
     """
 
 
+_ASSERTION_CANDIDATES_QUERY = """
+MATCH (a:KNOWLEDGE_ASSERTION {subject_id: $subject_id, predicate: $predicate})
+WHERE a.id <> $id AND a.object_value <> $object_value
+RETURN properties(a) AS properties
+"""
+_ASSERTION_WRITE_QUERY = """
+MERGE (a:KNOWLEDGE_ASSERTION {id: $id})
+ON CREATE SET a += $properties
+SET a.source_sha256s = reduce(acc = coalesce(a.source_sha256s, []), item IN $source_sha256s |
+        CASE WHEN item IN acc THEN acc ELSE acc + [item] END),
+    a.ingestion_run_ids = reduce(acc = coalesce(a.ingestion_run_ids, []), item IN $ingestion_run_ids |
+        CASE WHEN item IN acc THEN acc ELSE acc + [item] END),
+    a.evidence_references = reduce(acc = coalesce(a.evidence_references, []), item IN $evidence_references |
+        CASE WHEN item IN acc THEN acc ELSE acc + [item] END),
+    a.support_attestations = reduce(acc = coalesce(a.support_attestations, []), item IN $support_attestations |
+        CASE WHEN item IN acc THEN acc ELSE acc + [item] END)
+RETURN properties(a) AS properties
+"""
+_ASSERTION_CLASSIFICATION_IDENTITY_QUERY = """
+OPTIONAL MATCH (:KNOWLEDGE_ASSERTION)-[r:ASSERTION_CLASSIFICATION {id: $id}]->(:KNOWLEDGE_ASSERTION)
+RETURN collect(CASE WHEN r IS NULL THEN null ELSE {
+    source_id: startNode(r).id, target_id: endNode(r).id, properties: properties(r)
+} END) AS matches
+"""
+_ASSERTION_PAIR_PROVENANCE_QUERY = """
+MATCH (a:KNOWLEDGE_ASSERTION)
+WHERE a.id IN $ids
+RETURN a.id AS id, a.source_sha256s AS source_sha256s,
+       a.ingestion_run_ids AS ingestion_run_ids,
+       a.evidence_references AS evidence_references
+"""
+_ASSERTION_CLASSIFICATION_WRITE_QUERY = """
+MATCH (source:KNOWLEDGE_ASSERTION {id: $source_id}),
+      (target:KNOWLEDGE_ASSERTION {id: $target_id})
+MERGE (source)-[r:ASSERTION_CLASSIFICATION {id: $id}]->(target)
+ON CREATE SET r += $properties
+SET r.source_sha256s = reduce(acc = coalesce(r.source_sha256s, []), item IN $source_sha256s |
+        CASE WHEN item IN acc THEN acc ELSE acc + [item] END),
+    r.ingestion_run_ids = reduce(acc = coalesce(r.ingestion_run_ids, []), item IN $ingestion_run_ids |
+        CASE WHEN item IN acc THEN acc ELSE acc + [item] END),
+    r.evidence_references = reduce(acc = coalesce(r.evidence_references, []), item IN $evidence_references |
+        CASE WHEN item IN acc THEN acc ELSE acc + [item] END)
+RETURN properties(r) AS properties, source.id AS source_id, target.id AS target_id
+"""
+
+
+def _assertion_record(*, subject_id: str, predicate: str, object_value: str,
+                      context: AssertionContext) -> AssertionRecord:
+    return AssertionRecord(
+        id=assertion_identity(
+            subject_id=subject_id, predicate=predicate, object_value=object_value, context=context
+        ),
+        subject_id=subject_id, predicate=predicate,
+        object_value=object_value, context=context,
+    )
+
+
+def _batch_assertions(batch: GraphWriteBatch):
+    for node in batch.nodes:
+        properties = {key: value for key, value in node.properties.items() if key != "id"}
+        yield (
+            _assertion_record(
+                subject_id=str(node.properties["id"]), predicate="ENTITY_PROPERTIES",
+                object_value=_canonical(properties), context=node.assertion_context,
+            ),
+            _evidence_references(batch, node.evidence_spans),
+            _attestation_payload(node.support_attestation),
+        )
+    for edge in batch.relationships:
+        yield (
+            _assertion_record(
+                subject_id=edge.source_id, predicate=edge.relation_type.upper(),
+                object_value=edge.target_id, context=edge.assertion_context,
+            ),
+            _evidence_references(batch, edge.evidence_spans),
+            _attestation_payload(edge.support_attestation),
+        )
+
+
+def _claims_conflict(existing: dict, assertion: AssertionRecord) -> bool:
+    if existing.get("predicate") != assertion.predicate:
+        return False
+    if assertion.predicate == "ENTITY_PROPERTIES":
+        try:
+            old = json.loads(existing["object_value"])
+            new = json.loads(assertion.object_value)
+        except (TypeError, ValueError):
+            return True
+        return any(old[key] != new[key] for key in old.keys() & new.keys())
+    return existing.get("object_value") != assertion.object_value
+
+
+async def _persist_classification_tx(tx, proposal: AssertionClassificationProposal) -> None:
+    provenance_result = await tx.run(
+        _ASSERTION_PAIR_PROVENANCE_QUERY,
+        ids=[proposal.source_assertion_id, proposal.target_assertion_id],
+    )
+    provenance_records = [dict(record) async for record in provenance_result]
+    if len(provenance_records) != 2:
+        raise GraphIdentityConflict("Classification endpoints must be persisted assertions")
+    source_hashes = {
+        item for record in provenance_records for item in record.get("source_sha256s", [])
+    }
+    ingestion_runs = {
+        item for record in provenance_records for item in record.get("ingestion_run_ids", [])
+    }
+    evidence = {
+        item for record in provenance_records for item in record.get("evidence_references", [])
+    }
+    if (not set(proposal.source_sha256s).issubset(source_hashes)
+            or not set(proposal.ingestion_run_ids).issubset(ingestion_runs)
+            or not set(proposal.evidence_references).issubset(evidence)):
+        raise GraphIdentityConflict("Classification provenance must reference evidence on its assertions")
+    identity = classification_identity(proposal)
+    identity_result = await tx.run(_ASSERTION_CLASSIFICATION_IDENTITY_QUERY, id=identity)
+    identity_records = [record async for record in identity_result]
+    if len(identity_records) != 1:
+        raise GraphIdentityConflict("Assertion classification identity lookup was ambiguous")
+    existing = identity_records[0]["matches"]
+    if len(existing) > 1:
+        raise GraphIdentityConflict("Duplicate assertion classification identity already exists")
+    properties = {
+        "id": identity,
+        "classification": proposal.classification.value,
+        "classifier": proposal.classifier,
+        "rationale": proposal.rationale,
+        "adjudication_status": proposal.adjudication_status,
+    }
+    if existing:
+        current = existing[0]
+        if (current["source_id"] != proposal.source_assertion_id
+                or current["target_id"] != proposal.target_assertion_id
+                or any(current["properties"].get(key) != value for key, value in properties.items())):
+            raise GraphIdentityConflict("Assertion classification identity has conflicting content")
+    result = await tx.run(
+        _ASSERTION_CLASSIFICATION_WRITE_QUERY,
+        id=identity, source_id=proposal.source_assertion_id,
+        target_id=proposal.target_assertion_id, properties=properties,
+        source_sha256s=list(proposal.source_sha256s),
+        ingestion_run_ids=list(proposal.ingestion_run_ids),
+        evidence_references=list(proposal.evidence_references),
+    )
+    records = [record async for record in result]
+    if len(records) != 1:
+        raise GraphIdentityConflict("Assertion classification endpoints are missing or ambiguous")
+    stored = dict(records[0]["properties"])
+    if (records[0]["source_id"] != proposal.source_assertion_id
+            or records[0]["target_id"] != proposal.target_assertion_id
+            or any(stored.get(key) != value for key, value in properties.items())):
+        raise GraphIdentityConflict("Assertion classification has conflicting endpoints or content")
+
+
+async def _persist_assertion_tx(tx, batch: GraphWriteBatch, assertion: AssertionRecord,
+                                evidence_references: list[dict[str, Any]], attestation: dict[str, Any]) -> None:
+    context = assertion.context.model_dump(mode="json")
+    rows = await tx.run(
+        _ASSERTION_CANDIDATES_QUERY,
+        id=assertion.id,
+        subject_id=assertion.subject_id,
+        predicate=assertion.predicate,
+        object_value=assertion.object_value,
+    )
+    candidates = [dict(record["properties"]) async for record in rows]
+
+    properties = {
+        "id": assertion.id,
+        "subject_id": assertion.subject_id,
+        "predicate": assertion.predicate,
+        "object_value": assertion.object_value,
+        **context,
+    }
+    result = await tx.run(
+        _ASSERTION_WRITE_QUERY,
+        id=assertion.id,
+        properties=properties,
+        source_sha256s=[batch.document.document_id],
+        ingestion_run_ids=[batch.ingestion_run_id],
+        evidence_references=[_canonical(reference) for reference in evidence_references],
+        support_attestations=[_canonical(attestation)],
+    )
+    records = [record async for record in result]
+    if len(records) != 1:
+        raise GraphIdentityConflict("Knowledge assertion identity resolved to an unexpected record count")
+    stored = dict(records[0]["properties"])
+    if any(stored.get(key) != value for key, value in properties.items()):
+        raise GraphIdentityConflict("Existing knowledge assertion has conflicting immutable content")
+
+    for existing in candidates:
+        if (not applicability_overlaps(existing, assertion.context)
+                or not _claims_conflict(existing, assertion)):
+            continue
+        # UNRESOLVED is a conservative conflict candidate, never a legal verdict.
+        source_id, target_id = sorted((assertion.id, str(existing["id"])))
+        old_evidence = list(existing.get("evidence_references") or [])
+        classification = AssertionClassificationProposal(
+            source_assertion_id=source_id,
+            target_assertion_id=target_id,
+            classification=AssertionClassification.UNRESOLVED,
+            classifier="deterministic_overlap_scan",
+            rationale=("Different asserted values share subject, predicate, jurisdiction, scope, "
+                       "and potentially overlapping validity; no truth adjudication was performed."),
+            source_sha256s=tuple(sorted({
+                *stored.get("source_sha256s", []), *existing.get("source_sha256s", [])
+            })),
+            ingestion_run_ids=tuple(sorted({
+                *stored.get("ingestion_run_ids", []), *existing.get("ingestion_run_ids", [])
+            })),
+            evidence_references=tuple(dict.fromkeys([
+                *old_evidence, *stored.get("evidence_references", [])
+            ])),
+        )
+        await _persist_classification_tx(tx, classification)
+
+
 async def _write_transaction(tx, batch: GraphWriteBatch) -> dict[str, int]:
+    if not await semantic_constraints_ready(tx):
+        raise RuntimeError(
+            "Semantic uniqueness constraints are missing; run the explicit semantic schema "
+            "preflight/bootstrap before graph writes"
+        )
     counts = {"nodes": 0, "relationships": 0}
     for node in batch.nodes:
         props = {
@@ -183,11 +412,12 @@ async def _write_transaction(tx, batch: GraphWriteBatch) -> dict[str, int]:
         if len(records) != 1:
             raise GraphIdentityConflict("Graph node identity resolved to an unexpected record count")
         stored = dict(records[0]["properties"])
+        labels = set(records[0].get("labels", ()))
         try:
             stored_identity = _identity_properties(node.node_type, stored)
         except (KeyError, ValueError):
             stored_identity = {}
-        if stored_identity != identity_properties:
+        if stored_identity != identity_properties or node.node_type.upper() not in labels:
             raise GraphIdentityConflict(f"Existing {node.node_type} identity has conflicting identity properties")
         counts["nodes"] += 1
     for edge in batch.relationships:
@@ -239,7 +469,21 @@ async def _write_transaction(tx, batch: GraphWriteBatch) -> dict[str, int]:
                 or any(stored.get(k) != v for k, v in props.items())):
             raise GraphIdentityConflict("Existing relationship identity has conflicting endpoints or properties")
         counts["relationships"] += 1
+    for assertion, references, attestation in _batch_assertions(batch):
+        await _persist_assertion_tx(tx, batch, assertion, references, attestation)
     return counts
+
+
+async def _persist_assertion_classification_transaction(tx, proposal: AssertionClassificationProposal) -> None:
+    if not await semantic_constraints_ready(tx):
+        raise RuntimeError("Semantic uniqueness constraints must be initialized before classification writes")
+    await _persist_classification_tx(tx, proposal)
+
+
+async def persist_assertion_classification(db_connection, proposal: AssertionClassificationProposal) -> None:
+    """Persist a sourced, explicitly proposed classification without adjudicating it."""
+    async with db_connection.get_session() as session:
+        await session.execute_write(_persist_assertion_classification_transaction, proposal)
 
 
 async def persist_approved_batch(db_connection, batch: GraphWriteBatch) -> dict[str, int]:

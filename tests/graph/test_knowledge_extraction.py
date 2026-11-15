@@ -427,6 +427,7 @@ class FakeResult:
     def __aiter__(self): return self._iterate()
     async def _iterate(self):
         for row in self.records: yield row
+    async def single(self): return self.records[0] if self.records else None
 
 
 class FakeTx:
@@ -436,6 +437,28 @@ class FakeTx:
         self.calls = []
     async def run(self, query, **params):
         self.calls.append((query, params))
+        normalized_query = query.strip()
+        if normalized_query.startswith("SHOW CONSTRAINTS"):
+            from src.graph.semantic_schema import required_semantic_constraint_shapes
+            constraints = []
+            for entity_type, kind, labels, properties in required_semantic_constraint_shapes():
+                constraints.append({
+                    "entity_type": entity_type, "type": kind,
+                    "labels": list(labels), "properties": list(properties),
+                    "name": f"test_{labels[0]}_id_unique",
+                })
+            return FakeResult([{"constraints": constraints}])
+        if "MATCH (a:KNOWLEDGE_ASSERTION {subject_id:" in normalized_query:
+            return FakeResult([])
+        if normalized_query.startswith("MERGE (a:KNOWLEDGE_ASSERTION"):
+            return FakeResult([{"properties": params["properties"]}])
+        if normalized_query.startswith("OPTIONAL MATCH (:KNOWLEDGE_ASSERTION)"):
+            return FakeResult([{"matches": []}])
+        if normalized_query.startswith("MATCH (source:KNOWLEDGE_ASSERTION"):
+            return FakeResult([{
+                "properties": params["properties"],
+                "source_id": params["source_id"], "target_id": params["target_id"],
+            }])
         row = params["rows"][0]
         if "OPTIONAL MATCH ()-[r:" in query:
             return FakeResult([{"id": row["id"], "matches": self.relationship_matches}])
@@ -444,7 +467,12 @@ class FakeTx:
                                 "source_id": row["source_id"], "target_id": row["target_id"]}])
         props = dict(row["properties"])
         if self.conflict: props["name"] = "Conflicting name"
-        return FakeResult([{"id": row["id"], "properties": props}])
+        from src.graph.semantic_schema import SEMANTIC_NODE_LABELS
+        label = next((item for item in SEMANTIC_NODE_LABELS if f"SET n:{item}" in query), "")
+        return FakeResult([{
+            "id": row["id"], "properties": props,
+            "labels": ["SEMANTIC_ENTITY", label],
+        }])
 
 
 class FakeSession:
@@ -464,13 +492,19 @@ def test_writer_uses_gate_and_transaction_and_persists_node_metadata():
     batch = _batch("The Court owns the filing application.")
     db = FakeDb()
     assert asyncio.run(persist_approved_batch(db, batch)) == {"nodes": 2, "relationships": 1}
-    query, params = db.tx.calls[0]
+    query, params = next((query, params) for query, params in db.tx.calls if "rows" in params)
     row = params["rows"][0]
     assert "n.confidence" in query and "n.epistemic_mode" in query
     assert row["confidence"] == .97
     assert row["epistemic_mode"] == "VERBATIM_EXTRACTION"
     assert json.loads(row["assertions"][0])["support_attestation"]["model"] == "independent-test-verifier"
     assert json.loads(row["evidence_references"][0])["source_provenance"]["extraction_method"] == "NATIVE"
+    assertions = [
+        params for query, params in db.tx.calls
+        if query.strip().startswith("MERGE (a:KNOWLEDGE_ASSERTION")
+    ]
+    assert len(assertions) == 3
+    assert all(item["properties"]["id"].startswith("assertion:") for item in assertions)
 
 
 def test_cross_document_entity_id_is_stable_and_writer_appends_provenance():
