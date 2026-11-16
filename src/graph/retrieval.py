@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import asyncio
+from urllib.parse import quote
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -75,6 +76,150 @@ WHERE name IN $names
 RETURN name, type, state
 """
 
+_VISUAL_GRAPH_QUERY = """
+CYPHER 25
+MATCH (hit)
+SEARCH hit IN (
+  FULLTEXT INDEX visual_knowledge_fulltext
+  FOR $search_query
+  LIMIT $candidate_count
+) SCORE AS score
+OPTIONAL MATCH (candidate:VISUAL_ENTITY_CANDIDATE {id: hit.id})-[:OBSERVED_IN]->(candidate_observation)
+WITH hit, score,
+     coalesce(candidate_observation,
+              CASE WHEN hit:VISUAL_OBSERVATION THEN hit ELSE null END) AS observation
+WHERE observation IS NOT NULL
+MATCH (document:DOCUMENT {id: observation.source_sha256})
+WHERE document.current_ingestion_run_id = observation.ingestion_run_id
+  AND document.current_chunking_policy_version = observation.chunking_policy_version
+  AND document.current_ingestion_created_at IS NOT NULL
+OPTIONAL MATCH (candidate_entity:VISUAL_ENTITY_CANDIDATE)-[:OBSERVED_IN]->(observation)
+OPTIONAL MATCH (candidate_entity)-[visual_relation:VISUALLY_RELATED_TO]->(other:VISUAL_ENTITY_CANDIDATE)
+OPTIONAL MATCH (candidate_entity)-[:VISUALLY_REFERENCES]->(semantic:SEMANTIC_ENTITY)
+RETURN DISTINCT observation.id AS observation_id,
+       properties(observation) AS observation,
+       collect(DISTINCT properties(candidate_entity)) AS candidate_entities,
+       collect(DISTINCT CASE WHEN visual_relation IS NULL THEN null ELSE {
+         properties: properties(visual_relation), target: properties(other)
+       } END) AS visual_relationships,
+       collect(DISTINCT properties(semantic)) AS matched_semantic_entities,
+       score
+ORDER BY score DESC, observation_id ASC
+LIMIT $limit
+"""
+
+
+class VisualGraphEvidence(BaseModel):
+    """An unverified visual observation retrieved as image-backed evidence."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    result_id: str
+    document_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    ingestion_run_id: str
+    chunking_policy_version: str
+    page_number: int
+    source_chunk_id: str
+    source_image_block_id: str
+    image_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_coordinates: dict[str, Any]
+    description_text: str
+    description_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    description_excerpt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    vlm_provider: str
+    vlm_model: str
+    prompt_version: str
+    extraction_provider: str
+    extraction_model: str
+    trust_status: Literal["UNVERIFIED_AI_VISUAL_OBSERVATION"]
+    candidate_entities: tuple[dict[str, Any], ...]
+    visual_relationships: tuple[dict[str, Any], ...]
+    matched_semantic_entities: tuple[dict[str, Any], ...]
+    score: float
+    visual_asset: VisualAssetReference
+
+
+class VisualGraphRetriever:
+    """Search indexed visual observations and entity candidates in Neo4j."""
+
+    def __init__(self, db_connection, *, image_asset_resolver: Any | None = None,
+                 candidate_multiplier: int = 5):
+        if type(candidate_multiplier) is not int or candidate_multiplier < 1:
+            raise ValueError("Candidate multiplier must be a positive integer")
+        self._db = db_connection
+        self._resolver = image_asset_resolver
+        self._candidate_multiplier = candidate_multiplier
+        self._index_name = "visual_knowledge_fulltext"
+
+    @property
+    def configuration(self) -> dict[str, Any]:
+        return {"strategy": "visual_graph", "fulltext_index": self._index_name,
+                "candidate_multiplier": self._candidate_multiplier}
+
+    async def search(self, query: str, limit: int = 10) -> list[VisualGraphEvidence]:
+        if not query.strip() or type(limit) is not int or limit < 1:
+            raise ValueError("Search requires a non-empty query and positive limit")
+        await _require_search_indexes_online(
+            self._db, require_fulltext=False,
+            additional_indexes={self._index_name: "FULLTEXT"},
+        )
+        async with self._db.get_session() as session:
+            result = await session.run(
+                _VISUAL_GRAPH_QUERY, search_query=query,
+                candidate_count=limit * self._candidate_multiplier, limit=limit,
+            )
+            rows = await result.data()
+        results: list[VisualGraphEvidence] = []
+        for row in rows:
+            observation = dict(row["observation"])
+            score = float(row["score"])
+            if not math.isfinite(score):
+                raise ValueError("Neo4j returned a non-finite visual graph score")
+            required = (
+                "id", "source_sha256", "ingestion_run_id", "page_number", "source_chunk_id",
+                "source_image_block_id", "image_sha256", "description_text", "description_sha256",
+                "chunking_policy_version",
+                "description_excerpt_sha256", "vlm_provider", "vlm_model", "prompt_version",
+                "extraction_provider", "extraction_model", "trust_status",
+            )
+            if any(observation.get(key) is None for key in required):
+                raise ValueError("Neo4j returned incomplete visual observation provenance")
+            if observation["trust_status"] != "UNVERIFIED_AI_VISUAL_OBSERVATION":
+                raise ValueError("Visual observation trust status is invalid")
+            if self._resolver is None:
+                raise VisualAssetResolutionUnavailable("Visual graph search needs the private asset resolver")
+            assets = await self._resolver.resolve(
+                observation["ingestion_run_id"],
+                ((observation["page_number"], observation["source_image_block_id"]),),
+            )
+            asset = assets.get((observation["page_number"], observation["source_image_block_id"]))
+            if (asset is None or asset.image_sha256 != observation["image_sha256"]
+                    or asset.visual_description_sha256 != observation["description_sha256"]
+                    or asset.visual_description_provider != observation["vlm_provider"]
+                    or asset.visual_description_model != observation["vlm_model"]
+                    or asset.visual_prompt_version != observation["prompt_version"]):
+                raise VisualAssetResolutionUnavailable("Visual observation does not match stored asset provenance")
+            results.append(VisualGraphEvidence(
+                result_id=observation["id"], document_sha256=observation["source_sha256"],
+                ingestion_run_id=observation["ingestion_run_id"],
+                chunking_policy_version=observation["chunking_policy_version"],
+                page_number=observation["page_number"], source_chunk_id=observation["source_chunk_id"],
+                source_image_block_id=observation["source_image_block_id"],
+                image_sha256=observation["image_sha256"],
+                source_coordinates=observation["source_coordinates"],
+                description_text=observation["description_text"],
+                description_sha256=observation["description_sha256"],
+                description_excerpt_sha256=observation["description_excerpt_sha256"],
+                vlm_provider=observation["vlm_provider"], vlm_model=observation["vlm_model"],
+                prompt_version=observation["prompt_version"],
+                extraction_provider=observation["extraction_provider"],
+                extraction_model=observation["extraction_model"], trust_status=observation["trust_status"],
+                candidate_entities=tuple(item for item in row["candidate_entities"] if item),
+                visual_relationships=tuple(item for item in row["visual_relationships"] if item),
+                matched_semantic_entities=tuple(item for item in row["matched_semantic_entities"] if item),
+                score=score, visual_asset=asset.reference,
+            ))
+        return results
+
 
 class SearchIndexUnavailable(RuntimeError):
     pass
@@ -85,12 +230,15 @@ async def _require_search_indexes_online(
     vector_index: str | None = None,
     *,
     require_fulltext: bool = True,
+    additional_indexes: dict[str, str] | None = None,
 ) -> None:
     expected = {}
     if require_fulltext:
         expected["chunk_retrieval_text_fulltext"] = "FULLTEXT"
     if vector_index is not None:
         expected[vector_index] = "VECTOR"
+    if additional_indexes:
+        expected.update(additional_indexes)
     if not expected:
         raise ValueError("At least one Neo4j search index must be required")
     async with db_connection.get_session() as session:
@@ -509,3 +657,186 @@ class HybridRetriever:
                 span.record_exception(exc)
                 span.set_status(Status(StatusCode.ERROR, type(exc).__name__))
                 raise
+
+    async def search_multimodal(
+        self,
+        query: str,
+        visual_graph: VisualGraphRetriever,
+        limit: int = 10,
+        *,
+        visual_weight: float = 1.0,
+    ) -> list["MultimodalSearchResult"]:
+        """Fuse vector, full-text and graph observation rankings using rank only."""
+        if (not query.strip() or type(limit) is not int or limit < 1
+                or not math.isfinite(visual_weight) or visual_weight < 0
+                or self._fusion.vector_weight + self._fusion.fulltext_weight + visual_weight <= 0):
+            raise ValueError("Multimodal search parameters are invalid")
+        await _require_search_indexes_online(self._vector._db, self._vector._index_name)
+        vector_hits, fulltext_hits = await asyncio.gather(
+            self._vector._search(query, limit), self._fulltext._search(query, limit)
+        )
+        graph_hits = (
+            await visual_graph.search(query, limit) if visual_weight > 0 else []
+        )
+        bundles = [_as_evidence_bundle(hit) for hit in (*vector_hits, *fulltext_hits)]
+        bundles = await resolve_visual_asset_references(bundles, self._image_asset_resolver)
+        by_channel_and_id = {
+            (hit.channel, hit.chunk_id): bundle
+            for hit, bundle in zip((*vector_hits, *fulltext_hits), bundles, strict=True)
+        }
+        entries: dict[str, dict[str, Any]] = {}
+
+        def add(key: str, rank: int, channel: str, weight: float, *,
+                text: EvidenceBundle | None = None,
+                image: dict[str, Any] | None = None) -> None:
+            if weight == 0:
+                return
+            entry = entries.setdefault(key, {"score": 0.0, "channels": [], "text": None, "image": None})
+            entry["score"] += weight / (self._fusion.rank_constant + rank)
+            if channel not in entry["channels"]:
+                entry["channels"].append(channel)
+            if text is not None:
+                entry["text"] = text
+            if image is not None:
+                entry["image"] = image
+
+        for channel, hits, weight in (
+            ("vector", vector_hits, self._fusion.vector_weight),
+            ("fulltext", fulltext_hits, self._fusion.fulltext_weight),
+        ):
+            for rank, hit in enumerate(hits, 1):
+                bundle = by_channel_and_id[(channel, hit.chunk_id)]
+                visual_sources = [source for source in bundle.sources
+                                  if source.extraction_method == "IMAGE_VLM"]
+                if not visual_sources:
+                    add(f"chunk:{hit.chunk_id}", rank, channel, weight, text=bundle)
+                    continue
+                for source in visual_sources:
+                    asset = next((item for item in bundle.visual_assets
+                                  if item.page_number == source.page_number
+                                  and item.source_block_id == source.source_image_block_id), None)
+                    if asset is None:
+                        raise VisualAssetResolutionUnavailable("VLM result lacks its original image reference")
+                    key = f"image:{asset.ingestion_run_id}:{asset.page_number}:{asset.source_block_id}"
+                    visual_excerpt = ""
+                    asset_row = None
+                    if (self._image_asset_resolver is not None
+                            and source.source_image_block_id is not None
+                            and source.start_offset is not None and source.end_offset is not None):
+                        resolved = await self._image_asset_resolver.resolve(
+                            bundle.ingestion_run_id,
+                            ((source.page_number, source.source_image_block_id),),
+                        )
+                        asset_row = resolved.get((source.page_number, source.source_image_block_id))
+                        if asset_row is not None and asset_row.visual_description_text is not None:
+                            visual_excerpt = asset_row.visual_description_text[source.start_offset:source.end_offset]
+                    if (asset_row is None or not visual_excerpt
+                            or visual_excerpt not in bundle.raw_text):
+                        raise VisualAssetResolutionUnavailable(
+                            "VLM retrieval text cannot be mapped exactly to its stored visual description"
+                        )
+                    image = {
+                        "visual_asset": asset,
+                        "image_url": (
+                            f"/visual-assets/{quote(asset.ingestion_run_id, safe='')}/"
+                            f"{asset.page_number}/{quote(asset.source_block_id, safe='')}"
+                            f"?image_sha256={asset.image_sha256}"
+                        ),
+                        "document_sha256": bundle.document_sha256,
+                        "ingestion_run_id": bundle.ingestion_run_id,
+                        "page_number": source.page_number,
+                        "source_coordinates": asset_row.source_coordinates.model_dump(mode="json"),
+                        "source_chunk_id": bundle.chunk_id,
+                        "supporting_description": visual_excerpt,
+                        "visual_description_sha256": source.visual_description_sha256,
+                        "visual_model_provider": source.visual_model_provider,
+                        "visual_model": source.visual_model,
+                        "visual_prompt_version": source.visual_prompt_version,
+                    }
+                    # Hide the AI-generated description in presentation output. If
+                    # source and visual material share one chunk, emit source text
+                    # only when it can be separated exactly from the description.
+                    if len(bundle.sources) > len(visual_sources):
+                        residual = bundle.raw_text.replace(visual_excerpt, "", 1).strip()
+                        if residual:
+                            text_sources = tuple(item for item in bundle.sources
+                                                 if item.extraction_method != "IMAGE_VLM")
+                            text_bundle = bundle.model_copy(update={"raw_text": residual,
+                                                                   "sources": text_sources,
+                                                                   "visual_assets": ()})
+                            add(f"chunk:{hit.chunk_id}", rank, channel, weight, text=text_bundle)
+                        add(key, rank, channel, weight, image=image)
+                    else:
+                        add(key, rank, channel, weight, image=image)
+
+        for rank, item in enumerate(graph_hits, 1):
+            key = f"image:{item.ingestion_run_id}:{item.page_number}:{item.source_image_block_id}"
+            add(key, rank, "visual_graph", visual_weight, image={
+                "visual_asset": item.visual_asset,
+                "image_url": (
+                    f"/visual-assets/{quote(item.ingestion_run_id, safe='')}/"
+                    f"{item.page_number}/{quote(item.source_image_block_id, safe='')}"
+                    f"?image_sha256={item.image_sha256}"
+                ),
+                "document_sha256": item.document_sha256,
+                "ingestion_run_id": item.ingestion_run_id,
+                "page_number": item.page_number,
+                "source_coordinates": item.source_coordinates,
+                "source_chunk_id": item.source_chunk_id,
+                "supporting_description": item.description_text,
+                "visual_description_sha256": item.description_sha256,
+                "visual_model_provider": item.vlm_provider,
+                "visual_model": item.vlm_model,
+                "visual_prompt_version": item.prompt_version,
+                "candidate_entities": item.candidate_entities,
+                "visual_relationships": item.visual_relationships,
+                "matched_semantic_entities": item.matched_semantic_entities,
+                "trust_status": item.trust_status,
+            })
+        ordered = sorted(entries.items(), key=lambda pair: (-pair[1]["score"], pair[0]))[:limit]
+        return [MultimodalSearchResult(
+            id=key,
+            result_type="image" if entry["image"] is not None else "text",
+            score=entry["score"],
+            channels=tuple(entry["channels"]),
+            text_evidence=entry["text"],
+            image_evidence=entry["image"],
+        ) for key, entry in ordered]
+
+
+class ImageSearchEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    visual_asset: VisualAssetReference
+    image_url: str
+    source_coordinates: dict[str, Any]
+    document_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    ingestion_run_id: str
+    page_number: int
+    source_chunk_id: str
+    supporting_description: str
+    visual_description_sha256: str
+    visual_model_provider: str
+    visual_model: str
+    visual_prompt_version: str
+    candidate_entities: tuple[dict[str, Any], ...] = ()
+    visual_relationships: tuple[dict[str, Any], ...] = ()
+    matched_semantic_entities: tuple[dict[str, Any], ...] = ()
+    trust_status: str = "UNVERIFIED_AI_VISUAL_OBSERVATION"
+
+
+class MultimodalSearchResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    id: str
+    result_type: Literal["text", "image"]
+    score: float = Field(ge=0, allow_inf_nan=False)
+    channels: tuple[Literal["vector", "fulltext", "visual_graph"], ...]
+    text_evidence: EvidenceBundle | None = None
+    image_evidence: ImageSearchEvidence | None = None
+
+    @model_validator(mode="after")
+    def validate_payload(self):
+        if self.result_type == "text" and (self.text_evidence is None or self.image_evidence is not None):
+            raise ValueError("Text result requires text evidence only")
+        if self.result_type == "image" and (self.image_evidence is None or self.text_evidence is not None):
+            raise ValueError("Image result requires image evidence only")
+        return self

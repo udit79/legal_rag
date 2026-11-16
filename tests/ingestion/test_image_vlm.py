@@ -174,6 +174,7 @@ def test_openai_adapter_requests_strict_visual_description_schema(monkeypatch):
             return None
 
     monkeypatch.setattr(openai, "AsyncOpenAI", FakeOpenAI)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     provider = image_vlm.OpenAIVisualDescriptionProvider("test-vlm")
     response, input_tokens, output_tokens = asyncio.run(
         provider.describe(b"png", max_output_tokens=100)

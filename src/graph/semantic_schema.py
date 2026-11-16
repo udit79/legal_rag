@@ -23,13 +23,20 @@ _NODE_CONSTRAINTS = (
     "FOR (n:SEMANTIC_ENTITY) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT knowledge_assertion_id_unique IF NOT EXISTS "
     "FOR (n:KNOWLEDGE_ASSERTION) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT visual_observation_id_unique IF NOT EXISTS "
+    "FOR (n:VISUAL_OBSERVATION) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT visual_candidate_entity_id_unique IF NOT EXISTS "
+    "FOR (n:VISUAL_ENTITY_CANDIDATE) REQUIRE n.id IS UNIQUE",
 )
+VISUAL_RELATION_TYPES = ("OBSERVED_IN", "VISUALLY_RELATED_TO", "VISUALLY_REFERENCES")
 _RELATIONSHIP_CONSTRAINTS = tuple(
     f"CREATE CONSTRAINT semantic_{relation.casefold()}_id_unique IF NOT EXISTS "
     f"FOR ()-[r:{relation}]-() REQUIRE r.id IS UNIQUE"
-    for relation in ASSERTION_RELATION_TYPES
+    for relation in (*ASSERTION_RELATION_TYPES, *VISUAL_RELATION_TYPES)
 )
 SEMANTIC_CONSTRAINT_STATEMENTS = (*_NODE_CONSTRAINTS, *_RELATIONSHIP_CONSTRAINTS)
+_ALL_IDENTITY_NODE_LABELS = (*SEMANTIC_NODE_LABELS, "VISUAL_OBSERVATION", "VISUAL_ENTITY_CANDIDATE")
+_ALL_IDENTITY_RELATION_TYPES = (*ASSERTION_RELATION_TYPES, *VISUAL_RELATION_TYPES)
 
 DUPLICATE_NODE_IDS_QUERY = """
 MATCH (n)
@@ -110,12 +117,12 @@ async def semantic_constraints_ready(tx) -> bool:
 async def preflight_semantic_identities(db_connection) -> dict[str, int]:
     async with db_connection.get_session() as session:
         nodes = await session.run(
-            DUPLICATE_NODE_IDS_QUERY, labels=list(SEMANTIC_NODE_LABELS)
+            DUPLICATE_NODE_IDS_QUERY, labels=list(_ALL_IDENTITY_NODE_LABELS)
         )
         node_issues = [dict(record) async for record in nodes]
         relationships = await session.run(
             DUPLICATE_RELATIONSHIP_IDS_QUERY,
-            types=list(ASSERTION_RELATION_TYPES),
+            types=list(_ALL_IDENTITY_RELATION_TYPES),
         )
         relationship_issues = [dict(record) async for record in relationships]
         matched = await session.run(

@@ -29,6 +29,13 @@ from neo4j.exceptions import AuthError, DriverError, ServiceUnavailable, Session
 from pydantic import BaseModel
 
 from src.infrastructure.neo4j_client import DbConnect, create_db_connect, run_query
+from src.graph.embeddings import EmbeddingConfig, create_embedding_provider
+from src.graph.retrieval import (
+    FullTextRetriever,
+    HybridRetriever,
+    VectorRetriever,
+    VisualGraphRetriever,
+)
 from src.api.upload_limits import UploadBodyLimitMiddleware
 from src.ingestion.pipeline import (
     ChunkDisposition,
@@ -45,6 +52,8 @@ from src.ingestion.parser_worker.exceptions import (
 from src.ingestion.parser_worker.limits import MAX_PDF_PAGES, MAX_PDF_SIZE_BYTES
 from src.ingestion.parser_worker.runner import ParserWorkerRunner
 from src.ingestion.provenance.supabase_store import SupabaseProvenanceStore
+from src.ingestion.provenance.image_asset_resolver import SupabaseImageAssetResolver
+from src.api.graph import router as graph_router
 from src.ingestion.screening.image_screening import (
     add_admitted_image_ocr,
     attach_image_screening_results,
@@ -105,6 +114,9 @@ async def lifespan(app: FastAPI):
     db_connection = None
     instrumented = False
     app.state.image_vlm_provider = None
+    app.state.embedding_provider = None
+    app.state.multimodal_retriever = None
+    app.state.visual_graph_retriever = None
     try:
         screening_policy = ScreeningPolicy()
         malware_scanner = ClamAVScanner()
@@ -124,6 +136,11 @@ async def lifespan(app: FastAPI):
             if supabase_url and supabase_key
             else None
         )
+        app.state.image_asset_resolver = (
+            SupabaseImageAssetResolver(supabase_url, supabase_key, scaledown_http_client)
+            if supabase_url and supabase_key
+            else None
+        )
         app.state.image_vlm_config = VisualVlmConfig.from_env()
         if app.state.image_vlm_config is not None and app.state.provenance_store is None:
             raise RuntimeError("VLM descriptions require the configured Supabase provenance store")
@@ -139,6 +156,25 @@ async def lifespan(app: FastAPI):
 
         db_connection = create_db_connect()
         app.state.db = db_connection
+        if any(os.environ.get(key) for key in (
+            "EMBEDDING_PROVIDER", "EMBEDDING_MODEL", "EMBEDDING_DIMENSIONS"
+        )):
+            embedding_config = EmbeddingConfig.from_env()
+            app.state.embedding_provider = create_embedding_provider(embedding_config)
+            vector_retriever = VectorRetriever(
+                db_connection, app.state.embedding_provider, embedding_config,
+                image_asset_resolver=app.state.image_asset_resolver,
+            )
+            fulltext_retriever = FullTextRetriever(
+                db_connection, image_asset_resolver=app.state.image_asset_resolver,
+            )
+            app.state.multimodal_retriever = HybridRetriever(
+                vector_retriever, fulltext_retriever,
+                image_asset_resolver=app.state.image_asset_resolver,
+            )
+            app.state.visual_graph_retriever = VisualGraphRetriever(
+                db_connection, image_asset_resolver=app.state.image_asset_resolver,
+            )
 
         yield
     finally:
@@ -148,6 +184,12 @@ async def lifespan(app: FastAPI):
                 await vlm_provider.aclose()
             except Exception:
                 _LOGGER.warning("Failed to close OpenAI visual-description client")
+        embedding_provider = getattr(app.state, "embedding_provider", None)
+        if embedding_provider is not None:
+            try:
+                await embedding_provider.aclose()
+            except Exception:
+                _LOGGER.warning("Failed to close embedding provider client")
         try:
             if instrumented:
                 FastAPIInstrumentor.uninstrument_app(app)
@@ -168,6 +210,7 @@ async def lifespan(app: FastAPI):
                             provider.shutdown()
     print("Application shutting down...")
 app=FastAPI(lifespan=lifespan)
+app.include_router(graph_router)
 MAX_INGESTION_UPLOAD_BYTES = MAX_PDF_SIZE_BYTES
 MULTIPART_REQUEST_OVERHEAD_BYTES = 1024 * 1024
 MAX_BATCH_PDF_FILES = 10

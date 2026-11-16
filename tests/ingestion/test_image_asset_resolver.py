@@ -322,3 +322,97 @@ def test_private_visual_asset_reference_rejects_public_urls():
             object_path="https://storage.example/crop.png",
             file_size_bytes=128,
         )
+
+
+def test_private_download_verifies_asset_sha256_and_keeps_service_key_server_side():
+    png = b"\x89PNG\r\n\x1a\nvisual crop"
+    row = _asset_row()
+    row["image_sha256"] = hashlib.sha256(png).hexdigest()
+    row["image_file_size_bytes"] = len(png)
+    requests = []
+
+    async def handle(request):
+        requests.append(request)
+        if request.url.path.startswith("/rest/v1/image_screening_results"):
+            return httpx.Response(200, json=[row])
+        return httpx.Response(200, content=png)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            resolver = SupabaseImageAssetResolver("https://db.test", "secret-service-key", client)
+            asset = (await resolver.resolve(RUN, ((4, BLOCK),)))[(4, BLOCK)]
+            return await resolver.download_verified(asset.reference)
+
+    contents, media_type = asyncio.run(run())
+    assert contents == png and media_type == "image/png"
+    assert requests[-1].url.path == f"/storage/v1/object/authenticated/ingestion-image-crops/{RUN}/crop.png"
+    assert requests[-1].headers["Authorization"] == "Bearer secret-service-key"
+    assert "secret-service-key" not in contents.decode("latin1")
+
+
+def test_private_download_rejects_hash_mismatch():
+    expected = b"\x89PNG\r\n\x1a\nexpected"
+    row = _asset_row()
+    row["image_sha256"] = hashlib.sha256(expected).hexdigest()
+    row["image_file_size_bytes"] = len(expected)
+
+    async def handle(request):
+        if request.url.path.startswith("/rest/v1/image_screening_results"):
+            return httpx.Response(200, json=[row])
+        return httpx.Response(200, content=b"\x89PNG\r\n\x1a\nforged")
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            resolver = SupabaseImageAssetResolver("https://db.test", "service", client)
+            asset = (await resolver.resolve(RUN, ((4, BLOCK),)))[(4, BLOCK)]
+            await resolver.download_verified(asset.reference)
+
+    with pytest.raises(ImageAssetResolutionError, match="do not match"):
+        asyncio.run(run())
+
+
+def test_private_download_verifies_asset_sha256_and_keeps_service_key_server_side():
+    png = b"\x89PNG\r\n\x1a\nvisual crop"
+    row = _asset_row()
+    row["image_sha256"] = hashlib.sha256(png).hexdigest()
+    row["image_file_size_bytes"] = len(png)
+    requests = []
+
+    async def handle(request):
+        requests.append(request)
+        if request.url.path.startswith("/rest/v1/image_screening_results"):
+            return httpx.Response(200, json=[row])
+        return httpx.Response(200, content=png)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            resolver = SupabaseImageAssetResolver("https://db.test", "secret-service-key", client)
+            asset = (await resolver.resolve(RUN, ((4, BLOCK),)))[(4, BLOCK)]
+            return await resolver.download_verified(asset.reference)
+
+    contents, media_type = asyncio.run(run())
+    assert contents == png and media_type == "image/png"
+    assert requests[-1].url.path == f"/storage/v1/object/authenticated/ingestion-image-crops/{RUN}/crop.png"
+    assert requests[-1].headers["Authorization"] == "Bearer secret-service-key"
+    assert "secret-service-key" not in contents.decode("latin1")
+
+
+def test_private_download_rejects_hash_mismatch():
+    expected = b"\x89PNG\r\n\x1a\nexpected"
+    row = _asset_row()
+    row["image_sha256"] = hashlib.sha256(expected).hexdigest()
+    row["image_file_size_bytes"] = len(expected)
+
+    async def handle(request):
+        if request.url.path.startswith("/rest/v1/image_screening_results"):
+            return httpx.Response(200, json=[row])
+        return httpx.Response(200, content=b"\x89PNG\r\n\x1a\nforged")
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            resolver = SupabaseImageAssetResolver("https://db.test", "service", client)
+            asset = (await resolver.resolve(RUN, ((4, BLOCK),)))[(4, BLOCK)]
+            await resolver.download_verified(asset.reference)
+
+    with pytest.raises(ImageAssetResolutionError, match="do not match"):
+        asyncio.run(run())

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from urllib.parse import quote
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -28,6 +29,9 @@ class ResolvedImageAsset(BaseModel):
     ocr_text_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     ocr_text_length: int = Field(ge=0)
     visual_description_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    visual_description_text: str | None = None
+    visual_description_provider: str | None = None
+    visual_description_model: str | None = None
     visual_prompt_version: str | None = None
     decision: str | None
     source_coordinates: SourceCoordinates
@@ -109,6 +113,8 @@ class SupabaseImageAssetResolver:
             row = rows[0]
             description = row.get("visual_description")
             visual_description_sha256 = None
+            visual_description_provider = None
+            visual_description_model = None
             has_valid_description = False
             if isinstance(description, dict):
                 description_text = description.get("description_text")
@@ -129,12 +135,17 @@ class SupabaseImageAssetResolver:
                     and bool(prompt_version.strip())
                 ):
                     visual_description_sha256 = description_digest
+                    visual_description_text = description_text
+                    visual_description_provider = provider
+                    visual_description_model = model
                     visual_prompt_version = prompt_version
                     has_valid_description = True
                 else:
                     visual_prompt_version = None
+                    visual_description_text = None
             else:
                 visual_prompt_version = None
+                visual_description_text = None
             if (row.get("ingestion_run_id") != ingestion_run_id
                     or row.get("page_number") != page_number
                     or row.get("block_id") != block_id
@@ -164,11 +175,45 @@ class SupabaseImageAssetResolver:
                 ocr_text_sha256=row["ocr_text_sha256"],
                 ocr_text_length=row["ocr_text_length"],
                 visual_description_sha256=visual_description_sha256,
+                visual_description_text=visual_description_text,
+                visual_description_provider=visual_description_provider,
+                visual_description_model=visual_description_model,
                 visual_prompt_version=visual_prompt_version,
                 decision=row["decision"],
                 source_coordinates=SourceCoordinates.model_validate(row["source_coordinates"]),
                 reading_order=row["reading_order"],
             )
         return resolved
+
+    async def download_verified(self, reference: VisualAssetReference) -> tuple[bytes, str]:
+        """Download a private crop only after composite-key and SHA-256 verification."""
+        record = (await self.resolve(
+            reference.ingestion_run_id,
+            ((reference.page_number, reference.source_block_id),),
+        )).get((reference.page_number, reference.source_block_id))
+        if (record is None or record.image_sha256 != reference.image_sha256
+                or record.bucket != reference.bucket or record.object_path != reference.object_path
+                or record.file_size_bytes != reference.file_size_bytes):
+            raise ImageAssetResolutionError("Visual asset reference does not match stored metadata")
+        path = "/".join(quote(part, safe="") for part in record.object_path.split("/"))
+        try:
+            response = await self._client.get(
+                f"{self._url}/storage/v1/object/authenticated/{quote(record.bucket, safe='')}/{path}",
+                headers={"apikey": self._key, "Authorization": f"Bearer {self._key}"},
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise ImageAssetResolutionError("Private image download failed") from exc
+        image_bytes = response.content
+        if (len(image_bytes) != record.file_size_bytes
+                or hashlib.sha256(image_bytes).hexdigest() != record.image_sha256):
+            raise ImageAssetResolutionError("Downloaded image bytes do not match persisted SHA-256")
+        if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+            media_type = "image/png"
+        elif image_bytes.startswith(b"\xff\xd8\xff"):
+            media_type = "image/jpeg"
+        else:
+            raise ImageAssetResolutionError("Stored crop has an unsupported image format")
+        return image_bytes, media_type
 
 

@@ -7,7 +7,7 @@ import json
 import math
 import os
 from dataclasses import dataclass
-from typing import Literal, Protocol, Sequence
+from typing import Literal, Protocol, Sequence, cast
 
 from dotenv import load_dotenv
 from opentelemetry import trace
@@ -45,11 +45,14 @@ class EmbeddingConfig:
             raise ValueError(
                 "Set EMBEDDING_PROVIDER, EMBEDDING_MODEL and EMBEDDING_DIMENSIONS explicitly"
             )
+        provider_value = provider.strip().lower()
+        if provider_value not in {"openai", "voyage"}:
+            raise ValueError("EMBEDDING_PROVIDER must be openai or voyage")
         try:
             dimensions = int(raw_dimensions)
         except ValueError as exc:
             raise ValueError("EMBEDDING_DIMENSIONS must be an integer") from exc
-        return cls(provider.strip().lower(), model.strip(), dimensions)
+        return cls(cast(Literal["openai", "voyage"], provider_value), model.strip(), dimensions)
 
     @property
     def space_id(self) -> str:
@@ -105,6 +108,9 @@ class OpenAIEmbeddingProvider:
             raise ValueError("OpenAI returned an embedding from a different model")
         return [item.embedding for item in response.data]
 
+    async def aclose(self) -> None:
+        await self._client.close()
+
 
 class VoyageEmbeddingProvider:
     provider = "voyage"
@@ -115,9 +121,12 @@ class VoyageEmbeddingProvider:
         api_key = os.getenv("VOYAGE_API_KEY")
         if not api_key:
             raise ValueError("VOYAGE_API_KEY is required for the configured provider")
+        client_factory = getattr(voyageai, "AsyncClient", None)
+        if client_factory is None:
+            raise RuntimeError("The installed voyageai SDK does not provide AsyncClient")
         self.model = model
         self.dimensions = dimensions
-        self._client = voyageai.AsyncClient(api_key=api_key)
+        self._client = client_factory(api_key=api_key)
 
     async def embed(self, texts: Sequence[str], *,
                     input_type: Literal["query", "document"]) -> Sequence[Sequence[float]]:
@@ -126,6 +135,13 @@ class VoyageEmbeddingProvider:
             output_dimension=self.dimensions,
         )
         return response.embeddings
+
+    async def aclose(self) -> None:
+        close = getattr(self._client, "close", None)
+        if close is not None:
+            result = close()
+            if hasattr(result, "__await__"):
+                await result
 
 
 async def embed_texts(
