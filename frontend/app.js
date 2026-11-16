@@ -28,6 +28,9 @@ const App = {
   ragConfidenceMin: parseFloat(localStorage.getItem('reg_rag_conf') || '0.70'),
   isChatExpanded: false,
   chatHistory: [],
+  chatConversationId: localStorage.getItem('legal_chat_conversation_id') || null,
+  chatDocuments: [],
+  pendingSkillHint: null,
   // REAL DOCUMENT MILESTONES (Normalized across document sections)
   // Entities: Cumulative entity count discovered across 8 contract sections (4 to 28)
   entitiesDataNormalized: [0.22, 0.38, 0.35, 0.54, 0.68, 0.82, 0.78, 0.96],
@@ -861,20 +864,166 @@ async function submitCurrentQuestion() {
   appendAiThinking();
 
   try {
-    const response = await fetch(apiUrl('/graph/search'), {
+    const scope = [...(document.getElementById('chatDocumentScope')?.selectedOptions || [])]
+      .map(option => option.value).filter(Boolean);
+    const response = await fetch(apiUrl('/chat'), {
       method: 'POST',
       headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, limit: 10 })
+      body: JSON.stringify({
+        conversation_id: App.chatConversationId,
+        message: query,
+        doc_ids: scope,
+        skill_hint: App.pendingSkillHint
+      })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(apiErrorMessage(payload, response.status));
-    const results = Array.isArray(payload.results) ? payload.results : [];
-    App.chatHistory.push({ role: 'assistant', content: `Retrieved ${results.length} evidence items`, timestamp: new Date().toISOString() });
-    appendRetrievalResults(results);
+    App.chatConversationId = payload.conversation_id;
+    localStorage.setItem('legal_chat_conversation_id', App.chatConversationId);
+    App.pendingSkillHint = null;
+    App.chatHistory.push({ role: 'assistant', content: payload.answer, citations: payload.citations || [], timestamp: new Date().toISOString() });
+    appendChatAnswer(payload.answer, payload.citations || []);
+    await loadConversationList();
   } catch (error) {
+    App.pendingSkillHint = null;
     removeThinkingBubble();
-    appendRetrievalError(error.message || 'Graph retrieval is unavailable.');
+    appendRetrievalError(error.message || 'Document chat is unavailable.');
   }
+}
+
+function startChatSkill(skill) {
+  App.pendingSkillHint = skill;
+  const input = document.getElementById('userQuestionInput');
+  if (input) input.value = skill === 'summarization'
+    ? 'Summarize the selected documents and cite the key pages.'
+    : 'Analyze risks, compliance gaps, obligations, and controls in the selected documents. Cite the evidence.';
+  submitCurrentQuestion();
+}
+
+function startNewConversation() {
+  App.chatConversationId = null;
+  App.pendingSkillHint = null;
+  localStorage.removeItem('legal_chat_conversation_id');
+  App.chatHistory = [];
+  const selector = document.getElementById('chatConversationList');
+  if (selector) selector.value = '';
+  const feed = document.getElementById('aiMessageFeed');
+  if (feed) {
+    feed.replaceChildren();
+    const row = document.createElement('div');
+    row.className = 'chat-msg-row ai-msg-row';
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-ai-bubble';
+    bubble.textContent = 'New conversation. Choose fully ingested documents and ask a question.';
+    row.appendChild(bubble);
+    feed.appendChild(row);
+  }
+}
+
+async function loadChatWorkspace() {
+  if (App.apiMode === 'standalone') return;
+  try {
+    const response = await fetch(apiUrl('/chat/documents'), { headers: apiHeaders() });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(apiErrorMessage(payload, response.status));
+    App.chatDocuments = payload.documents || [];
+    const scope = document.getElementById('chatDocumentScope');
+    if (scope) {
+      scope.replaceChildren();
+      for (const item of App.chatDocuments) {
+        const option = document.createElement('option');
+        option.value = item.doc_id;
+        option.textContent = `${item.document_name} · ${item.source_page_count} pages`;
+        option.selected = true;
+        scope.appendChild(option);
+      }
+    }
+    await loadConversationList();
+    if (App.chatConversationId) await openConversation(App.chatConversationId);
+  } catch (error) {
+    console.info('Document chat controls are unavailable:', error.message);
+  }
+}
+
+async function loadConversationList() {
+  const response = await fetch(apiUrl('/chat/conversations'), { headers: apiHeaders() });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(apiErrorMessage(payload, response.status));
+  const selector = document.getElementById('chatConversationList');
+  if (!selector) return;
+  selector.replaceChildren(new Option('New conversation', ''));
+  for (const item of payload.conversations || []) {
+    selector.add(new Option(item.title, item.conversation_id));
+  }
+  selector.value = App.chatConversationId || '';
+}
+
+async function openSelectedConversation() {
+  const selector = document.getElementById('chatConversationList');
+  if (!selector?.value) return startNewConversation();
+  await openConversation(selector.value);
+}
+
+async function openConversation(conversationId) {
+  const response = await fetch(apiUrl(`/chat/conversations/${encodeURIComponent(conversationId)}`), { headers: apiHeaders() });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(apiErrorMessage(payload, response.status));
+  App.chatConversationId = payload.conversation_id;
+  localStorage.setItem('legal_chat_conversation_id', payload.conversation_id);
+  const scope = document.getElementById('chatDocumentScope');
+  const selected = new Set(payload.doc_ids || []);
+  if (scope) [...scope.options].forEach(option => { option.selected = selected.has(option.value); });
+  App.chatHistory = payload.messages || [];
+  const feed = document.getElementById('aiMessageFeed');
+  if (feed) feed.replaceChildren();
+  for (const message of App.chatHistory) {
+    if (message.role === 'user') appendUserMessage(message.content);
+    else appendChatAnswer(message.content, message.citations || []);
+  }
+}
+
+function appendChatAnswer(answer, citations) {
+  removeThinkingBubble();
+  const feed = document.getElementById('aiMessageFeed');
+  if (!feed) return;
+  const row = document.createElement('div');
+  row.className = 'chat-msg-row ai-msg-row';
+  const avatar = document.createElement('div');
+  avatar.className = 'ai-avatar-square-sm';
+  avatar.textContent = 'RG';
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-ai-bubble retrieval-response';
+  const response = document.createElement('div');
+  response.className = 'chat-msg-body';
+  response.textContent = answer || '';
+  bubble.appendChild(response);
+  for (const citation of citations) {
+    const item = document.createElement('article');
+    item.className = 'retrieval-result-card';
+    const pages = Array.isArray(citation.page_numbers) ? citation.page_numbers.join(', ') : '';
+    makeEvidenceText(item, `[${citation.id}] ${citation.document_name || shortHash(citation.doc_id)} · page${pages.includes(',') ? 's' : ''} ${pages || 'unknown'}`, 'retrieval-meta');
+    if (citation.unverified_visual_observation) {
+      makeEvidenceText(item, 'Unverified AI-generated visual observation; not original-source text.', 'retrieval-description');
+    }
+    const assets = citation.source_reference?.visual_assets ||
+      (citation.source_reference?.asset ? [citation.source_reference.asset] : []);
+    for (const asset of assets) {
+      if (asset?.ingestion_run_id && asset?.source_block_id && asset?.image_sha256) {
+        const image = document.createElement('img');
+        image.className = 'retrieval-image';
+        image.loading = 'lazy';
+        image.referrerPolicy = 'no-referrer';
+        image.alt = `Source image page ${asset.page_number}`;
+        image.src = apiUrl(`/visual-assets/${encodeURIComponent(asset.ingestion_run_id)}/${asset.page_number}/${encodeURIComponent(asset.source_block_id)}?image_sha256=${encodeURIComponent(asset.image_sha256)}`);
+        item.appendChild(image);
+      }
+    }
+    if (citation.snippet) makeEvidenceText(item, citation.snippet, 'retrieval-quote');
+    bubble.appendChild(item);
+  }
+  row.append(avatar, bubble);
+  feed.appendChild(row);
+  feed.scrollTop = feed.scrollHeight;
 }
 
 function removeThinkingBubble() {
@@ -1188,17 +1337,7 @@ function initChatResize() {
 }
 
 function clearChatMessages() {
-  const feed = document.getElementById('aiMessageFeed');
-  if (!feed) return;
-  feed.replaceChildren();
-  const row = document.createElement('div');
-  row.className = 'chat-msg-row ai-msg-row';
-  const bubble = document.createElement('div');
-  bubble.className = 'chat-ai-bubble';
-  bubble.textContent = 'Ask a question to retrieve source evidence from the connected graph.';
-  row.appendChild(bubble);
-  feed.appendChild(row);
-  App.chatHistory = [];
+  startNewConversation();
 }
 
 function exportChatConversation() {
@@ -1406,4 +1545,5 @@ window.addEventListener('load', () => {
   returnToUploadFirstScreen();
   initChatResize();
   testApiConnection(false);
+  loadChatWorkspace();
 });

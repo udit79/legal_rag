@@ -372,17 +372,17 @@
             <span class="action-item-chevron">›</span>
           </button>
 
-          <button id="actionPillBtn2" class="action-row-item" title="No summary API is connected yet" disabled aria-disabled="true">
+          <button id="actionPillBtn2" class="action-row-item" onclick="startChatSkill('summarization')" title="Summarize in the current conversation">
             <span class="action-item-num">02.</span>
             <span class="action-item-icon">📄</span>
-            <span class="action-item-label">Summary API unavailable</span>
+            <span class="action-item-label">Summarize in chat</span>
             <span class="action-item-chevron">›</span>
           </button>
 
-          <button id="actionPillBtn3" class="action-row-item" title="No risk-analysis API is connected yet" disabled aria-disabled="true">
+          <button id="actionPillBtn3" class="action-row-item" onclick="startChatSkill('risk_analysis')" title="Analyze risks in the current conversation">
             <span class="action-item-num">03.</span>
             <span class="action-item-icon">⚠️</span>
-            <span class="action-item-label">Risk API unavailable</span>
+            <span class="action-item-label">Analyze risks in chat</span>
             <span class="action-item-chevron">›</span>
           </button>
         </div>
@@ -434,13 +434,20 @@
           </button>
         </div>
 
+        <div class="chat-scope-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;">
+          <button id="newChatButton" class="glass-pill-btn" type="button" onclick="startNewConversation()">＋ New chat</button>
+          <select id="chatConversationList" class="settings-select" aria-label="Open conversation" onchange="openSelectedConversation()" style="min-width:190px;max-width:300px;"><option value="">New conversation</option></select>
+          <select id="chatDocumentScope" class="settings-select" aria-label="Conversation document scope" multiple size="1" title="Select fully ingested documents; leave empty for all available documents" style="min-width:220px;max-width:360px;"></select>
+          <button class="glass-pill-btn" type="button" onclick="startChatSkill('summarization')">Summarize</button>
+          <button class="glass-pill-btn" type="button" onclick="startChatSkill('risk_analysis')">Risk analysis</button>
+        </div>
         <div class="qa-ai-bubble-card" style="padding: 14px 16px; flex-direction: column; align-items: stretch; position: relative;">
           <div id="aiMessageFeed" class="chat-messages-container">
             <div class="chat-msg-row ai-msg-row">
               <div class="ai-avatar-square-sm">AI</div>
               <div class="chat-ai-bubble">
                 <div class="chat-ai-body">
-                  Ask a question to retrieve text evidence and matching source images from the connected Neo4j corpus. This interface shows retrieved evidence; it does not generate answers.
+                  Ask about admitted PDF evidence. Risk analysis and summarization continue in this same conversation.
                 </div>
               </div>
             </div>

@@ -55,6 +55,7 @@ from src.ingestion.parser_worker.runner import ParserWorkerRunner
 from src.ingestion.provenance.supabase_store import SupabaseProvenanceStore
 from src.ingestion.provenance.image_asset_resolver import SupabaseImageAssetResolver
 from src.api.graph import router as graph_router
+from src.api.chat import router as chat_router
 from src.ingestion.screening.image_screening import (
     add_admitted_image_ocr,
     attach_image_screening_results,
@@ -118,6 +119,13 @@ async def lifespan(app: FastAPI):
     app.state.embedding_provider = None
     app.state.multimodal_retriever = None
     app.state.visual_graph_retriever = None
+    app.state.chat_runtime = None
+    app.state.chat_persistence = None
+    app.state.chat_corpus_reader = None
+    app.state.chat_openai_client = None
+    embedding_config = None
+    vector_retriever = None
+    fulltext_retriever = None
     try:
         screening_policy = ScreeningPolicy()
         malware_scanner = ClamAVScanner()
@@ -142,6 +150,11 @@ async def lifespan(app: FastAPI):
             if supabase_url and supabase_key
             else None
         )
+        if supabase_url is not None and supabase_key is not None:
+            from src.graph.corpus_reader import SupabaseCorpusReader
+            app.state.chat_corpus_reader = SupabaseCorpusReader(
+                supabase_url, supabase_key, scaledown_http_client
+            )
         app.state.image_vlm_config = VisualVlmConfig.from_env()
         if app.state.image_vlm_config is not None and app.state.provenance_store is None:
             raise RuntimeError("VLM descriptions require the configured Supabase provenance store")
@@ -177,8 +190,52 @@ async def lifespan(app: FastAPI):
                 db_connection, image_asset_resolver=app.state.image_asset_resolver,
             )
 
+        chat_database_url = os.environ.get("SUPABASE_DATABASE_URL")
+        if chat_database_url:
+            if app.state.embedding_provider is None or app.state.multimodal_retriever is None:
+                raise RuntimeError(
+                    "Document chat needs explicit embedding settings and configured Neo4j retrieval"
+                )
+            if app.state.chat_corpus_reader is None:
+                raise RuntimeError(
+                    "Document chat needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to verify ingestion status"
+                )
+            from openai import AsyncOpenAI
+            from src.graph.chat_persistence import open_chat_persistence
+            from src.graph.document_chat import ChatRuntime
+
+            if not os.environ.get("OPENAI_API_KEY"):
+                raise RuntimeError("OPENAI_API_KEY is required for the Document Q&A model")
+            app.state.chat_persistence = await open_chat_persistence(chat_database_url)
+            app.state.chat_openai_client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+            app.state.chat_runtime = ChatRuntime(
+                persistence=app.state.chat_persistence,
+                openai_client=app.state.chat_openai_client,
+                scaledown_http_client=scaledown_http_client,
+                retriever=app.state.multimodal_retriever,
+                fulltext=fulltext_retriever,
+                vector=vector_retriever,
+                visual_graph=app.state.visual_graph_retriever,
+                db=db_connection,
+                document_reader=app.state.chat_corpus_reader,
+                image_asset_resolver=app.state.image_asset_resolver,
+                embedding_config=embedding_config,
+            )
+
         yield
     finally:
+        chat_client = getattr(app.state, "chat_openai_client", None)
+        if chat_client is not None:
+            try:
+                await chat_client.close()
+            except Exception:
+                _LOGGER.warning("Failed to close Document Q&A model client")
+        chat_persistence = getattr(app.state, "chat_persistence", None)
+        if chat_persistence is not None:
+            try:
+                await chat_persistence.close()
+            except Exception:
+                _LOGGER.warning("Failed to close chat persistence connections")
         vlm_provider = getattr(app.state, "image_vlm_provider", None)
         if vlm_provider is not None:
             try:
@@ -224,10 +281,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=frontend_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 app.include_router(graph_router)
+app.include_router(chat_router)
 MAX_INGESTION_UPLOAD_BYTES = MAX_PDF_SIZE_BYTES
 MULTIPART_REQUEST_OVERHEAD_BYTES = 1024 * 1024
 MAX_BATCH_PDF_FILES = 10

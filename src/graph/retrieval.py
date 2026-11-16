@@ -34,6 +34,7 @@ WHERE c.is_current = true
   AND c.chunking_policy_version = d.current_chunking_policy_version
   AND d.current_ingestion_run_id IS NOT NULL
   AND d.current_ingestion_created_at IS NOT NULL
+  AND ($source_sha256s IS NULL OR d.source_sha256 IN $source_sha256s)
 RETURN DISTINCT c.id AS chunk_id, d.source_sha256 AS document_sha256,
        c.raw_text AS raw_text, c.sources_json AS sources_json,
        d.current_ingestion_run_id AS ingestion_run_id, score
@@ -63,6 +64,7 @@ WHERE c.is_current = true
   AND c.embedding_model = $embedding_model
   AND c.embedding_dimensions = $embedding_dimensions
   AND c.embedding_space_id = $embedding_space_id
+  AND ($source_sha256s IS NULL OR d.source_sha256 IN $source_sha256s)
 RETURN DISTINCT c.id AS chunk_id, d.source_sha256 AS document_sha256,
        c.raw_text AS raw_text, c.sources_json AS sources_json,
        d.current_ingestion_run_id AS ingestion_run_id, score
@@ -117,6 +119,7 @@ MATCH (document:DOCUMENT {id: observation.source_sha256})
 WHERE document.current_ingestion_run_id = observation.ingestion_run_id
   AND document.current_chunking_policy_version = observation.chunking_policy_version
   AND document.current_ingestion_created_at IS NOT NULL
+  AND ($source_sha256s IS NULL OR document.source_sha256 IN $source_sha256s)
 OPTIONAL MATCH (candidate_entity:VISUAL_ENTITY_CANDIDATE)-[:OBSERVED_IN]->(observation)
 OPTIONAL MATCH (candidate_entity)-[visual_relation:VISUALLY_RELATED_TO]-(other:VISUAL_ENTITY_CANDIDATE)
 OPTIONAL MATCH (candidate_entity)-[:VISUALLY_REFERENCES]->(semantic:SEMANTIC_ENTITY)
@@ -190,7 +193,8 @@ class VisualGraphRetriever:
             "candidate_multiplier": self._candidate_multiplier,
         }
 
-    async def search(self, query: str, limit: int = 10) -> list[VisualGraphEvidence]:
+    async def search(self, query: str, limit: int = 10,
+                     *, source_sha256s: tuple[str, ...] | None = None) -> list[VisualGraphEvidence]:
         if not query.strip() or type(limit) is not int or limit < 1:
             raise ValueError("Search requires a non-empty query and positive limit")
         await _require_search_indexes_online(
@@ -205,6 +209,7 @@ class VisualGraphRetriever:
             result = await session.run(
                 _VISUAL_GRAPH_QUERY, search_query=query,
                 candidate_count=limit * self._candidate_multiplier, limit=limit,
+                source_sha256s=list(source_sha256s) if source_sha256s is not None else None,
             )
             rows = await result.data()
         results: list[VisualGraphEvidence] = []
@@ -484,14 +489,16 @@ class FullTextRetriever:
             "abstention_score_policy": "fulltext_relevance_score",
         }
 
-    async def search(self, query: str, limit: int = 10) -> list[EvidenceBundle]:
+    async def search(self, query: str, limit: int = 10,
+                     *, source_sha256s: tuple[str, ...] | None = None) -> list[EvidenceBundle]:
         if not query.strip() or type(limit) is not int or limit < 1:
             raise ValueError("Search requires a non-empty query and positive limit")
         await _require_search_indexes_online(self._db)
-        evidence = [_as_evidence_bundle(hit) for hit in await self._search(query, limit)]
+        evidence = [_as_evidence_bundle(hit) for hit in await self._search(query, limit, source_sha256s)]
         return await resolve_visual_asset_references(evidence, self._image_asset_resolver)
 
-    async def _search(self, query: str, limit: int) -> list[RetrievalHit]:
+    async def _search(self, query: str, limit: int,
+                      source_sha256s: tuple[str, ...] | None = None) -> list[RetrievalHit]:
         with _TRACER.start_as_current_span("graph.neo4j.fulltext_retrieval") as span:
             span.set_attribute("db.system", "neo4j")
             span.set_attribute("graph.retrieval.channel", "fulltext")
@@ -502,6 +509,7 @@ class FullTextRetriever:
                         _FULLTEXT_QUERY, search_query=query,
                         candidate_count=limit * self._candidate_multiplier,
                         limit=limit,
+                        source_sha256s=list(source_sha256s) if source_sha256s is not None else None,
                     )
                     hits = [_hit(row, "fulltext") for row in await result.data()]
                 span.set_attribute("graph.retrieval.result_count", len(hits))
@@ -543,16 +551,18 @@ class VectorRetriever:
             "abstention_score_policy": "vector_relevance_score",
         }
 
-    async def search(self, query: str, limit: int = 10) -> list[EvidenceBundle]:
+    async def search(self, query: str, limit: int = 10,
+                     *, source_sha256s: tuple[str, ...] | None = None) -> list[EvidenceBundle]:
         if not query.strip() or type(limit) is not int or limit < 1:
             raise ValueError("Search requires a non-empty query and positive limit")
         await _require_search_indexes_online(
             self._db, self._index_name, require_fulltext=False
         )
-        evidence = [_as_evidence_bundle(hit) for hit in await self._search(query, limit)]
+        evidence = [_as_evidence_bundle(hit) for hit in await self._search(query, limit, source_sha256s)]
         return await resolve_visual_asset_references(evidence, self._image_asset_resolver)
 
-    async def _search(self, query: str, limit: int) -> list[RetrievalHit]:
+    async def _search(self, query: str, limit: int,
+                      source_sha256s: tuple[str, ...] | None = None) -> list[RetrievalHit]:
         with _TRACER.start_as_current_span("graph.neo4j.vector_retrieval") as span:
             span.set_attribute("db.system", "neo4j")
             span.set_attribute("graph.retrieval.channel", "vector")
@@ -572,6 +582,7 @@ class VectorRetriever:
                         embedding_dimensions=self._config.dimensions,
                         embedding_space_id=self._config.space_id,
                         limit=limit,
+                        source_sha256s=list(source_sha256s) if source_sha256s is not None else None,
                     )
                     hits = [_hit(row, "vector") for row in await result.data()]
                 span.set_attribute("graph.retrieval.result_count", len(hits))
@@ -683,7 +694,8 @@ class HybridRetriever:
             "abstention_score_policy": "rrf_score",
         }
 
-    async def search(self, query: str, limit: int = 10) -> list[EvidenceBundle]:
+    async def search(self, query: str, limit: int = 10,
+                     *, source_sha256s: tuple[str, ...] | None = None) -> list[EvidenceBundle]:
         if not query.strip() or type(limit) is not int or limit < 1:
             raise ValueError("Search requires a non-empty query and positive limit")
         with _TRACER.start_as_current_span("graph.retrieval.hybrid") as span:
@@ -693,8 +705,8 @@ class HybridRetriever:
                     self._vector._db, self._vector._index_name
                 )
                 vector_hits, fulltext_hits = await asyncio.gather(
-                    self._vector._search(query, limit),
-                    self._fulltext._search(query, limit),
+                    self._vector._search(query, limit, source_sha256s),
+                    self._fulltext._search(query, limit, source_sha256s),
                 )
                 evidence = reciprocal_rank_fusion(vector_hits, fulltext_hits,
                                                   self._fusion, limit)
@@ -712,6 +724,7 @@ class HybridRetriever:
         limit: int = 10,
         *,
         visual_weight: float = 1.0,
+        source_sha256s: tuple[str, ...] | None = None,
     ) -> list["MultimodalSearchResult"]:
         """Fuse vector, full-text and graph observation rankings using rank only."""
         if (not query.strip() or type(limit) is not int or limit < 1
@@ -720,10 +733,10 @@ class HybridRetriever:
             raise ValueError("Multimodal search parameters are invalid")
         await _require_search_indexes_online(self._vector._db, self._vector._index_name)
         vector_hits, fulltext_hits = await asyncio.gather(
-            self._vector._search(query, limit), self._fulltext._search(query, limit)
+            self._vector._search(query, limit, source_sha256s), self._fulltext._search(query, limit, source_sha256s)
         )
         graph_hits = (
-            await visual_graph.search(query, limit) if visual_weight > 0 else []
+            await visual_graph.search(query, limit, source_sha256s=source_sha256s) if visual_weight > 0 else []
         )
         bundles = [_as_evidence_bundle(hit) for hit in (*vector_hits, *fulltext_hits)]
         bundles = await resolve_visual_asset_references(bundles, self._image_asset_resolver)
