@@ -13,6 +13,8 @@ SCHEMA_STATEMENTS = (
     "CREATE INDEX chunk_source_order IF NOT EXISTS FOR (c:CHUNK) ON (c.source_sha256, c.chunk_index)",
     "CREATE FULLTEXT INDEX chunk_retrieval_text_fulltext IF NOT EXISTS FOR (c:CHUNK) ON EACH [c.retrieval_text]",
     "CREATE FULLTEXT INDEX visual_knowledge_fulltext IF NOT EXISTS FOR (n:VISUAL_OBSERVATION|VISUAL_ENTITY_CANDIDATE) ON EACH [n.description_text, n.name]",
+    "CREATE FULLTEXT INDEX visual_relationship_fulltext IF NOT EXISTS FOR ()-[r:VISUALLY_RELATED_TO]-() ON EACH [r.observed_relation, r.evidence_quote]",
+    "CREATE FULLTEXT INDEX visual_semantic_entity_fulltext IF NOT EXISTS FOR (n:SEMANTIC_ENTITY) ON EACH [n.name, n.title, n.description, n.requirement_text]",
 )
 
 

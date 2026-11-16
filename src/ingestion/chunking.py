@@ -28,7 +28,7 @@ from src.ingestion.parser_contracts import (
 )
 from src.ingestion.retrieval_text import normalize_retrieval_chunks
 
-CHUNKING_ALGORITHM_VERSION = "1.6.0"
+CHUNKING_ALGORITHM_VERSION = "1.6.1"
 PROVISION_MARKER_PATTERNS = (
     r"(?m)^[ \t]*(?!20[0-9]{2}\.[ \t])"
     r"(?:[0-9]+(?:\.[0-9]+)+|[0-9]+[.)])(?=[ \t]|$)",

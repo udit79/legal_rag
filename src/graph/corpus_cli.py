@@ -12,8 +12,20 @@ from opentelemetry.trace import Status, StatusCode
 
 from src.graph.corpus_reader import SupabaseCorpusReader
 from src.graph.schema_bootstrap import initialize_graph_schema
+from src.graph.semantic_schema import initialize_semantic_schema
 from src.graph.structural_writer import StructuralGraphWriter, validate_structural_document
-from src.infrastructure.neo4j_client import create_db_connect
+from src.graph.visual_graph_ingestion import (
+    VisualGraphRunStatus,
+    has_admitted_visual_evidence,
+    process_visual_graph_documents,
+    visual_graph_failure_statuses,
+)
+from src.graph.visual_observations import (
+    OpenAIVisualGraphExtractor,
+    VisualGraphExtractionConfig,
+)
+from src.infrastructure.neo4j_client import DbConnect, create_db_connect
+from src.ingestion.provenance.image_asset_resolver import SupabaseImageAssetResolver
 from src.observability.telemetry import configure_telemetry
 
 _TRACER = trace.get_tracer("graph_rag.graph.corpus_cli")
@@ -63,7 +75,19 @@ async def _execute(args) -> int:
     if not args.apply:
         print("No Neo4j writes performed; pass --apply to persist.")
         return 0
-    db = create_db_connect()
+    if args.visual_knowledge:
+        test_database = os.getenv("NEO4J_TEST_DATABASE", "").strip()
+        if (not test_database or "test" not in test_database.casefold()
+                or test_database.casefold() in {"neo4j", "rag"}):
+            raise RuntimeError(
+                "--visual-knowledge requires NEO4J_TEST_DATABASE to name an isolated test database"
+            )
+        db = DbConnect(
+            url=os.getenv("NEO4J_URI"), username=os.getenv("NEO4J_USERNAME"),
+            password=os.getenv("NEO4J_PASSWORD"), database=test_database,
+        )
+    else:
+        db = create_db_connect()
     try:
         await db.verify_connection()
         await initialize_graph_schema(db)
@@ -83,6 +107,48 @@ async def _execute(args) -> int:
                     span.set_status(Status(StatusCode.ERROR, type(exc).__name__))
                     raise
             print("idempotency_counts:", json.dumps(rerun, sort_keys=True))
+        if args.visual_knowledge:
+            if not any(has_admitted_visual_evidence(document) for document in documents):
+                statuses = tuple(VisualGraphRunStatus(
+                    document.source_sha256, document.ingestion_run_id, "NO_VISUAL_EVIDENCE"
+                ) for document in documents)
+            else:
+                try:
+                    await initialize_semantic_schema(db)
+                except Exception as exc:
+                    statuses = visual_graph_failure_statuses(
+                        tuple(documents), "VISUAL_GRAPH_SCHEMA_NOT_READY", exc
+                    )
+                    print("visual_graph_statuses:", json.dumps(
+                        [item.as_dict() for item in statuses], sort_keys=True
+                    ))
+                    print("Structural ingestion remains persisted; provision schema and rerun --visual-knowledge to retry.")
+                    return 2
+                try:
+                    extractor = OpenAIVisualGraphExtractor(VisualGraphExtractionConfig.from_env())
+                except Exception as exc:
+                    statuses = visual_graph_failure_statuses(
+                        tuple(documents), "VISUAL_GRAPH_CONFIGURATION_FAILED", exc
+                    )
+                    print("visual_graph_statuses:", json.dumps(
+                        [item.as_dict() for item in statuses], sort_keys=True
+                    ))
+                    print("Structural ingestion remains persisted; configure visual extraction and rerun --visual-knowledge to retry.")
+                    return 2
+                try:
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        resolver = SupabaseImageAssetResolver(url, key, client)
+                        statuses = await process_visual_graph_documents(
+                            db, tuple(documents), extractor, resolver
+                        )
+                finally:
+                    await extractor.aclose()
+            print("visual_graph_statuses:", json.dumps(
+                [item.as_dict() for item in statuses], sort_keys=True
+            ))
+            if any(item.status == "FAILED" for item in statuses):
+                print("Structural ingestion remains persisted; rerun --visual-knowledge to retry failed runs.")
+                return 2
     finally:
         await db.close()
     return 0
@@ -95,9 +161,13 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="Write validated corpus to Neo4j")
     parser.add_argument("--verify-idempotency", action="store_true",
                         help="After --apply, repeat write and require zero created records")
+    parser.add_argument("--visual-knowledge", action="store_true",
+                        help="After successful structural writes, extract and persist unverified visual candidates")
     args = parser.parse_args()
     if args.verify_idempotency and not args.apply:
         parser.error("--verify-idempotency requires --apply")
+    if args.visual_knowledge and not args.apply:
+        parser.error("--visual-knowledge requires --apply")
     provider, tracer = configure_telemetry()
     try:
         with tracer.start_as_current_span("graph.corpus.import") as span:

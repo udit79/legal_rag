@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import json
 
 import pytest
 
@@ -172,5 +173,7 @@ def test_mocked_end_to_end_vlm_chunk_to_image_linked_graph_observation():
     persisted = next(iter(db.session.tx.observations.values()))
     assert persisted["image_sha256"] == "b" * 64
     assert persisted["trust_status"] == "UNVERIFIED_AI_VISUAL_OBSERVATION"
+    assert json.loads(persisted["source_coordinates_json"])["x0"] == 1.0
+    assert "source_coordinates" not in persisted
     assert observations[0].source_coordinates["x0"] == 1.0
 

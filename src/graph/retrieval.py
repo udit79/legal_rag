@@ -78,29 +78,57 @@ RETURN name, type, state
 
 _VISUAL_GRAPH_QUERY = """
 CYPHER 25
-MATCH (hit)
-SEARCH hit IN (
-  FULLTEXT INDEX visual_knowledge_fulltext
-  FOR $search_query
-  LIMIT $candidate_count
-) SCORE AS score
-OPTIONAL MATCH (candidate:VISUAL_ENTITY_CANDIDATE {id: hit.id})-[:OBSERVED_IN]->(candidate_observation)
-WITH hit, score,
-     coalesce(candidate_observation,
-              CASE WHEN hit:VISUAL_OBSERVATION THEN hit ELSE null END) AS observation
-WHERE observation IS NOT NULL
+CALL {
+  MATCH (hit)
+  SEARCH hit IN (
+    FULLTEXT INDEX visual_knowledge_fulltext
+    FOR $search_query
+    LIMIT $candidate_count
+  ) SCORE AS score
+  OPTIONAL MATCH (candidate:VISUAL_ENTITY_CANDIDATE {id: hit.id})-[:OBSERVED_IN]->(candidate_observation)
+  WITH score, coalesce(candidate_observation,
+                       CASE WHEN hit:VISUAL_OBSERVATION THEN hit ELSE null END) AS observation
+  WHERE observation IS NOT NULL
+  RETURN observation, score
+  UNION ALL
+  MATCH ()-[relationship:VISUALLY_RELATED_TO]-()
+  SEARCH relationship IN (
+    FULLTEXT INDEX visual_relationship_fulltext
+    FOR $search_query
+    LIMIT $candidate_count
+  ) SCORE AS score
+  MATCH (candidate:VISUAL_ENTITY_CANDIDATE)
+  WHERE candidate = startNode(relationship) OR candidate = endNode(relationship)
+  MATCH (candidate)-[:OBSERVED_IN]->(observation)
+  RETURN observation, score
+  UNION ALL
+  MATCH (semantic:SEMANTIC_ENTITY)
+  SEARCH semantic IN (
+    FULLTEXT INDEX visual_semantic_entity_fulltext
+    FOR $search_query
+    LIMIT $candidate_count
+  ) SCORE AS score
+  MATCH (candidate:VISUAL_ENTITY_CANDIDATE)-[:VISUALLY_REFERENCES]->(semantic)
+  MATCH (candidate)-[:OBSERVED_IN]->(observation)
+  RETURN observation, score
+}
+WITH observation, max(score) AS score
 MATCH (document:DOCUMENT {id: observation.source_sha256})
 WHERE document.current_ingestion_run_id = observation.ingestion_run_id
   AND document.current_chunking_policy_version = observation.chunking_policy_version
   AND document.current_ingestion_created_at IS NOT NULL
 OPTIONAL MATCH (candidate_entity:VISUAL_ENTITY_CANDIDATE)-[:OBSERVED_IN]->(observation)
-OPTIONAL MATCH (candidate_entity)-[visual_relation:VISUALLY_RELATED_TO]->(other:VISUAL_ENTITY_CANDIDATE)
+OPTIONAL MATCH (candidate_entity)-[visual_relation:VISUALLY_RELATED_TO]-(other:VISUAL_ENTITY_CANDIDATE)
 OPTIONAL MATCH (candidate_entity)-[:VISUALLY_REFERENCES]->(semantic:SEMANTIC_ENTITY)
 RETURN DISTINCT observation.id AS observation_id,
        properties(observation) AS observation,
        collect(DISTINCT properties(candidate_entity)) AS candidate_entities,
        collect(DISTINCT CASE WHEN visual_relation IS NULL THEN null ELSE {
-         properties: properties(visual_relation), target: properties(other)
+         properties: properties(visual_relation),
+         source: properties(startNode(visual_relation)),
+         target: properties(endNode(visual_relation)),
+         matched_endpoint: properties(candidate_entity),
+         other_endpoint: properties(other)
        } END) AS visual_relationships,
        collect(DISTINCT properties(semantic)) AS matched_semantic_entities,
        score
@@ -152,15 +180,26 @@ class VisualGraphRetriever:
 
     @property
     def configuration(self) -> dict[str, Any]:
-        return {"strategy": "visual_graph", "fulltext_index": self._index_name,
-                "candidate_multiplier": self._candidate_multiplier}
+        return {
+            "strategy": "visual_graph",
+            "fulltext_indexes": (
+                self._index_name,
+                "visual_relationship_fulltext",
+                "visual_semantic_entity_fulltext",
+            ),
+            "candidate_multiplier": self._candidate_multiplier,
+        }
 
     async def search(self, query: str, limit: int = 10) -> list[VisualGraphEvidence]:
         if not query.strip() or type(limit) is not int or limit < 1:
             raise ValueError("Search requires a non-empty query and positive limit")
         await _require_search_indexes_online(
             self._db, require_fulltext=False,
-            additional_indexes={self._index_name: "FULLTEXT"},
+            additional_indexes={
+                self._index_name: "FULLTEXT",
+                "visual_relationship_fulltext": "FULLTEXT",
+                "visual_semantic_entity_fulltext": "FULLTEXT",
+            },
         )
         async with self._db.get_session() as session:
             result = await session.run(
@@ -185,6 +224,14 @@ class VisualGraphRetriever:
                 raise ValueError("Neo4j returned incomplete visual observation provenance")
             if observation["trust_status"] != "UNVERIFIED_AI_VISUAL_OBSERVATION":
                 raise ValueError("Visual observation trust status is invalid")
+            coordinates = observation.get("source_coordinates")
+            if coordinates is None:
+                try:
+                    coordinates = json.loads(observation["source_coordinates_json"])
+                except (KeyError, TypeError, ValueError) as exc:
+                    raise ValueError("Neo4j returned invalid visual source coordinates") from exc
+            if not isinstance(coordinates, dict):
+                raise ValueError("Neo4j returned invalid visual source coordinates")
             if self._resolver is None:
                 raise VisualAssetResolutionUnavailable("Visual graph search needs the private asset resolver")
             assets = await self._resolver.resolve(
@@ -205,7 +252,7 @@ class VisualGraphRetriever:
                 page_number=observation["page_number"], source_chunk_id=observation["source_chunk_id"],
                 source_image_block_id=observation["source_image_block_id"],
                 image_sha256=observation["image_sha256"],
-                source_coordinates=observation["source_coordinates"],
+                source_coordinates=coordinates,
                 description_text=observation["description_text"],
                 description_sha256=observation["description_sha256"],
                 description_excerpt_sha256=observation["description_excerpt_sha256"],

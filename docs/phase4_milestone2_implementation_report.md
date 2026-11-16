@@ -9,12 +9,11 @@
   `OPENAI_API_KEY` is used without logging it.
 - Only `NO_TEXT` images or images with admitted short OCR are candidates.
   Failed, rejected and quarantined OCR is excluded before the VLM adapter is
-  called. Responses are schema-validated and run through the existing text
-  screening policy before canonicalization. Per-document image, image-byte,
-  timeout, retry, output-token and total-token limits are configurable. The
-  default per-document token budget is 20,000 after the pilot exposed a
-  14,288-input-token high-resolution crop that could not pass the former
-  6,000-token ceiling.
+  called. Every eligible crop under the configured byte limit is attempted;
+  calls have per-image timeout/retry bounds and a 600-token output cap. Each
+  response is schema-validated and run through the existing text screening
+  policy before canonicalization. There is no silent document-wide image,
+  timeout or token cutoff.
 - `CanonicalBlock` and `ChunkSource` support the distinct `IMAGE_VLM` method.
   Generated text has a deterministic page-scoped identity and retains source
   page, image block identity, exact text offsets, text digest, provider, model
@@ -27,9 +26,10 @@
   text/vector retrieval continues to search the chunk retrieval text; VLM
   evidence resolves the existing private asset through the same
   `(ingestion_run_id, page_number, block_id)` key after the Neo4j session closes.
-- Chunking policy semantic version advances to `1.6.0`, so structural import
-  treats chunks containing derived visual descriptions as a new immutable
-  policy snapshot rather than conflicting with old same-index chunk identities.
+- Chunking policy semantic version is now `1.6.1`: expanding VLM eligibility can
+  add derived blocks and change chunk contents. Structural import therefore
+  stores the expanded output as a new immutable policy snapshot instead of
+  conflicting with existing `1.6.0` chunk identities.
 - New migration
   `supabase/migrations/202611150001_image_vlm_descriptions.sql` adds a
   write-once JSON description to `image_screening_results` and a service-role
@@ -39,6 +39,24 @@
   successfully persisted through the wrapper.
 
 ## Validation results
+
+### VLM eligibility expansion follow-up (2026-11-16)
+
+- A fresh run of all six PDFs under chunk policy `1.6.1` succeeded. Supabase
+  contains 32 image records with 29 distinct image SHA-256 values. Based on the
+  deterministic OCR/size policy, 26 unique images were eligible; 25 have an
+  admitted description persisted. Three unique images were ineligible.
+- The one eligible image without a persisted description is
+  `9118a034b77848c9999d83ae2e02b0cd`, page 14, `page-14-block-0`. Failure or
+  screening-rejection status is not persisted, so its outcome cannot be
+  distinguished from the stored row alone.
+- The 28 persisted description records identify OpenAI `gpt-4o-mini`; recorded
+  output usage ranged from 34 to 165 tokens, within the 600-token request cap.
+- Structural import into the existing `test-rag` graph was attempted but
+  rejected by the writer because the same DOCUMENT identity already has a
+  different canonical document digest. No Neo4j records were changed by that
+  failed transaction; graph refresh requires an isolated fresh test database.
+- Focused tests: 40 passed. Python compilation and `git diff --check` passed.
 
 Historical focused command from the earlier psql-launcher run (the launcher has
 since been removed and this command is not a current runnable command):

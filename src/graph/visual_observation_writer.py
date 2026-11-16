@@ -13,6 +13,15 @@ class VisualObservationConflict(RuntimeError):
     pass
 
 
+def _observation_properties(observation: VisualObservation) -> dict[str, Any]:
+    properties = observation.model_dump(mode="json", exclude={"candidates", "relationships"})
+    coordinates = properties.pop("source_coordinates")
+    properties["source_coordinates_json"] = json.dumps(
+        coordinates, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+    return properties
+
+
 _EXISTING_QUERY = """
 UNWIND $ids AS id
 OPTIONAL MATCH (n {id: id})
@@ -127,7 +136,7 @@ async def _write_visual_observation_transaction(tx, observation: VisualObservati
         raise RuntimeError("Visual observation uniqueness constraints are missing; initialize graph schema first")
     semantic_result = await tx.run(_SEMANTIC_QUERY)
     semantic_nodes = [dict(row) async for row in semantic_result]
-    observation_properties = observation.model_dump(mode="json", exclude={"candidates", "relationships"})
+    observation_properties = _observation_properties(observation)
     ids = [observation.id, *(candidate.id for candidate in observation.candidates)]
     identity_result = await tx.run(_EXISTING_QUERY, ids=ids)
     identity_rows = [dict(row) async for row in identity_result]

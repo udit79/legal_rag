@@ -69,9 +69,19 @@ adapter.
 Eligibility is deterministic: process only an image whose OCR result is
 `NO_TEXT`, or whose OCR text was admitted and is shorter than the configured
 minimum. `FAILED`, `QUARANTINED`, `REJECTED` and nonempty OCR rejected by policy
-are excluded. Per-document image, crop-size, request-timeout, retry and token
-limits bound work. Each structured result passes the same `screen_extracted_text`
-policy before it becomes canonical text.
+are excluded. Every eligible crop within the configured size limit is sent for a
+description; there is no per-document image-count, wall-clock or aggregate-token
+cutoff. Each call is bounded by its timeout, retry count, crop byte limit and
+600-token response limit. Configure these with `IMAGE_VLM_TIMEOUT_SECONDS`
+(default 25), `IMAGE_VLM_MAX_RETRIES` (2), `IMAGE_VLM_MAX_IMAGE_BYTES`
+(4,000,000), `IMAGE_VLM_MAX_OUTPUT_TOKENS` (600), and
+`IMAGE_VLM_MIN_OCR_CHARACTERS` (80). Each structured result passes the same
+`screen_extracted_text` policy before it becomes canonical text.
+
+The OpenAI visual-description prompt and strict JSON schema are defined in
+`src/ingestion/screening/image_vlm.py`, in
+`OpenAIVisualDescriptionProvider.describe()` and
+`_VISUAL_DESCRIPTION_RESPONSE_SCHEMA` respectively.
 
 An admitted description is a separate `IMAGE_VLM` canonical block. Its stable
 page-scoped ID hashes the page, original image block, image digest, provider,

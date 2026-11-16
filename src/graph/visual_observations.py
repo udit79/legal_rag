@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import math
 import os
 from dataclasses import dataclass
@@ -18,6 +19,8 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from src.graph.corpus_reader import CorpusChunk, CorpusDocument
 from src.ingestion.chunk_contracts import ChunkSource
 from src.ingestion.provenance.image_asset_resolver import ResolvedImageAsset
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class VisualEntityProposal(BaseModel):
@@ -208,6 +211,26 @@ class OpenAIVisualGraphExtractor:
                 content = response.choices[0].message.content
                 if not isinstance(content, str) or not content:
                     raise ValueError("Visual graph extractor returned empty output")
+                payload = json.loads(content)
+                if isinstance(payload, dict) and isinstance(payload.get("entities"), list) \
+                        and isinstance(payload.get("relationships"), list):
+                    refs = {item.get("ref") for item in payload["entities"]
+                            if isinstance(item, dict) and isinstance(item.get("ref"), str)}
+                    relationships = [
+                        item for item in payload["relationships"]
+                        if isinstance(item, dict)
+                        and item.get("source_ref") in refs
+                        and item.get("target_ref") in refs
+                        and item.get("source_ref") != item.get("target_ref")
+                    ]
+                    dropped = len(payload["relationships"]) - len(relationships)
+                    if dropped:
+                        _LOGGER.warning(
+                            "Dropped %d visual relationships with invalid candidate references",
+                            dropped,
+                        )
+                    payload["relationships"] = relationships
+                    return VisualGraphProposal.model_validate(payload)
                 return VisualGraphProposal.model_validate_json(content)
             except Exception as exc:
                 from openai import APIConnectionError, APITimeoutError, InternalServerError, RateLimitError
@@ -228,41 +251,97 @@ async def extract_document_visual_observations(
     asset_resolver: VisualAssetResolver,
 ) -> tuple[VisualObservation, ...]:
     """Extract candidates only from admitted, source-backed IMAGE_VLM chunks."""
-    visual_chunks: list[tuple[CorpusChunk, ChunkSource]] = []
+    visual_sources: list[tuple[CorpusChunk, ChunkSource]] = []
     for chunk in document.chunks:
         if (not chunk.admission_decisions
                 or any(decision not in {"ADMITTED", "ADMITTED_FLAGGED"}
                        for decision in chunk.admission_decisions)):
             continue
         typed_sources = tuple(ChunkSource.model_validate(source) for source in chunk.sources)
-        visual_sources = tuple(source for source in typed_sources
-                               if source.extraction_method == "IMAGE_VLM")
-        if not visual_sources:
-            continue
-        # A merged CPCR chunk may contain multiple source blocks. We only process
-        # a VLM source when its raw chunk text maps unambiguously to that one block.
-        if len(visual_sources) != 1 or len(typed_sources) != 1:
-            continue
-        visual_chunks.append((chunk, visual_sources[0]))
+        visual_sources.extend(
+            (chunk, source) for source in typed_sources
+            if source.extraction_method == "IMAGE_VLM"
+        )
     keys = tuple(sorted({(source.page_number, source.source_image_block_id)
-                         for _, source in visual_chunks
+                         for _, source in visual_sources
                          if source.source_image_block_id is not None}))
-    if visual_chunks and len(keys) == 0:
+    if visual_sources and len(keys) == 0:
         raise ValueError("VLM chunks have no original image identity")
     assets = await asset_resolver.resolve(document.ingestion_run_id, keys) if keys else {}
     results: list[VisualObservation] = []
-    for chunk, source in visual_chunks:
+    for chunk, source in visual_sources:
         assert source.source_image_block_id is not None
         asset = assets.get((source.page_number, source.source_image_block_id))
         if asset is None:
             raise ValueError("VLM chunk has no matching private source image asset")
-        proposal = await extractor.extract(chunk.raw_text)
+        description_text = _visual_source_text(document, chunk, source, asset)
+        proposal = await extractor.extract(description_text)
+        supported_entities = tuple(
+            item for item in proposal.entities
+            if _has_unique_exact_quote(description_text, item.evidence_quote)
+        )
+        supported_refs = {item.ref for item in supported_entities}
+        supported_relationships = tuple(
+            item for item in proposal.relationships
+            if item.source_ref in supported_refs and item.target_ref in supported_refs
+            and _has_unique_exact_quote(description_text, item.evidence_quote)
+        )
+        dropped = (len(proposal.entities) - len(supported_entities)
+                   + len(proposal.relationships) - len(supported_relationships))
+        if dropped:
+            _LOGGER.warning(
+                "Dropped %d visual graph candidates without unique exact description quotes",
+                dropped,
+                extra={"ingestion_run_id": document.ingestion_run_id,
+                       "source_sha256": document.source_sha256,
+                       "page_number": source.page_number,
+                       "source_image_block_id": source.source_image_block_id},
+            )
+        proposal = VisualGraphProposal(
+            entities=supported_entities, relationships=supported_relationships
+        )
+        source_chunk = CorpusChunk(
+            id=chunk.id, chunk_index=chunk.chunk_index,
+            original_chunk_indices=chunk.original_chunk_indices,
+            raw_text=description_text, retrieval_text=description_text,
+            chunk_sha256=hashlib.sha256(description_text.encode("utf-8")).hexdigest(),
+            sources=[source.model_dump(mode="json", exclude_defaults=True)],
+            retrieval_text_edits=[], admission_decisions=chunk.admission_decisions,
+        )
         results.append(build_visual_observation(
-            document=document, chunk=chunk, source=source, asset=asset,
+            document=document, chunk=source_chunk, source=source, asset=asset,
             proposal=proposal, extraction_provider=extractor.provider,
             extraction_model=extractor.model,
         ))
     return tuple(results)
+
+
+def _visual_source_text(
+    document: CorpusDocument,
+    chunk: CorpusChunk,
+    source: ChunkSource,
+    asset: ResolvedImageAsset,
+) -> str:
+    """Validate and isolate one source span without confusing adjacent chunk text."""
+    description = asset.visual_description_text
+    if (description is None or source.start_offset is None or source.end_offset is None
+            or source.source_text_length != len(description)
+            or hashlib.sha256(description.encode("utf-8")).hexdigest()
+            != source.visual_description_sha256
+            or source.page_number != asset.page_number
+            or source.source_image_block_id != asset.block_id
+            or source.source_image_sha256 != asset.image_sha256
+            or source.visual_description_sha256 != asset.visual_description_sha256
+            or source.visual_prompt_version != asset.visual_prompt_version
+            or source.visual_model_provider != asset.visual_description_provider
+            or source.visual_model != asset.visual_description_model
+            or document.ingestion_run_id != asset.ingestion_run_id):
+        raise ValueError("VLM source span does not match stored image description provenance")
+    text = description[source.start_offset:source.end_offset]
+    if not text:
+        raise ValueError("VLM source span is empty")
+    _unique_quote_range(chunk.raw_text, text)
+    return text
 
 
 def _unique_quote_range(description: str, quote: str) -> tuple[int, int]:
@@ -272,6 +351,14 @@ def _unique_quote_range(description: str, quote: str) -> tuple[int, int]:
     if description.find(quote, start + 1) >= 0:
         raise ValueError("Visual candidate evidence must identify one unambiguous source span")
     return start, start + len(quote)
+
+
+def _has_unique_exact_quote(description: str, quote: str) -> bool:
+    try:
+        _unique_quote_range(description, quote)
+    except ValueError:
+        return False
+    return True
 
 
 def _id(prefix: str, parts: list[str]) -> str:
@@ -306,7 +393,8 @@ def build_visual_observation(
         raise ValueError("Visual relationship quote is not present in its source chunk")
     observation_id = _id("visual-observation:", [
         document.source_sha256, document.ingestion_run_id, str(asset.page_number),
-        asset.block_id, chunk.id, source.visual_description_sha256 or "",
+        asset.block_id, chunk.id, str(source.start_offset), str(source.end_offset),
+        source.visual_description_sha256 or "",
     ])
     entity_ids = {
         item.ref: _id("visual-entity:", [observation_id, item.category, " ".join(item.name.casefold().split())])

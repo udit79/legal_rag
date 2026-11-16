@@ -8,13 +8,30 @@ VLM descriptions, and stores admitted descriptions against the existing
 keeps `IMAGE_VLM` text searchable through the normal retrieval text embedding
 space. No image embeddings or CLIP model are used.
 
-`scripts/index_visual_knowledge.py` reads the latest CPCR corpus snapshot and
-private image metadata, selects admitted `IMAGE_VLM` chunks, asks the separately
-configured graph extraction model for schema-constrained candidates, validates
-each quoted span against the stored description, and can persist the resulting
-unverified observations in Neo4j. It is dry-run by default. Persistence requires
-`--apply` and an explicitly configured `NEO4J_TEST_DATABASE` whose name contains
-`test` and is not `rag` or `neo4j`.
+The normal structural graph importer now accepts `--visual-knowledge`. After
+CPCR output has been read and validated and structural chunks have been
+successfully persisted (and optionally replay-verified), it runs the visual
+candidate stage. Visual processing has a separate Neo4j transaction per
+ingestion run. A failure leaves structural ingestion committed, reports
+`FAILED` with the source hash/run ID in CLI output, structured logs and tracing,
+and returns a non-zero status so the visual stage can be retried. Retrying the
+same manifest is safe because visual IDs and writes are deterministic and
+idempotent. The option requires an explicit `NEO4J_TEST_DATABASE` whose name
+contains `test` and is not `rag` or `neo4j`; it never targets the default or
+production database.
+
+The retained `scripts/index_visual_knowledge.py` is the dry-run/backfill and
+recovery tool. It reads the latest CPCR corpus snapshot and private image
+metadata, selects admitted `IMAGE_VLM` chunks, asks the separately configured
+graph extraction model for schema-constrained candidates, and can persist into
+an explicitly selected isolated Neo4j test database.
+
+Multi-source chunks are processed per `IMAGE_VLM` source. For each source, the
+run/page/block key resolves its stored description and the canonical source
+offsets are checked against its digest and the chunk text. The exact visual span
+is extracted independently, while native text and other image sources remain
+untouched. Missing, mismatched, repeated or ambiguous spans fail closed before
+the graph extraction model sees them. Rejected/quarantined chunks are excluded.
 
 Visual candidates are stored separately as `VISUAL_OBSERVATION` and
 `VISUAL_ENTITY_CANDIDATE` nodes. Their `UNVERIFIED_AI_VISUAL_OBSERVATION`
@@ -26,9 +43,13 @@ and explicitly unverified. Exact name/type matches may link to existing
 `GraphWriteGate` is unchanged and remains the path for verified textual claims.
 
 Schema bootstrap adds uniqueness constraints for visual node and relationship
-IDs and a `visual_knowledge_fulltext` index. It adds no vector index, asset
+IDs, a `visual_knowledge_fulltext` node index, a
+`visual_relationship_fulltext` relationship index, and a
+`visual_semantic_entity_fulltext` index for resolving linked semantic entities.
+Retrieval checks that all three visual indexes are ONLINE and uses bounded
+candidate counts for each SEARCH branch. It adds no vector index, asset
 table, storage bucket, Supabase migration or public image URL. Initialize this
-schema only on the intended Neo4j database after reviewing its existing schema.
+schema only on a disposable isolated Neo4j test database in this task.
 
 `HybridRetriever.search_multimodal()` rank-fuses existing vector and full-text
 results with visual-graph results. Image-derived hits return an image result
@@ -46,26 +67,43 @@ Set `GRAPH_VISUAL_EXTRACTION_PROVIDER=openai` and an explicit
 read credentials and Neo4j settings. Search also requires the existing
 embedding configuration and online full-text/vector indexes.
 
-Preview without writes:
+Preview extraction without graph writes:
 
 ```powershell
 uv run python scripts/index_visual_knowledge.py <source-sha256>
 ```
 
 For a disposable Neo4j database only, set `NEO4J_TEST_DATABASE` to its explicit
-isolated name, then add `--apply`. Do not point this option at a production
-database. `--apply` runs existing schema bootstrap and stores visual candidate
-records; it does not re-ingest the PDF or alter Supabase data.
+isolated name. To run the complete graph-ingestion stage after the existing
+Supabase ingestion/CPCR step, use:
+
+```powershell
+uv run python -m src.graph.corpus_cli --manifest <manifest.json> --apply --verify-idempotency --visual-knowledge
+```
+
+This command first writes the structural graph and verifies replay, then
+processes visual candidates. A visual failure is reported against each
+`ingestion_run_id` and does not undo the structural write. Re-run the same
+command to retry. The separate backfill script's `--apply` also requires the
+isolated database. Do not target production. Neither command re-ingests PDFs or
+changes Supabase records.
 
 ## Verification status
 
-Unit and mocked API tests exercise source admission, exact description offsets,
-asset-key provenance, deterministic identities, replay/conflict behavior,
-visual retrieval, rank fusion, private hash-verified delivery, and the mocked
-chunk-to-observation persistence path. The actual disposable Neo4j/Supabase and
-OpenAI end-to-end pilot was not executable in the current environment because
-the required connection/model environment variables were not present. No live
-database write, real API request, or production operation was performed.
+Unit and route-level tests exercise admitted-source filtering, per-source
+offsets for native+visual and multi-image chunks, ambiguous-span rejection,
+asset-key provenance, deterministic identities, retry status, replay/conflict
+behavior, relationship/entity graph search, current-run filtering, API result
+types, private hash-verified delivery, and the mocked chunk-to-observation
+The final full regression run completed with **642 passed and 9 skipped**. The
+focused Phase 6/graph-gate/retrieval run completed with **127 passed and 2
+skipped**. Skips were the configured live Neo4j schema/retrieval/writer checks
+and the OCR test requiring Tesseract. The actual disposable Neo4j/Supabase and OpenAI end-to-end
+pilot was not executable in the current environment because the required
+Supabase URL/key, isolated Neo4j database and credentials, and OpenAI extraction
+configuration/key were not present. The dry-run command stopped before network
+access with the explicit missing-Supabase-configuration error. No live database
+write, real model request, or production operation was performed.
 
 Therefore this implementation is **PARTIAL**, not accepted end-to-end. The
 remaining acceptance step is to run the dry-run extraction against a known

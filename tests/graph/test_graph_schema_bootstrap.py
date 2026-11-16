@@ -46,6 +46,10 @@ def test_schema_bootstrap_is_idempotent_and_contains_required_indexes():
     assert all("IF NOT EXISTS" in statement for statement in SCHEMA_STATEMENTS)
     assert any("FULLTEXT INDEX" in statement and "retrieval_text" in statement
                for statement in SCHEMA_STATEMENTS)
+    assert any("FULLTEXT INDEX visual_relationship_fulltext" in statement
+               and "observed_relation" in statement for statement in SCHEMA_STATEMENTS)
+    assert any("FULLTEXT INDEX visual_semantic_entity_fulltext" in statement
+               and "SEMANTIC_ENTITY" in statement for statement in SCHEMA_STATEMENTS)
     assert not any("VECTOR" in statement for statement in SCHEMA_STATEMENTS)
 
 

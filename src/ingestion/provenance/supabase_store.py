@@ -264,10 +264,15 @@ class SupabaseProvenanceStore:
                 last_error.response.headers.get("x-request-id")
                 or last_error.response.headers.get("sb-request-id")
             )
+            failure_message = error_body.get("message") if isinstance(error_body, dict) else None
+            if not isinstance(failure_message, str):
+                failure_message = ""
+            failure_message = " ".join(failure_message.split())[:300]
             failure_detail = (
                 f" (HTTP {failure_http_status}, Supabase code "
                 f"{failure_error_code or 'unavailable'}, request ID "
-                f"{failure_request_id or 'unavailable'})"
+                f"{failure_request_id or 'unavailable'}"
+                f"{', message: ' + failure_message if failure_message else ''})"
             )
         _LOGGER.error(
             "Supabase did not atomically persist screening/OCR for run %s%s: %s",

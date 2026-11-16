@@ -109,12 +109,9 @@ class VisualVlmConfig:
     provider: str
     model: str
     timeout_seconds: float = 25.0
-    max_total_seconds_per_document: float = 90.0
     max_retries: int = 2
-    max_images_per_document: int = 8
     max_image_bytes: int = 4_000_000
-    max_output_tokens: int = 700
-    max_total_tokens_per_document: int = 20000
+    max_output_tokens: int = 600
     min_ocr_characters: int = 80
 
     def __post_init__(self) -> None:
@@ -122,11 +119,8 @@ class VisualVlmConfig:
             raise ValueError("IMAGE_VLM_PROVIDER currently supports only the explicit openai adapter")
         if not self.model.strip() or self.model != self.model.strip():
             raise ValueError("IMAGE_VLM_MODEL must be configured")
-        integer_limits = (
-            self.max_retries, self.max_images_per_document, self.max_image_bytes,
-            self.max_output_tokens, self.max_total_tokens_per_document,
-            self.min_ocr_characters,
-        )
+        integer_limits = (self.max_retries, self.max_image_bytes,
+                          self.max_output_tokens, self.min_ocr_characters)
         if any(type(value) is not int for value in integer_limits):
             raise ValueError("VLM count and token limits must be integers")
         if (not isinstance(self.timeout_seconds, (int, float))
@@ -135,19 +129,10 @@ class VisualVlmConfig:
                 or not 0 < self.timeout_seconds <= 120
                 or not 0 <= self.max_retries <= 3):
             raise ValueError("VLM timeout or retry count is outside safe bounds")
-        if (not isinstance(self.max_total_seconds_per_document, (int, float))
-                or isinstance(self.max_total_seconds_per_document, bool)
-                or not math.isfinite(self.max_total_seconds_per_document)
-                or not 1 <= self.max_total_seconds_per_document <= 300):
-            raise ValueError("VLM document timeout must be from 1 through 300 seconds")
-        if not 1 <= self.max_images_per_document <= 32:
-            raise ValueError("VLM image limit must be from 1 through 32")
         if not 1 <= self.max_image_bytes <= 8_000_000:
             raise ValueError("VLM crop byte limit must be from 1 through 8 MB")
         if not 32 <= self.max_output_tokens <= 2000:
             raise ValueError("VLM output token limit must be from 32 through 2000")
-        if self.max_total_tokens_per_document < self.max_output_tokens:
-            raise ValueError("VLM document token limit must allow one complete response")
         if self.min_ocr_characters < 0:
             raise ValueError("VLM OCR sufficiency threshold cannot be negative")
 
@@ -164,12 +149,9 @@ class VisualVlmConfig:
             provider=provider.strip().lower(),
             model=model.strip(),
             timeout_seconds=float(os.getenv("IMAGE_VLM_TIMEOUT_SECONDS", "25")),
-            max_total_seconds_per_document=float(os.getenv("IMAGE_VLM_MAX_TOTAL_SECONDS", "90")),
             max_retries=int(os.getenv("IMAGE_VLM_MAX_RETRIES", "2")),
-            max_images_per_document=int(os.getenv("IMAGE_VLM_MAX_IMAGES", "8")),
             max_image_bytes=int(os.getenv("IMAGE_VLM_MAX_IMAGE_BYTES", "4000000")),
-            max_output_tokens=int(os.getenv("IMAGE_VLM_MAX_OUTPUT_TOKENS", "700")),
-            max_total_tokens_per_document=int(os.getenv("IMAGE_VLM_MAX_TOTAL_TOKENS", "20000")),
+            max_output_tokens=int(os.getenv("IMAGE_VLM_MAX_OUTPUT_TOKENS", "600")),
             min_ocr_characters=int(os.getenv("IMAGE_VLM_MIN_OCR_CHARACTERS", "80")),
         )
 
@@ -312,38 +294,23 @@ async def describe_eligible_images(
     eligible = [crop for crop in crops if (crop.page_number, crop.block_id) in by_key
                 and is_visual_description_eligible(crop, by_key[(crop.page_number, crop.block_id)], config)]
     output: list[ImageVlmResult] = []
-    total_tokens = 0
-    deadline = asyncio.get_running_loop().time() + config.max_total_seconds_per_document
-    for crop in eligible[:config.max_images_per_document]:
-        if total_tokens + config.max_output_tokens > config.max_total_tokens_per_document:
-            break
+    for crop in eligible:
         ocr = by_key[(crop.page_number, crop.block_id)]
         raw = base64.b64decode(crop.data_base64, validate=True)
         last_error: Exception | None = None
         image_input_tokens = 0
         image_output_tokens = 0
         for attempt in range(config.max_retries + 1):
-            remaining_seconds = deadline - asyncio.get_running_loop().time()
-            if remaining_seconds <= 0:
-                last_error = TimeoutError("VLM document timeout exceeded")
-                break
-            if total_tokens + config.max_output_tokens > config.max_total_tokens_per_document:
-                last_error = ValueError("VLM document token budget exhausted")
-                break
             try:
                 response, input_tokens, output_tokens = await asyncio.wait_for(
                     provider.describe(raw, max_output_tokens=config.max_output_tokens),
-                    timeout=min(config.timeout_seconds, remaining_seconds),
+                    timeout=config.timeout_seconds,
                 )
                 if (type(input_tokens) is not int or input_tokens < 0
-                        or type(output_tokens) is not int or output_tokens < 0):
+                        or type(output_tokens) is not int or not 0 <= output_tokens <= config.max_output_tokens):
                     raise ValueError("VLM returned invalid token usage")
                 image_input_tokens += input_tokens
                 image_output_tokens += output_tokens
-                total_tokens += input_tokens + output_tokens
-                if total_tokens > config.max_total_tokens_per_document:
-                    last_error = ValueError("VLM document token budget exceeded")
-                    break
                 if not isinstance(response, (str, dict)):
                     raise ValueError("VLM returned a non-JSON description")
                 payload = json.loads(response) if isinstance(response, str) else response
@@ -372,9 +339,7 @@ async def describe_eligible_images(
             except (asyncio.TimeoutError, ValidationError, ValueError, Exception) as exc:
                 last_error = exc
                 if attempt < config.max_retries:
-                    remaining_seconds = deadline - asyncio.get_running_loop().time()
-                    if remaining_seconds > 0:
-                        await asyncio.sleep(min(0.1 * (2**attempt), remaining_seconds))
+                    await asyncio.sleep(min(0.1 * (2**attempt), config.timeout_seconds))
         if last_error is not None:
             output.append(ImageVlmResult(
                 page_number=crop.page_number, block_id=crop.block_id,

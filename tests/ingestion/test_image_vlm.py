@@ -64,9 +64,11 @@ class Provider:
     def __init__(self, outputs):
         self.outputs = list(outputs)
         self.calls = 0
+        self.requested_output_tokens = []
 
     async def describe(self, image_png, *, max_output_tokens):
         self.calls += 1
+        self.requested_output_tokens.append(max_output_tokens)
         output = self.outputs.pop(0)
         if isinstance(output, Exception):
             raise output
@@ -75,7 +77,7 @@ class Provider:
 
 def config(**overrides):
     values = dict(provider="openai", model="test-vlm", max_retries=1,
-                  min_ocr_characters=80, max_total_tokens_per_document=1000)
+                  min_ocr_characters=80)
     values.update(overrides)
     return VisualVlmConfig(**values)
 
@@ -129,7 +131,7 @@ def test_openai_configuration_is_explicit_and_opt_in(monkeypatch):
     assert config.provider == "openai" and config.model == "gpt-4o-mini"
 
 
-def test_default_token_budget_accepts_observed_high_resolution_image_usage():
+def test_per_image_output_cap_accepts_observed_high_resolution_image_usage():
     cfg = VisualVlmConfig(provider="openai", model="test-vlm")
     image = crop()
     ocr = ImageScreeningResult(
@@ -148,7 +150,7 @@ def test_default_token_budget_accepts_observed_high_resolution_image_usage():
         provider=HighResolutionTokenProvider([]),
         screening_service=ScreeningService(),
     ))
-    assert cfg.max_total_tokens_per_document == 20_000
+    assert cfg.max_output_tokens == 600
     assert results[0].status == "ADMITTED"
 
 
@@ -209,21 +211,31 @@ def test_generated_prompt_injection_is_screened_out_before_canonicalization():
     assert add_admitted_visual_descriptions(canonical(), results) == canonical()
 
 
-def test_token_budget_stops_more_calls_and_reports_failure_safely():
-    image = crop()
-    ocr = ImageScreeningResult(
-        page_number=1, block_id=image.block_id, reading_order=0,
-        source_coordinates=image.source_coordinates,
-        image_sha256=hashlib.sha256(b"png-crop").hexdigest(), ocr_status="NO_TEXT",
-    )
-    provider = Provider([json.dumps(description())])
+def test_every_eligible_image_is_attempted_and_uses_600_output_tokens():
+    images = []
+    screenings = []
+    for index in range(10):
+        raw = f"png-crop-{index}".encode()
+        image = crop().model_copy(update={
+            "block_id": f"page-1-block-{index}",
+            "data_base64": base64.b64encode(raw).decode(),
+            "filename": f"page-1-{index}.png",
+        })
+        images.append(image)
+        screenings.append(ImageScreeningResult(
+            page_number=1, block_id=image.block_id, reading_order=0,
+            source_coordinates=image.source_coordinates,
+            image_sha256=hashlib.sha256(raw).hexdigest(), ocr_status="NO_TEXT",
+        ))
+    provider = Provider([json.dumps(description()) for _ in images])
     results = asyncio.run(describe_eligible_images(
-        (image,), (ocr,), config=config(max_output_tokens=32, max_total_tokens_per_document=50),
-        provider=provider, screening_service=ScreeningService(),
+        tuple(images), tuple(screenings), config=config(), provider=provider,
+        screening_service=ScreeningService(),
     ))
-    assert provider.calls == 1
-    assert results[0].status == "FAILED"
-    assert results[0].description_text is None
+    assert provider.calls == len(images)
+    assert provider.requested_output_tokens == [600] * len(images)
+    assert len(results) == len(images)
+    assert all(result.status == "ADMITTED" for result in results)
 
 
 def test_candidate_visual_eval_file_keeps_human_review_pending():
@@ -267,7 +279,7 @@ def test_admitted_description_is_separate_chunked_provenance_and_idempotent():
     assert source.visual_prompt_version == result[0].prompt_version
     assert source.start_offset == 0 and source.end_offset == len(block.text)
     assert "AI-generated visual description" in chunk.text
-    assert chunk_document(updated, "a" * 64).document.policy_version.startswith("5c-1.6.0+")
+    assert chunk_document(updated, "a" * 64).document.policy_version.startswith("5c-1.6.1+")
     assert provider.calls == 1
 
 

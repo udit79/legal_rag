@@ -83,7 +83,9 @@ def test_supabase_store_sends_one_rpc_with_hashes_sources_and_screening_results(
 
 def test_supabase_store_reports_database_failure():
     async def handle(_request: httpx.Request) -> httpx.Response:
-        return httpx.Response(500)
+        return httpx.Response(500, json={
+            "code": "55000", "message": "Ingestion provenance records are immutable",
+        })
 
     async def run():
         screened, context = await _screened()
@@ -94,7 +96,7 @@ def test_supabase_store_reports_database_failure():
     from src.ingestion.provenance.supabase_store import SupabaseProvenanceError
     import pytest
 
-    with pytest.raises(SupabaseProvenanceError):
+    with pytest.raises(SupabaseProvenanceError, match="Ingestion provenance records are immutable"):
         asyncio.run(run())
 
 
