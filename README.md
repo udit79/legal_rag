@@ -1,89 +1,145 @@
 # Graph RAG
 
-Graph RAG is a Python service foundation for connecting source documents to a
-validated risk-domain graph. The repository contains API health checks, Neo4j
-connectivity, telemetry, canonical PDF parser adapters, BLP-1 deterministic
-chunking, and CPCR page-continuity classification. The `POST /ingestion`
-endpoint runs the full pipeline for an uploaded PDF and returns the CPCR result.
-It also returns PNG crops for image blocks with no recognized text. Canonical
-output and chunking details are not included.
+Graph RAG is a document-grounded question answering and knowledge graph
+application for legal and enterprise risk documents. It ingests PDFs, preserves
+source provenance, indexes admitted text in Neo4j, and serves text and image
+evidence through a FastAPI backend.
 
-Upload a PDF with multipart form data:
+> **Start here:** follow [setup.md](setup.md) for the complete Windows
+> development setup, including Docker, the parser worker, ClamAV, Supabase,
+> Neo4j, environment variables, and local startup.
 
-```powershell
-curl.exe -X POST http://localhost:8000/ingestion `
-  -F "file=@D:\path\to\document.pdf;type=application/pdf" `
-  -o ingestion-result.json
+## Capabilities
+
+- PDF upload and batch ingestion with file screening, isolated Docker parsing,
+  canonical text, OCR, optional OpenAI visual descriptions, and source-backed
+  chunk provenance.
+- Supabase persistence for ingestion provenance and private image crops.
+- Neo4j structural corpus import, text/vector/hybrid retrieval, and graph
+  retrieval for unverified visual observations.
+- Document Q&A chat with shared conversation history, citations, and
+  `risk_analysis` and `summarization` skills.
+- Paginated graph export for frontend rendering and a private image endpoint
+  that verifies the original crop hash before serving it.
+- OpenTelemetry traces through an OTLP HTTP endpoint such as local Jaeger.
+
+VLM descriptions and visual graph candidates remain explicitly AI-generated
+observations. They are not treated as verified source facts or authoritative
+legal conclusions. Retrieved quotations use raw source text; private asset
+references do not expose public storage URLs.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    PDF[PDF upload] --> Gate[File screening and ClamAV]
+    Gate --> Worker[Docker parser worker]
+    Worker --> Canonical[Canonical text, OCR and optional VLM]
+    Canonical --> Screen[Chunk screening and provenance]
+    Screen --> SB[(Supabase provenance and private crops)]
+    Screen --> Import[Explicit Neo4j corpus import]
+    Import --> Neo4j[(Neo4j graph and search indexes)]
+    Neo4j --> Search[Full-text, vector, hybrid and visual graph search]
+    Search --> API[FastAPI graph and chat APIs]
+    SB --> API
+    API --> UI[Frontend]
+    API -. traces .-> Jaeger[Jaeger / OTLP]
 ```
 
-`POST /ingestion/batch` accepts repeated multipart `files` fields for up to 10
-PDFs. Each file runs independently; the endpoint returns a compact per-file
-status, document ID, ingestion run ID, page/chunk counts, and failure code,
-without chunks or image bytes. The aggregate PDF payload is limited to 50 MiB,
-plus multipart framing overhead.
+PDF ingestion and Neo4j graph import are separate operations. The API's
+`POST /ingestion` and `POST /ingestion/batch` perform document ingestion and
+persist provenance when Supabase is configured. The explicit corpus CLI reads
+the latest persisted output and imports it to Neo4j; the API does not silently
+rebuild or replace the graph during startup.
 
-The JSON response contains `revised_chunks`, `unrecognized_images`, and compact
-`chunk_dispositions`. A positive `SAME_PARAGRAPH` continuity result keeps the
-original chunks in order and prefixes the continuation chunk with a bounded,
-source-backed tail from the preceding page. The output stays within the
-configured character limit; this is context overlap, not a calibrated semantic
-merge. Image crops include OCR status, admission decision, flags, page/block
-metadata, and base64 PNG data. Uploads are limited to 50 MiB.
-`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` is optional; when set, an OTLP HTTP
-collector must be reachable at that URL or trace export warnings will appear.
-For local Jaeger, publish port 4318 to the host; Jaeger UI is available on port
-16686.
+## Quick start
 
-Docling runs in a persistent, restricted Docker parser worker. Build the image
-and configure the local ClamAV installation before starting the API; see
-[`docker/PARSER_WORKER.md`](docker/PARSER_WORKER.md) and
-[`tools/clamav/README.md`](tools/clamav/README.md).
+Prerequisites include Python 3.14, `uv`, Docker Desktop, a Neo4j 2026.09+
+database, and (for persisted ingestion/chat) a Supabase project. Configure the
+required services in `.env` by following [setup.md](setup.md), then run:
 
-If a page reaches the `ESCALATE` route, or local OCR returns no usable page
-text, the parser worker exports that page as a bounded single-page PDF and the
-API sends only that page to ScaleDown Extract. Its raw `ocr_text` is added as
-a canonical page text block with a fallback warning. This requires
-`SCALEDOWN_API_KEY`; the recovered block has page-level coordinates because
-Extract does not return word-level geometry.
+```powershell
+uv sync
+uv run uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+```
 
-The Windows x64 ClamAV scanner runtime is included under
-`tools/clamav/1.5.4/windows-x64` and runs on the Windows API host. The
-signature database, local configuration and logs are not committed. Configure
-`CLAMAV_BINARY` and `CLAMAV_DATABASE_DIRECTORY` in the local `.env`, then use
-`freshclam.exe` to populate/update the database; setup steps are in
-[`tools/clamav/README.md`](tools/clamav/README.md). G0 fails closed when the
-scanner or its signature database is unavailable. The API has no user login;
-anonymous uploads remain marked T3 and are still screened before parsing and
-CPCR.
+Check liveness at <http://127.0.0.1:8000/health>, dependency readiness at
+<http://127.0.0.1:8000/health/ready>, and interactive API documentation at
+<http://127.0.0.1:8000/docs>.
 
-See [docs/architecture.md](docs/architecture.md) for the current component
-structure and data contracts. See [docs/code_map.md](docs/code_map.md) for
-the file tree and a file-by-file index of implemented classes and functions.
-The implemented BLP-1 chunking strategy is described in
-[docs/blp1_chunking.md](docs/blp1_chunking.md).
+### Frontend
 
-## Phase 3 hybrid retrieval baseline
+In another PowerShell window, start the local frontend host:
 
-Set `EMBEDDING_PROVIDER` to `openai` or `voyage`, and set the matching
-`EMBEDDING_MODEL` and integer `EMBEDDING_DIMENSIONS` in the environment or
-local `.env`. The matching `OPENAI_API_KEY` or `VOYAGE_API_KEY` must also be
-present. The vector path fails closed if provider, model, or dimensions differ
-from the configured embedding space. Full-text retrieval does not require an
-embedding configuration.
+```powershell
+uv run uvicorn server:app --app-dir frontend --host 127.0.0.1 --port 3000
+```
 
-Vector index creation is explicit through
-`src.graph.embeddings.create_vector_index`; it is never run by graph schema
-bootstrap or retrieval. After provisioning the matching index, call
-`index_current_chunks` with the selected provider adapter. Full-text and vector
-retrievers return source-grounded evidence from raw chunk text and feed the
-configurable RRF hybrid retriever. Evaluation utilities and the synthetic,
-versioned development set are in `src/graph/evaluation.py` and
-`src/graph/evaluation/dev_v1.json`. The human-adjudicated corpus-backed dev set
-is `src/graph/evaluation/legal_corpus_dev_v1.json`; its labels are pinned to the
-latest ingestion-run IDs recorded in the fixture. Retrieval uses Cypher 25
-`SEARCH` and requires Neo4j 2026.09 or later for full-text `SEARCH` support.
-Use a dedicated `NEO4J_TEST_DATABASE` for
-the opt-in Neo4j integration test. `run_and_save_evaluation` writes a timestamped
-JSON artifact with settings, aggregate metrics, and per-query results. Supply a
-calibrated `abstention_rrf_threshold` explicitly to each evaluation run; the
-harness does not assume that zero is a useful abstention threshold.
+Open <http://127.0.0.1:3000>. The UI's **Live API** mode calls the Graph RAG
+backend at `http://127.0.0.1:8000` by default. The frontend server also has
+offline/demo routes with sample in-memory data; use Live API mode to work with
+the configured ingestion, chat, retrieval, and Neo4j services. This local UI
+host is a development aid, not a production deployment server.
+
+## Main API routes
+
+| Route                                     | Purpose                                                                     |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `POST /ingestion`                         | Ingest one PDF.                                                             |
+| `POST /ingestion/batch`                   | Ingest up to 10 PDFs independently.                                         |
+| `GET /graph`                              | Read a paginated graph snapshot for frontend rendering.                     |
+| `POST /graph/search`                      | Retrieve and fuse text and image-derived graph evidence.                    |
+| `GET /visual-assets/{run}/{page}/{block}` | Serve a hash-verified private image crop.                                   |
+| `GET /chat/documents`                     | List fully ingested documents available to chat.                            |
+| `POST /chat`                              | Ask a question in a persisted conversation; accepts an optional skill hint. |
+| `/chat/conversations`                     | Create, list, load, rename, or delete conversations.                        |
+
+The chat API returns structured citations alongside the answer. Conversations
+share one thread across ordinary Q&A and skill use. The project currently has
+no user authentication; run it only in a trusted local or appropriately
+protected environment.
+
+## Neo4j corpus and embeddings
+
+Neo4j schema bootstrap and corpus import are explicit operations. The corpus
+CLI defaults to dry-run; writing requires `--apply`. Inspect its options with:
+
+```powershell
+uv run python -m src.graph.corpus_cli --help
+```
+
+Embedding configuration must explicitly identify its provider, model, and
+dimensions. The matching vector index is not silently created by API startup
+or retrieval. Use `scripts/index_neo4j_embeddings.py` to index the configured
+current corpus, and `scripts/retrieval_smoke.py` for read-only retrieval
+checks. Do not change embedding spaces for a populated index without a planned
+reindex.
+
+## Source and graph model
+
+Chunk `raw_text` remains the source for screening, quotations, and evidence.
+`retrieval_text` is a derived search field with reversible edits; it is not
+used as quoted evidence. Chunk sources retain document hash, ingestion run,
+page, block, reading order, and text offsets. An ingestion upload and a graph
+import are separate: inspect the corpus CLI in dry-run mode before enabling
+`--apply`.
+
+The graph supports enterprise concepts such as organizations, applications,
+policies, obligations, controls, findings, risks, and evidence. Semantic claims
+keep verifier attestations and source references; competing claims can be
+classified as `SUPPORTS`, `CONTRADICTS`, `QUALIFIES`, `SUPERSEDES`, or
+`UNRESOLVED`. Classification preserves disagreement; it does not determine
+legal truth. Visual observations and entity candidates are kept separate and
+marked unverified.
+
+## Repository layout
+
+- `src/api/` — FastAPI ingestion, graph, visual asset, and chat routes.
+- `src/ingestion/` — parsing orchestration, canonicalization, OCR/VLM, chunking,
+  and Supabase provenance.
+- `src/graph/` — corpus loading, structural and semantic writers, retrieval,
+  image-aware graph support, and chat agent.
+- `frontend/` — local development UI and demo host.
+- `supabase/setup.sql` — consolidated bootstrap for a fresh Supabase project.
+- `scripts/` — explicit embedding, retrieval smoke, and visual knowledge tools.
+- `artifacts/evaluation/` — frozen Phase 3 evaluation outputs.

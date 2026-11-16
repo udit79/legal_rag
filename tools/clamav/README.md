@@ -12,15 +12,33 @@ fetch signatures:
 ```powershell
 $ClamHome = (Resolve-Path "tools/clamav/1.5.4/windows-x64").Path
 $Database = Join-Path $ClamHome "database"
+$Logs = Join-Path $ClamHome "logs"
 $Config = Join-Path $ClamHome "freshclam.local.conf"
-New-Item -ItemType Directory -Force $Database | Out-Null
+New-Item -ItemType Directory -Force $Database, $Logs | Out-Null
 @"
 DatabaseDirectory "$Database"
+UpdateLogFile "$(Join-Path $Logs 'freshclam.log')"
+LogTime yes
 CVDCertsDirectory "$(Join-Path $ClamHome 'certs')"
 DatabaseMirror database.clamav.net
 "@ | Set-Content -LiteralPath $Config -Encoding ascii
 & (Join-Path $ClamHome "freshclam.exe") "--config-file=$Config"
 ```
+
+FreshClam writes signature-update details to
+`tools/clamav/1.5.4/windows-x64/logs/freshclam.log`. To save the output of an
+optional manual scan to a file, use ClamAV's `--log` option:
+
+```powershell
+& "$ClamHome\clamscan.exe" `
+  "--database=$Database" `
+  "--log=$(Join-Path $Logs 'clamscan.log')" `
+  "D:\path\to\sample.pdf"
+Get-Content (Join-Path $Logs "clamscan.log") -Tail 30
+```
+
+The API captures its scanner output in the service console; the manual
+`clamscan.log` is for diagnostics. Do not commit runtime logs.
 
 Set these local `.env` values (the paths below match this checkout):
 
