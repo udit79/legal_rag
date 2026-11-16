@@ -21,6 +21,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry import trace
@@ -209,7 +210,23 @@ async def lifespan(app: FastAPI):
                         finally:
                             provider.shutdown()
     print("Application shutting down...")
+load_dotenv()
 app=FastAPI(lifespan=lifespan)
+frontend_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "FRONTEND_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    ).split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=frontend_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
 app.include_router(graph_router)
 MAX_INGESTION_UPLOAD_BYTES = MAX_PDF_SIZE_BYTES
 MULTIPART_REQUEST_OVERHEAD_BYTES = 1024 * 1024

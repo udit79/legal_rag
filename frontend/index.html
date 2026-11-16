@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RegGraph AI — Document Knowledge Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Ambient Mesh Aurora -->
+<div class="aurora-layer" aria-hidden="true">
+  <div class="aurora-glow glow-top-left"></div>
+  <div class="aurora-glow glow-center-cyan"></div>
+  <div class="aurora-glow glow-top-right"></div>
+  <div class="aurora-glow glow-bottom-magenta"></div>
+  <div class="aurora-glow glow-bottom-right"></div>
+</div>
+<div class="cosmic-arcs-overlay" aria-hidden="true"></div>
+
+<!-- ================================================================
+     PAGE 1: INITIAL UPLOAD SCREEN (NO SIDEBAR VISIBLE HERE)
+================================================================ -->
+<div id="screenInitialUpload">
+
+  <!-- Minimal Initial Top Bar -->
+  <header class="initial-top-nav">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed, #06b6d4); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 18px rgba(99, 102, 241, 0.5);">
+        <svg width="20" height="20" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div>
+        <div style="font-size: 17px; font-weight: 800; color: var(--text-main);">RegGraph AI</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Document Knowledge Platform</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- Connection Status Pill -->
+      <button onclick="openSettingsModal('api')" id="initialApiStatusPill" class="glass-pill-btn api-status-pill" title="Click to view API & Neo4j Settings">
+        <span class="status-indicator-dot dot-live" id="initialApiStatusDot"></span>
+        <span id="initialApiStatusText">API: Connected</span>
+      </button>
+
+      <!-- Settings Button -->
+      <button onclick="openSettingsModal()" class="glass-pill-btn" title="Open System & Neo4j Settings">
+        <span>⚙️</span>
+        <span>Settings</span>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button onclick="toggleTheme()" class="glass-pill-btn theme-toggle-btn" title="Toggle Light / Dark mode">
+        <span class="theme-icon-orb">☼</span>
+        <span class="theme-label-slot">Light</span>
+        <span style="font-size: 10px; opacity: 0.6;">▾</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Centered Ingestion Hero & Dropzone -->
+  <main class="initial-hero-zone">
+    
+    <div class="glass-pill-btn" style="cursor: default; margin-bottom: 20px; display: inline-flex;">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #818cf8; box-shadow: 0 0 10px #818cf8;"></span>
+      Multi-Source Document Ingestion &middot; Regulatory &amp; Legal Graph Engine
+    </div>
+
+    <h1 class="hero-glow-title" style="margin-bottom: 14px;">
+      Ingest Documents into<br>
+      <span class="gradient-text">Live Knowledge Graphs</span>
+    </h1>
+
+    <p style="font-size: 15px; line-height: 1.65; color: var(--text-muted); text-align: center; max-width: 540px; margin: 0 auto 32px;">
+      Attach regulatory policies, agreements, or contracts. Experience high-speed entity mapping, cross-clause reasoning, summarisation, and deep risk analysis.
+    </p>
+
+    <!-- Upload Card -->
+    <div class="glass-panel" style="padding: 34px; width: 100%;">
+      
+      <div id="initialDropZone" class="dropzone-container" onclick="document.getElementById('mainPdfFileInput').click()">
+        <input type="file" id="mainPdfFileInput" accept=".pdf" multiple style="display: none;">
+
+        <div class="upload-icon-orb">📄</div>
+
+        <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
+          Drop PDF documents here
+        </h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 26px;">
+          Accepts legal agreements, compliance binders, and regulatory policies
+        </p>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px;" onclick="event.stopPropagation()">
+          <button type="button" onclick="document.getElementById('mainPdfFileInput').click()" class="glass-pill-btn btn-new-analysis" style="padding: 11px 22px;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+            Attach PDF Files
+          </button>
+          <button type="button" onclick="stageSampleDocument()" class="glass-pill-btn" style="padding: 11px 20px;">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Open Existing Knowledge Graph
+          </button>
+        </div>
+      </div>
+
+      <!-- Staged Document Row -->
+      <div id="initialStagedRow" style="display: none; margin-top: 18px; padding: 12px 18px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border); align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="pdf-icon-badge">PDF</div>
+          <div>
+            <div id="initialStagedName" style="font-size: 13.5px; font-weight: 700; color: var(--text-main);">Regulatory_Policy_Framework_2026.pdf</div>
+            <div style="font-size: 11.5px; color: var(--text-muted);">2.4 MB &middot; Ready for Knowledge Graph</div>
+          </div>
+        </div>
+        <button onclick="unstageDocument()" class="glass-pill-btn" style="padding: 4px 10px; font-size: 11px;">✕</button>
+      </div>
+
+      <!-- Trigger Button -->
+      <div id="initialTriggerBtnWrapper" style="display: none; margin-top: 22px;">
+        <button onclick="executeDocumentAnalyticsFlow()" class="glass-pill-btn btn-new-analysis" style="width: 100%; padding: 15px 22px; font-size: 14.5px;">
+          ⚡ Generate Relational Graph &amp; Run Engine
+        </button>
+      </div>
+
+      <!-- Processing Progress Overlay -->
+      <div id="initialProcessingScan" style="display: none; flex-direction: column; gap: 14px; margin-top: 24px; padding: 18px; border-radius: 16px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(129, 140, 248, 0.3);">
+        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13.5px;">
+          <span style="font-weight: 700; color: var(--text-main);" id="initialProcTitle">Extracting Clauses &amp; Constructing Graph...</span>
+          <span id="initialProcNum" style="font-family: var(--font-mono); color: #818cf8; font-weight: 800;">30%</span>
+        </div>
+        <div style="height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); overflow: hidden;">
+          <div id="initialProcBar" style="height: 100%; width: 30%; border-radius: 6px; background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4); transition: width 0.25s ease;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted);">
+          <span id="initialProcSub">Evaluating entity dependencies &amp; liabilities...</span>
+          <button onclick="finishProcessingAndEnterDashboard()" style="background: none; border: none; color: #818cf8; cursor: pointer; text-decoration: underline; font-weight: 600;">Skip to Graph →</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ================================================================
+     PAGE 2: ANALYTICS DASHBOARD (SIDEBAR APPEARS ONLY HERE)
+================================================================ -->
+<div id="screenDashboardAnalytics">
+
+  <!-- Left Sidebar (NO analytics, NO settings, NO name at bottom) -->
+  <aside class="glass-panel sidebar-panel">
+    <div>
+      <!-- Brand Logo -->
+      <div class="logo-container">
+        <div class="logo-triquetra-wrap">
+          <svg class="logo-triquetra-svg" viewBox="0 0 100 100" fill="none">
+            <defs>
+              <linearGradient id="triquetraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#c084fc"/>
+                <stop offset="50%" stop-color="#818cf8"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="38" r="24" stroke="url(#triquetraGrad)" stroke-width="4.5" fill="none"/>
+            <circle cx="36" cy="62" r="24" stroke="url(#triquetraGrad)" stroke-width="4.5" fill="none"/>
+            <circle cx="64" cy="62" r="24" stroke="url(#triquetraGrad)" stroke-width="4.5" fill="none"/>
+            <circle cx="50" cy="52" r="28" stroke="url(#triquetraGrad)" stroke-width="2" stroke-dasharray="4 4" fill="none" opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="brand-title">RegGraph AI</div>
+        <div class="brand-subtitle">Document Knowledge Platform</div>
+      </div>
+
+      <!-- Navigation Menu: ONLY Graph Explorer -->
+      <nav>
+        <ul class="nav-menu-list">
+          <li>
+            <a href="#" class="nav-menu-item nav-pill-active">
+              <span class="nav-menu-icon">
+                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/>
+                  <path d="M8.5 7.5l7 0M7.5 8.5l3.5 7M16.5 8.5l-3.5 7"/>
+                </svg>
+              </span>
+              <span>Graph Explorer</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
+    <!-- AI Promo Box at bottom of sidebar (No user name underneath) -->
+    <div class="ai-upgrade-promo-card">
+      <div class="promo-celestial-orb"></div>
+      <div class="promo-headline">Unlock deeper<br>insights with AI</div>
+      <button class="promo-upgrade-btn">Upgrade Plan &rarr;</button>
+    </div>
+  </aside>
+
+  <!-- Right Stage (Explorer Dashboard) -->
+  <div class="content-stage">
+
+    <!-- Top App Bar -->
+    <div class="top-stage-header">
+      <div class="header-title-zone">
+        <div class="header-orb-badge"></div>
+        <div>
+          <h1 class="page-headline">Relational Knowledge Graph</h1>
+          <div class="page-subheadline">Explore connections. Discover insights.</div>
+        </div>
+      </div>
+
+      <div class="top-controls-group">
+        <button onclick="openSettingsModal('api')" id="dashboardApiStatusPill" class="glass-pill-btn api-status-pill" title="Click to view API & Neo4j Settings">
+          <span class="status-indicator-dot dot-live" id="dashboardApiStatusDot"></span>
+          <span id="dashboardApiStatusText">API: Connected</span>
+        </button>
+
+        <button onclick="openSettingsModal()" class="glass-pill-btn" title="Configure Endpoints & Neo4j Pattern">
+          <span>⚙️</span>
+          <span>Settings</span>
+        </button>
+
+        <button onclick="toggleTheme()" class="glass-pill-btn theme-toggle-btn" title="Toggle Light / Dark mode">
+          <span class="theme-icon-orb">☼</span>
+          <span class="theme-label-slot">Light</span>
+          <span style="font-size: 10px; opacity: 0.6;">▾</span>
+        </button>
+
+        <button onclick="returnToUploadFirstScreen()" class="glass-pill-btn btn-new-analysis">
+          <span>✦</span>
+          <span>New Analysis</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TWO-COLUMN MAIN STAGE (GRAPH + DOCUMENT PROFILE) -->
+    <div class="main-two-col-grid">
+
+      <!-- LEFT: RELATIONAL KNOWLEDGE GRAPH CARD (NO +- ZOOM BUTTONS) -->
+      <div class="glass-panel graph-stage-card">
+
+        <!-- Header Toolbar inside Graph Card -->
+        <div class="graph-card-header">
+          <div class="graph-stat-pill">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/>
+              <path d="M8.5 7.5l7 0M7.5 8.5l3.5 7M16.5 8.5l-3.5 7"/>
+            </svg>
+            <span id="graphNodesEdgesPill">Loading Neo4j graph…</span>
+          </div>
+
+          <div class="graph-top-tools">
+            <button id="pausePhysicsBtn" onclick="toggleGraphPhysics()" class="glass-pill-btn" style="padding: 6px 14px; font-size: 12px;">
+              <span id="physicsIcon">⏸</span>
+              <span id="physicsBtnText">Pause Animation</span>
+            </button>
+            <button onclick="recenterGraph()" class="glass-pill-btn" style="padding: 6px 14px; font-size: 12px;">
+              <span>🔄</span>
+              <span>Reset View</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Container (NO +- ZOOM BUTTONS) -->
+        <div class="canvas-interactive-wrapper" id="canvasBox">
+          <canvas id="graphRendererCanvas"></canvas>
+
+          <!-- Bottom Left Node Type Legend -->
+          <div class="graph-bottom-legend">
+            <span class="legend-item"><span class="legend-dot" style="background: #3b82f6; box-shadow: 0 0 8px #3b82f6;"></span> Entity</span>
+            <span class="legend-item"><span class="legend-dot" style="background: #ef4444; box-shadow: 0 0 8px #ef4444;"></span> Risk</span>
+            <span class="legend-item"><span class="legend-dot" style="background: #a855f7; box-shadow: 0 0 8px #a855f7;"></span> Obligation</span>
+            <span class="legend-item"><span class="legend-dot" style="background: #10b981; box-shadow: 0 0 8px #10b981;"></span> Compliance</span>
+          </div>
+
+          <!-- Node Hover Tooltip -->
+          <div id="neuralNodeTooltip"></div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: DOCUMENT PROFILE CARD WITH REAL-DATA LIVE WAVES & 3 GLOSSY BUTTONS -->
+      <div class="glass-panel doc-profile-card">
+
+        <div>
+          <div class="doc-profile-header">
+            <div class="doc-profile-title">
+              <svg width="20" height="20" fill="none" stroke="#38bdf8" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Document Profile</span>
+            </div>
+            <span class="badge-synthesized">
+              <span style="font-size: 11px;">✓</span> Synthesized
+            </span>
+          </div>
+
+          <!-- Document Filename Strip -->
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;">Indexed Document</div>
+          <div class="doc-file-capsule">
+            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+              <div class="pdf-icon-badge">PDF</div>
+              <div style="overflow: hidden;">
+                <div id="docProfileFileName" style="font-size: 12.5px; font-weight: 700; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                  Regulatory_Policy_Framework_2026.pdf
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+              <span style="font-size: 11px; color: var(--text-muted);">2.4 MB</span>
+              <button style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">⤓</button>
+            </div>
+          </div>
+
+          <div id="graphVisualAssets" class="graph-visual-assets" aria-live="polite">
+            Loading linked image evidence…
+          </div>
+
+          <!-- Two Metric Cards with REAL DATA LIVE FLOATING WAVES -->
+          <div class="metrics-row-grid">
+
+            <!-- Live counts populated from the graph API -->
+            <div class="metric-spark-card blue-theme">
+              <div class="metric-top-bar">
+                <svg width="14" height="14" fill="none" stroke="#38bdf8" stroke-width="2" viewBox="0 0 24 24">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                  <polyline points="2 17 12 22 22 17"/>
+                  <polyline points="2 12 12 17 22 12"/>
+                </svg>
+                <span>Graph nodes</span>
+              </div>
+              <div class="metric-number-display">
+                <span id="graphNodeCount">—</span>
+              </div>
+              <!-- Real-Data Floating Wave Canvas -->
+              <canvas id="cyanWaveCanvas" class="live-wave-canvas"></canvas>
+            </div>
+
+            <!-- Relationship count from the graph API -->
+            <div class="metric-spark-card red-theme">
+              <div class="metric-top-bar">
+                <span style="color: #ef4444; font-size: 13px;">⚠️</span>
+                <span>Relationships</span>
+              </div>
+              <div class="metric-number-display">
+                <span id="graphEdgeCount">—</span>
+              </div>
+              <!-- Real-Data Floating Wave Canvas -->
+              <canvas id="redWaveCanvas" class="live-wave-canvas"></canvas>
+            </div>
+
+          </div>
+
+          <!-- Green Alert Banner -->
+          <div class="green-alert-banner">
+            <div class="green-check-orb">✓</div>
+            <div style="font-size: 12px; line-height: 1.45; color: var(--text-main);">
+              <strong id="graphLoadStatus">Connecting to the persisted Neo4j graph…</strong><br>
+              <span style="color: var(--text-muted);">Search returns source evidence and linked private images.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 CLEAN LIQUID GLASS ACTION ITEMS (MATCHING REFERENCE MOCKUP) -->
+        <div class="action-items-list">
+          <button id="actionPillBtn1" onclick="switchWorkspaceTab('qa')" class="action-row-item active-synced-row active-synced-pill" title="Inquire and interrogate document graph">
+            <span class="action-item-num">01.</span>
+            <span class="action-item-icon">💬</span>
+            <span class="action-item-label">Ask Questions (Q&amp;A)</span>
+            <span class="action-item-chevron">›</span>
+          </button>
+
+          <button id="actionPillBtn2" class="action-row-item" title="No summary API is connected yet" disabled aria-disabled="true">
+            <span class="action-item-num">02.</span>
+            <span class="action-item-icon">📄</span>
+            <span class="action-item-label">Summary API unavailable</span>
+            <span class="action-item-chevron">›</span>
+          </button>
+
+          <button id="actionPillBtn3" class="action-row-item" title="No risk-analysis API is connected yet" disabled aria-disabled="true">
+            <span class="action-item-num">03.</span>
+            <span class="action-item-icon">⚠️</span>
+            <span class="action-item-label">Risk API unavailable</span>
+            <span class="action-item-chevron">›</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+        <!-- BOTTOM WORKSPACE CARD: CONTROLLED BY THE 3 ACTION BUTTONS ABOVE -->
+    <div id="bottomWorkspacePanel" class="glass-panel bottom-workspace-card">
+
+      <!-- VIEW 1: ASK GROUNDED QUESTIONS (Q&A) -->
+      <div id="viewQA" class="qa-content-block">
+        <div class="qa-sub-header">
+          <div class="qa-header-left">
+            <div class="qa-starburst-orb">✦</div>
+            <div>
+              <h3 style="font-size: 15px; font-weight: 700; color: var(--text-main);">Ask Grounded Questions</h3>
+              <p style="font-size: 12px; color: var(--text-muted);">Retrieve matching source text and linked images with page and document provenance.</p>
+            </div>
+          </div>
+
+          <!-- Controls: Clear and Expand right beside each other (NOT greyed out) -->
+          <div class="chat-top-actions-group">
+            <button onclick="clearChatMessages()" id="chatClearBtn" class="chat-clear-btn" title="Clear conversation thread">
+              <span>🗑️</span>
+              <span>Clear</span>
+            </button>
+            <button onclick="toggleChatExpanded()" id="chatExpandBtn" class="chat-expand-btn" title="Toggle expanded full-height chat">
+              <span id="chatExpandIcon">⤢</span>
+              <span id="chatExpandLabel">Expand</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Prompt suggestion chips row -->
+        <div class="qa-prompt-chips-row" style="margin-top: 4px;">
+          <button onclick="setQuestionText('What happens if either party terminates?')" class="prompt-chip">
+            ⚡ Termination liabilities (Section 8.2)
+          </button>
+          <button onclick="setQuestionText('What data privacy and encryption standards apply?')" class="prompt-chip">
+            🔒 Data privacy &amp; encryption (Section 11.2)
+          </button>
+          <button onclick="setQuestionText('Why is the IP indemnity dangerous?')" class="prompt-chip">
+            ⚖️ IP indemnity super-caps (Section 14.3)
+          </button>
+          <button onclick="setQuestionText('Which court has exclusive jurisdiction?')" class="prompt-chip">
+            🏛️ Delaware jurisdiction (Section 16.2)
+          </button>
+        </div>
+
+        <div class="qa-ai-bubble-card" style="padding: 14px 16px; flex-direction: column; align-items: stretch; position: relative;">
+          <div id="aiMessageFeed" class="chat-messages-container">
+            <div class="chat-msg-row ai-msg-row">
+              <div class="ai-avatar-square-sm">AI</div>
+              <div class="chat-ai-bubble">
+                <div class="chat-ai-body">
+                  Ask a question to retrieve text evidence and matching source images from the connected Neo4j corpus. This interface shows retrieved evidence; it does not generate answers.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form onsubmit="handleFormSubmit(event)" class="qa-bottom-input-wrap">
+          <span class="input-lightbulb-icon">💡</span>
+          <input type="text" id="userQuestionInput" class="qa-text-input-field" placeholder="Ask a question about the document or its graph relationships...">
+          <button type="submit" class="qa-inline-send-btn" title="Submit Question">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- VIEW 2: SUMMARISE DOCUMENT (EXECUTIVE SYNTHESIS) -->
+      <div id="viewSummary" style="display: none; flex-direction: column; gap: 18px;">
+        
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 3px;">
+              📋 Executive Agreement Summary
+            </h3>
+            <p style="font-size: 12px; color: var(--text-muted);">
+              Key governance mandates, liability limitations, and compliance terms.
+            </p>
+          </div>
+          
+        </div>
+
+        <!-- At-A-Glance Status Strip -->
+        <div id="atAGlanceStrip" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-radius: 12px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(129, 140, 248, 0.25); flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 12.5px;" id="atAGlanceDetails">
+            <span><strong>Parties:</strong> Apex Corp (Customer) &amp; CloudVendor Inc (Provider)</span>
+            <span style="color: var(--text-muted);">&bull;</span>
+            <span><strong>Jurisdiction:</strong> Delaware Courts</span>
+            <span style="color: var(--text-muted);">&bull;</span>
+            <span><strong>General Liability:</strong> Capped at 2&times; Fees</span>
+          </div>
+          <span class="plain-badge-crit" id="atAGlanceBadge">⚠️ 1 Critical Risk to Amend</span>
+        </div>
+
+        <!-- 4 Core Synthesis Cards -->
+        <div class="summary-matrix-grid" id="summaryCardsGrid">
+          
+          <!-- Card 1: Data Security -->
+          <div class="plain-card">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                🛡️ Data Security &amp; Privacy
+              </div>
+              <span class="plain-badge-safe">✓ Standard &amp; Safe</span>
+            </div>
+            <p style="font-size: 12.5px; line-height: 1.6; color: var(--text-secondary);">
+              <strong>Summary:</strong> All customer data is encrypted with bank-grade AES-256 at rest and TLS 1.3 during transfer. The vendor must provide an independent SOC-2 security audit every year and permanently delete data when the contract ends.
+            </p>
+            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+              Referenced: Section 9.4 (SOC-2 Audit) &amp; Section 11.2 (Encryption Standards)
+            </div>
+          </div>
+
+          <!-- Card 2: Money & Liabilities -->
+          <div class="plain-card">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                💰 Money &amp; Liability Caps
+              </div>
+              <span class="plain-badge-safe">✓ Fair &amp; Mutual</span>
+            </div>
+            <p style="font-size: 12.5px; line-height: 1.6; color: var(--text-secondary);">
+              <strong>Summary:</strong> Neither side can sue for more than 2 years worth of contract payments. If the cloud servers experience downtime, the customer receives up to a 10% monthly discount.
+            </p>
+            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+              Referenced: Section 6.3 (SLA Credits) &amp; Section 14.1 (Liability Ceiling)
+            </div>
+          </div>
+
+          <!-- Card 3: The Big Danger -->
+          <div class="plain-card" style="border-color: rgba(239, 68, 68, 0.35);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 14px; font-weight: 700; color: #ef4444;">
+                ⚠️ The Big Danger (IP Lawsuits)
+              </div>
+              <span class="plain-badge-crit">🔴 Needs Fixing</span>
+            </div>
+            <p style="font-size: 12.5px; line-height: 1.6; color: var(--text-secondary);">
+              <strong>Summary:</strong> While general damages are capped, intellectual property lawsuits have <strong>no limit at all</strong>. If a third party sues over software patents, the vendor pays 100% of unlimited damages.
+            </p>
+            <div style="font-size: 11px; color: #f87171; font-family: var(--font-mono);">
+              Referenced: Section 14.3 (Carve-outs from Liability Cap)
+            </div>
+          </div>
+
+          <!-- Card 4: Cancellation & Disputes -->
+          <div class="plain-card">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                ⚖️ Ending the Contract &amp; Disputes
+              </div>
+              <span class="plain-badge-warn">⚠️ Needs Attention</span>
+            </div>
+            <p style="font-size: 12.5px; line-height: 1.6; color: var(--text-secondary);">
+              <strong>Summary:</strong> Either company can leave with 60 days notice. However, if a regulator investigates, the customer can cancel immediately with 0 days notice unless amended. Disputes go to Delaware Chancery Court.
+            </p>
+            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+              Referenced: Section 8.2 (Immediate Cancellation) &amp; Section 16.2 (Delaware Venue)
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Milestone Stepper Bar -->
+        <div class="clause-stepper-row">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-main);">
+            <strong style="color: #818cf8;">Timeline:</strong>
+            <span>Day 1 (Contract Starts) &rarr; Day 30 (SOC-2 Delivered) &rarr; Day 60 (Security Check) &rarr; Year 1 (Annual Renewal)</span>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: #10b981; font-weight: 700;">● ALL 56 RULES VALIDATED</span>
+        </div>
+
+      </div>
+
+      <!-- VIEW 3: DEEP RISK ANALYSIS (EASILY UNDERSTANDABLE + 1-CLICK REDLINES) -->
+      <div id="viewRisk" style="display: none; flex-direction: column; gap: 16px;">
+
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 3px;">
+              ⚠️ Identified Risks &amp; Recommended Fixes
+            </h3>
+            <p style="font-size: 12px; color: var(--text-muted);">
+              Clear explanations of the 3 legal exposure points and how to fix them before signing.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px;" id="riskHeaderBadges">
+            <span class="plain-badge-crit">1 Critical</span>
+            <span class="plain-badge-warn">1 Moderate</span>
+            <span class="plain-badge-safe">1 Advisory</span>
+          </div>
+        </div>
+
+        <div id="riskDossiersList" style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Risk Dossier 1: Critical IP Indemnity -->
+        <div class="risk-dossier-card crit">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="font-size: 14.5px; font-weight: 800; color: var(--text-main);">
+              🔴 Risk 1: Unlimited Financial Liability for Patent/IP Lawsuits
+            </div>
+            <span class="plain-badge-crit">CRITICAL EXPOSURE</span>
+          </div>
+          
+          <div class="risk-explainer-box">
+            <strong>Risk Assessment:</strong>
+            Under Section 14.3, intellectual property lawsuits are excluded from the 2&times; liability cap. If someone claims the software infringes a patent, the vendor has to pay <strong>unlimited damages with no ceiling</strong>. A single patent lawsuit could cost $10M–$20M and bankrupt the company.
+          </div>
+
+          <div class="solution-box" style="margin-top: 8px;">
+            <strong>How to Fix It:</strong> Add a secondary "super-cap" limiting maximum payout to <strong>$5,000,000 USD</strong> or 5&times; annual fees.
+          </div>
+
+          <div class="risk-quote-box">
+            <strong>Original Contract Clause:</strong><br>
+            "14.3 Exclusions. The limitations of liability set forth in Section 14.1 shall not apply to damages, legal fees, or settlements resulting from Vendor's indemnification obligations under Section 12 (Intellectual Property)."
+          </div>
+
+          <div class="redline-copy-box">
+            <div>
+              <strong>Recommended Change to Paste:</strong>
+              <div style="font-family: var(--font-mono); font-size: 11.5px; margin-top: 4px; color: #a5b4fc;">
+                "...provided however that Vendor's aggregate indemnity liability under Section 12 shall not exceed $5,000,000 USD or 5× annual fees paid."
+              </div>
+            </div>
+            <button onclick="copyRedlineText(1)" id="copyRedlineBtn1" class="glass-pill-btn" style="padding: 5px 12px; font-size: 11px; flex-shrink: 0;">
+              Copy Redline
+            </button>
+          </div>
+        </div>
+
+        <!-- Risk Dossier 2: Immediate Cancellation -->
+        <div class="risk-dossier-card mod">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="font-size: 14.5px; font-weight: 800; color: var(--text-main);">
+              🟡 Risk 2: Customer Can Cancel Immediately With Zero Notice
+            </div>
+            <span class="plain-badge-warn">MODERATE RISK</span>
+          </div>
+
+          <div class="risk-explainer-box" style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3);">
+            <strong>Risk Assessment:</strong>
+            Section 8.2 allows the customer to cancel the contract instantly if any regulator sends an inquiry or question about the vendor. It gives <strong>0 days to explain or fix it</strong>.
+          </div>
+
+          <div class="solution-box" style="margin-top: 8px;">
+            <strong>How to Fix It:</strong> Require 30 days prior written notice and give the vendor a chance to clarify or resolve the inquiry.
+          </div>
+
+          <div class="risk-quote-box">
+            <strong>Original Contract Clause:</strong><br>
+            "8.2 Immediate Termination. Customer reserves the unilateral right to immediately terminate this Agreement without penalty upon receipt of any regulatory inquiry or subpoena regarding Vendor."
+          </div>
+
+          <div class="redline-copy-box">
+            <div>
+              <strong>Recommended Change to Paste:</strong>
+              <div style="font-family: var(--font-mono); font-size: 11.5px; margin-top: 4px; color: #a5b4fc;">
+                "...Customer may terminate only after delivering written notice detailing the inquiry and allowing Vendor thirty (30) days to clarify or remediate the finding."
+              </div>
+            </div>
+            <button onclick="copyRedlineText(2)" id="copyRedlineBtn2" class="glass-pill-btn" style="padding: 5px 12px; font-size: 11px; flex-shrink: 0;">
+              Copy Redline
+            </button>
+          </div>
+        </div>
+
+        <!-- Risk Dossier 3: 48h Breach Notice -->
+        <div class="risk-dossier-card adv">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="font-size: 14.5px; font-weight: 800; color: var(--text-main);">
+              🔵 Risk 3: Unrealistic 48-Hour Incident Notification Window
+            </div>
+            <span class="plain-badge-safe">ADVISORY</span>
+          </div>
+
+          <div class="risk-explainer-box" style="background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.3);">
+            <strong>Risk Assessment:</strong>
+            Section 11.4 forces the vendor to report any <em>suspected</em> security event within 48 hours. Standard law (GDPR) gives 72 hours and only applies to <em>confirmed</em> breaches. 48 hours on mere suspicion causes premature false alarms.
+          </div>
+
+          <div class="solution-box" style="margin-top: 8px;">
+            <strong>How to Fix It:</strong> Change to the industry-standard 72 hours for confirmed incidents involving personal data.
+          </div>
+
+          <div class="risk-quote-box">
+            <strong>Original Contract Clause:</strong><br>
+            "11.4 Incident Reporting. Vendor shall notify Customer in writing within forty-eight (48) hours of detecting any suspected or unverified access to customer data."
+          </div>
+
+          <div class="redline-copy-box">
+            <div>
+              <strong>Recommended Change to Paste:</strong>
+              <div style="font-family: var(--font-mono); font-size: 11.5px; margin-top: 4px; color: #a5b4fc;">
+                "...within seventy-two (72) hours of confirming an actual security incident involving unauthorized access to unencrypted personal data."
+              </div>
+            </div>
+            <button onclick="copyRedlineText(3)" id="copyRedlineBtn3" class="glass-pill-btn" style="padding: 5px 12px; font-size: 11px; flex-shrink: 0;">
+              Copy Redline
+            </button>
+          </div>
+        </div>
+        </div>
+
+      </div>
+
+    </div>
+</div>
+
+</div>
+
+<!-- ================================================================
+     SETTINGS & CONFIGURATION MODAL (Apple Glassmorphism)
+================================================================ -->
+<div id="settingsModal" class="settings-modal-overlay" style="display: none;" onclick="handleSettingsBackdropClick(event)">
+  <div class="settings-modal-card" onclick="event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="settings-modal-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 22px;">⚙️</span>
+        <div>
+          <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-main);">System & API Settings</h3>
+          <p style="margin: 2px 0 0; font-size: 11.5px; color: var(--text-muted);">Configure Live Endpoints, Neo4j Graph Rendering, and Chat RAG Engine</p>
+        </div>
+      </div>
+      <button class="settings-close-btn" onclick="closeSettingsModal()" title="Close Settings">✕</button>
+    </div>
+
+    <!-- Modal Tabs -->
+    <div class="settings-tabs-bar">
+      <button class="settings-tab-btn active" data-tab="api" onclick="switchSettingsTab('api')">🔌 API & Endpoints</button>
+      <button class="settings-tab-btn" data-tab="neo4j" onclick="switchSettingsTab('neo4j')">🕸️ Neo4j Graph</button>
+      <button class="settings-tab-btn" data-tab="physics" onclick="switchSettingsTab('physics')">⚡ Physics Engine</button>
+      <button class="settings-tab-btn" data-tab="chat" onclick="switchSettingsTab('chat')">💬 Chat & RAG</button>
+    </div>
+
+    <!-- Tab 1: API Configuration -->
+    <div id="tabContentApi" class="settings-tab-content active">
+      <div class="settings-row">
+        <label class="settings-label">Backend API Base URL</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="settingApiUrl" class="settings-input" value="http://127.0.0.1:8000" placeholder="e.g. http://127.0.0.1:8000">
+          <button class="glass-pill-btn" onclick="testApiConnection(true)" style="padding: 0 16px; font-size: 12px; white-space: nowrap;">
+            ⚡ Ping Test
+          </button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          FastAPI base URL. Uses `/graph`, `/graph/search`, `/ingestion`, and `/visual-assets/...`.
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-label">Execution Mode & Fallback Strategy</label>
+        <select id="settingApiMode" class="settings-select" onchange="updateApiModeUI()">
+          <option value="auto">🔄 Live API</option>
+          <option value="live">🟢 Live API (required)</option>
+          <option value="standalone">🟡 Offline demo mode (search disabled)</option>
+        </select>
+        <div id="apiStatusDetails" style="font-size: 11px; color: #38bdf8; margin-top: 6px; padding: 6px 10px; background: rgba(56, 189, 248, 0.08); border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">
+          Status: Checking backend connection...
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-label">API Authorization Token (Optional)</label>
+        <input type="password" id="settingApiToken" class="settings-input" placeholder="Bearer eyJhbGciOiJIUzI1NiIs..." autocomplete="off">
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          Optional header sent as <code>Authorization: Bearer &lt;token&gt;</code> for enterprise auth gateways.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Neo4j Graph Settings -->
+    <div id="tabContentNeo4j" class="settings-tab-content">
+      <div class="settings-row">
+        <label class="settings-label">Graph Database Format Adapter</label>
+        <select id="settingGraphSource" class="settings-select" onchange="reloadGraphWithCurrentSettings()">
+          <option value="neo4j">🕸️ Neo4j graph (/graph)</option>
+          <option value="d3">📊 Neo4j graph (/graph)</option>
+          <option value="hybrid">⚡ Neo4j graph (/graph)</option>
+        </select>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          Loads the persisted graph through the paginated, read-only graph API.
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-label">Graph API access</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="settingCypherQuery" class="settings-input font-mono" value="GET /graph · POST /graph/search" style="font-size: 11.5px;" readonly>
+          <button class="glass-pill-btn" onclick="executeCypherInSettings()" style="padding: 0 16px; font-size: 12px; white-space: nowrap; background: rgba(99, 102, 241, 0.25);">
+            ℹ API details
+          </button>
+        </div>
+        <div id="cypherResultSummary" style="font-size: 11px; color: var(--text-muted); margin-top: 6px; font-family: var(--font-mono);">
+          The frontend does not expose arbitrary Cypher execution.
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-label">Ontology Label Color Map</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin-top: 6px; font-size: 11px;">
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block;"></span>ORGANIZATION</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#a855f7;display:inline-block;"></span>APPLICATION</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#6366f1;display:inline-block;"></span>POLICY</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;display:inline-block;"></span>OBLIGATION</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#06b6d4;display:inline-block;"></span>CONTROL</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span>RISK</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span>EVIDENCE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Physics Engine -->
+    <div id="tabContentPhysics" class="settings-tab-content">
+      <div class="settings-row">
+        <div style="display: flex; justify-content: space-between;">
+          <label class="settings-label">Node Charge (Repulsion)</label>
+          <span id="chargeValDisplay" style="font-family: var(--font-mono); font-size: 11px; color: #a5b4fc;">-240</span>
+        </div>
+        <input type="range" id="settingCharge" class="settings-slider" min="-500" max="-50" value="-240" oninput="updatePhysicsFromSlider()">
+      </div>
+
+      <div class="settings-row">
+        <div style="display: flex; justify-content: space-between;">
+          <label class="settings-label">Link Spring Distance</label>
+          <span id="distanceValDisplay" style="font-family: var(--font-mono); font-size: 11px; color: #a5b4fc;">80px</span>
+        </div>
+        <input type="range" id="settingDistance" class="settings-slider" min="30" max="220" value="80" oninput="updatePhysicsFromSlider()">
+      </div>
+
+      <div class="settings-row">
+        <div style="display: flex; justify-content: space-between;">
+          <label class="settings-label">Node Collision Padding</label>
+          <span id="collisionValDisplay" style="font-family: var(--font-mono); font-size: 11px; color: #a5b4fc;">18px</span>
+        </div>
+        <input type="range" id="settingCollision" class="settings-slider" min="8" max="40" value="18" oninput="updatePhysicsFromSlider()">
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button class="glass-pill-btn" onclick="resetPhysicsDefaults()" style="padding: 6px 14px; font-size: 11.5px;">
+          Reset Physics Defaults
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab 4: Chat & RAG Settings -->
+    <div id="tabContentChat" class="settings-tab-content">
+      <div class="settings-row">
+        <div style="display: flex; justify-content: space-between;">
+          <label class="settings-label">RAG Minimum Confidence Threshold</label>
+          <span id="ragConfDisplay" style="font-family: var(--font-mono); font-size: 11px; color: #34d399;">70%</span>
+        </div>
+        <input type="range" id="settingRagConf" class="settings-slider" min="40" max="95" value="70" oninput="document.getElementById('ragConfDisplay').textContent = this.value + '%'">
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          Queries below this threshold trigger semantic warning badges and suggest deeper analysis.
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-label">Chat Window Default Height</label>
+        <div style="display: flex; gap: 8px; margin-top: 4px;">
+          <button class="glass-pill-btn" onclick="setChatHeight(380)" style="padding: 5px 12px; font-size: 11.5px;">Standard (380px)</button>
+          <button class="glass-pill-btn" onclick="setChatHeight(520)" style="padding: 5px 12px; font-size: 11.5px;">Medium (520px)</button>
+          <button class="glass-pill-btn" onclick="setChatHeight(680)" style="padding: 5px 12px; font-size: 11.5px;">Large (680px)</button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+          Tip: You can also drag the bottom resize handle directly or click ⤢ to expand to maximum height!
+        </div>
+      </div>
+
+      <div class="settings-row" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+        <label class="settings-label">Conversation Management</label>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <button class="glass-pill-btn" onclick="clearChatMessages()" style="padding: 5px 12px; font-size: 11.5px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+            🗑️ Clear Chat History
+          </button>
+          <button class="glass-pill-btn" onclick="exportChatConversation()" style="padding: 5px 12px; font-size: 11.5px;">
+            📥 Export Transcript (JSON)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="settings-modal-footer">
+      <div style="font-size: 11px; color: var(--text-muted);">Changes persist to localStorage.</div>
+      <div style="display: flex; gap: 8px;">
+        <button class="glass-pill-btn" onclick="closeSettingsModal()" style="padding: 7px 16px; font-size: 12px;">Cancel</button>
+        <button class="glass-pill-btn" onclick="saveSettingsAndApply()" style="padding: 7px 20px; font-size: 12px; background: var(--accent-gradient); color: #fff; font-weight: 700; border: none;">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     CLIENT SCRIPT: REAL DATA LIVE WAVES + INSTANT TABS + GRAPH
+================================================================ -->
+<script src="app.js"></script>
+
+</body>
+</html>
